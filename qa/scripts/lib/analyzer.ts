@@ -92,7 +92,7 @@ function findRelatedTests(filePath: string): string[] {
         
         // Filter to likely related tests based on file name
         const fileName = path.basename(filePath, path.extname(filePath));
-        const relatedMatchingFiles = matchingFiles.filter(f => 
+        const relatedMatchingFiles = matchingFiles.filter((f: string) => 
           f.includes(fileName) || 
           f.includes(path.dirname(filePath).replace('src/', ''))
         );
