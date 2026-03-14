@@ -1,0 +1,39 @@
+{
+  "name": "superpowers",
+  "version": "1.0.0",
+  "description": "AI-powered workflows for OpenClaw - Browser automation, QA, releases, and product strategy",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "install:all": "./install.sh",
+    "test": "vitest run",
+    "lint": "eslint scripts --ext .ts"
+  },
+  "keywords": [
+    "openclaw",
+    "skills",
+    "playwright",
+    "automation",
+    "qa",
+    "release",
+    "bat-framework"
+  ],
+  "author": "Ares",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.41.0",
+    "glob": "^10.3.10"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

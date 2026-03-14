@@ -1,0 +1,60 @@
+{
+  "browser": {
+    "flows": {
+      "critical": [
+        { "action": "navigate", "target": "/" },
+        { "action": "screenshot" },
+        { "action": "navigate", "target": "/about" },
+        { "action": "screenshot" }
+      ],
+      "auth": [
+        { "action": "navigate", "target": "/login" },
+        { "action": "screenshot" },
+        { "action": "type", "selector": "input[name='email']", "value": "test@example.com" },
+        { "action": "type", "selector": "input[name='password']", "value": "password" },
+        { "action": "click", "selector": "button[type='submit']" },
+        { "action": "wait", "selector": ".dashboard", "delay": 3000 },
+        { "action": "screenshot" }
+      ]
+    },
+    "viewports": {
+      "mobile": { "width": 375, "height": 667 },
+      "tablet": { "width": 768, "height": 1024 },
+      "desktop": { "width": 1280, "height": 720 },
+      "1440p": { "width": 2560, "height": 1440 },
+      "4k": { "width": 3840, "height": 2160 }
+    },
+    "defaultTimeout": 30000
+  },
+  "qa": {
+    "defaultMode": "targeted",
+    "coverageThreshold": 80,
+    "testCommand": "npm test",
+    "testPatterns": {
+      "unit": ["**/*.test.ts", "**/*.spec.ts"],
+      "integration": ["**/*.integration.test.ts"],
+      "e2e": ["**/e2e/**/*.spec.ts"]
+    }
+  },
+  "ship": {
+    "requireCleanWorkingDir": true,
+    "runTestsBeforeRelease": true,
+    "testCommand": "npm test",
+    "changelog": {
+      "preset": "conventional",
+      "includeContributors": true
+    }
+  },
+  "github": {
+    "defaultOrg": "nKOxxx"
+  },
+  "telegram": {
+    "notifyOnShip": true
+  },
+  "ceoReview": {
+    "minimumScore": 10,
+    "requireAllBAT": false,
+    "autoGenerateNextSteps": true,
+    "marketAnalysis": true
+  }
+}
