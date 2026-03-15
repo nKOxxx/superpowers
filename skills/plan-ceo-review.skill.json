@@ -1,0 +1,36 @@
+{
+  "name": "plan-ceo-review",
+  "version": "1.0.0",
+  "description": "Product strategy review using BAT framework (Brand, Attention, Trust) and 10-star methodology",
+  "author": "nKOxxx",
+  "entry": {
+    "type": "cli",
+    "bin": "superpowers",
+    "command": "ceo-review"
+  },
+  "requires": {
+    "bins": ["node", "npx"],
+    "npm": ["@nko/superpowers"]
+  },
+  "config": {
+    "feature": {
+      "type": "string",
+      "required": true
+    },
+    "brand": {
+      "type": "number",
+      "min": 0,
+      "max": 5
+    },
+    "attention": {
+      "type": "number",
+      "min": 0,
+      "max": 5
+    },
+    "trust": {
+      "type": "number",
+      "min": 0,
+      "max": 5
+    }
+  }
+}

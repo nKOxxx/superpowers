@@ -1,4 +1,6 @@
-export * as browse from './browse';
-export * as qa from './qa';
-export * as ship from './ship';
-export * as planCeoReview from './plan-ceo-review';
+// Main entry point for programmatic usage
+export { browseCommand } from './commands/browse.js';
+export { qaCommand } from './commands/qa.js';
+export { shipCommand } from './commands/ship.js';
+export { ceoReviewCommand } from './commands/ceo-review.js';
+//# sourceMappingURL=index.js.map

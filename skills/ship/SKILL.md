@@ -19,7 +19,6 @@ One-command release: version bump, changelog generation, git tag, push, and GitH
 - Conventional commit changelog generation
 - Git tag creation and push
 - GitHub release creation
-- Telegram notifications
 - Dry-run preview mode
 
 ## Usage
@@ -93,55 +92,6 @@ Parses conventional commits since last tag:
 - `fix:` → Bug Fixes section
 - `chore:` → Chores section
 - Others → Other changes
-
-## Output Example
-
-```
-══════════════════════════════════════════════════
-Release Pipeline
-══════════════════════════════════════════════════
-
-ℹ Current version: 1.0.0
-ℹ New version: 1.0.1
-
-ℹ Running tests...
-✓ Tests passed
-
-ℹ Updating version...
-✓ Version updated to 1.0.1
-
-ℹ Generating changelog...
-✓ Changelog updated
-
-ℹ Creating release commit...
-✓ Commit created
-
-ℹ Creating git tag...
-✓ Tag v1.0.1 created
-
-ℹ Pushing to remote...
-✓ Pushed to remote
-
-ℹ Creating GitHub release...
-✓ GitHub release created
-
-✓ Released 1.0.1
-```
-
-## Configuration
-
-Add to `superpowers.config.json`:
-
-```json
-{
-  "ship": {
-    "requireCleanWorkingDir": true,
-    "runTestsBeforeRelease": true,
-    "changelogPath": "CHANGELOG.md",
-    "versionFiles": ["src/version.ts"]
-  }
-}
-```
 
 ## Environment Variables
 

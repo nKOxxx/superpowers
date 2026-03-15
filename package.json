@@ -1,24 +1,40 @@
 {
   "name": "@nko/superpowers",
   "version": "1.0.0",
-  "description": "OpenClaw superpowers skills - Browser, QA, Ship, and BAT framework",
+  "description": "OpenClaw superpowers - AI-powered development workflows",
   "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "superpowers": "./cli.js"
+  },
   "scripts": {
-    "build": "tsc && npm run package:skills",
-    "package:skills": "node scripts/package-skills.js",
+    "build": "tsc",
     "dev": "tsc --watch",
-    "test": "echo \"Run individual skill tests\""
+    "test": "vitest run",
+    "package:skills": "node scripts/package-skills.js"
   },
-  "keywords": ["openclaw", "skills", "browser", "qa", "release", "bat"],
-  "author": "nKO",
+  "keywords": [
+    "openclaw",
+    "ai",
+    "automation",
+    "testing",
+    "browser",
+    "release",
+    "strategy"
+  ],
+  "author": "nKOxxx",
   "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "typescript": "^5.3.3"
-  },
   "dependencies": {
-    "playwright": "^1.40.0",
-    "commander": "^11.1.0",
+    "playwright": "^1.42.0",
+    "commander": "^12.0.0",
     "chalk": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

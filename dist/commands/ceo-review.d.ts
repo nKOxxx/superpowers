@@ -1,3 +1,13 @@
-import { Command } from 'commander';
-export declare const ceoReviewCommand: Command;
+interface CEORviewOptions {
+    feature: string;
+    goal?: string;
+    audience?: string;
+    competition?: string;
+    trust?: string;
+    brand?: string;
+    attention?: string;
+    trustScore?: string;
+}
+export declare function ceoReviewCommand(options: CEORviewOptions): Promise<void>;
+export {};
 //# sourceMappingURL=ceo-review.d.ts.map

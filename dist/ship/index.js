@@ -251,3 +251,4 @@ export async function run(options) {
     console.log(chalk.green(`✓ Released ${newVersion}`));
     console.log(chalk.cyan('══════════════════════════════════════════════════'));
 }
+//# sourceMappingURL=index.js.map

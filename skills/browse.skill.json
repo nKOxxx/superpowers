@@ -1,0 +1,30 @@
+{
+  "name": "browse",
+  "version": "1.0.0",
+  "description": "Browser automation for visual testing and QA with Playwright",
+  "author": "nKOxxx",
+  "entry": {
+    "type": "cli",
+    "bin": "superpowers",
+    "command": "browse"
+  },
+  "requires": {
+    "bins": ["node", "npx"],
+    "npm": ["@nko/superpowers"]
+  },
+  "config": {
+    "viewport": {
+      "type": "string",
+      "enum": ["mobile", "tablet", "desktop", "wide"],
+      "default": "desktop"
+    },
+    "fullPage": {
+      "type": "boolean",
+      "default": false
+    },
+    "outputDir": {
+      "type": "string",
+      "default": "./screenshots"
+    }
+  }
+}

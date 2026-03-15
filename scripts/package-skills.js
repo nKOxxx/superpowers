@@ -1,65 +1,76 @@
 #!/usr/bin/env node
+/**
+ * Package all skills into distributable .skill.tar.gz files
+ */
 import { execSync } from 'child_process';
-import { existsSync, mkdirSync, copyFileSync, writeFileSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { existsSync, mkdirSync, readdirSync, copyFileSync, writeFileSync, readFileSync } from 'fs';
+import { join, resolve } from 'path';
 
-const skills = ['browse', 'qa', 'ship', 'plan-ceo-review'];
-const distSkillsDir = join(process.cwd(), 'dist-skills');
+const skillsDir = resolve('skills');
+const distDir = resolve('dist-skills');
+const packageJson = JSON.parse(readFileSync('package.json', 'utf-8'));
 
-if (!existsSync(distSkillsDir)) {
-  mkdirSync(distSkillsDir, { recursive: true });
+// Ensure dist directory exists
+if (!existsSync(distDir)) {
+  mkdirSync(distDir, { recursive: true });
 }
 
-for (const skill of skills) {
-  const skillDir = join(process.cwd(), skill);
-  const skillDist = join(skillDir, 'dist');
+// Get all skill directories
+const skillDirs = readdirSync(skillsDir, { withFileTypes: true })
+  .filter(d => d.isDirectory())
+  .map(d => d.name);
+
+console.log('Packaging skills...\n');
+
+for (const skillName of skillDirs) {
+  const skillDir = join(skillsDir, skillName);
+  const skillJsonPath = join(skillsDir, `${skillName}.skill.json`);
   
-  if (!existsSync(skillDist)) {
-    console.log(`⚠️  ${skill}: dist/ not found, skipping`);
+  if (!existsSync(skillJsonPath)) {
+    console.log(`⚠ Skipping ${skillName}: No skill.json found`);
     continue;
   }
-  
-  console.log(`📦 Packaging ${skill}...`);
-  
-  // Read skill.json for metadata
-  const skillJsonPath = join(skillDir, 'skill.json');
-  const skillJson = existsSync(skillJsonPath) 
-    ? JSON.parse(readFileSync(skillJsonPath, 'utf-8'))
-    : { name: skill, version: '1.0.0' };
-  
-  // Create package manifest
-  const manifest = {
-    ...skillJson,
-    packagedAt: new Date().toISOString(),
-    files: ['cli.js', 'dist/', 'skill.json']
+
+  const skillJson = JSON.parse(readFileSync(skillJsonPath, 'utf-8'));
+  const outputFile = join(distDir, `${skillName}.skill.tar.gz`);
+
+  // Create temporary package directory
+  const tempDir = join(distDir, `temp-${skillName}`);
+  if (!existsSync(tempDir)) {
+    mkdirSync(tempDir, { recursive: true });
+  }
+
+  // Copy skill files
+  copyFileSync(skillJsonPath, join(tempDir, 'skill.json'));
+  copyFileSync(join(skillDir, 'SKILL.md'), join(tempDir, 'SKILL.md'));
+
+  // Add package metadata
+  const metadata = {
+    name: skillJson.name,
+    version: skillJson.version,
+    packageVersion: packageJson.version,
+    description: skillJson.description,
+    author: skillJson.author,
+    builtAt: new Date().toISOString()
   };
-  
-  // Write manifest to skill dir temporarily for packaging
-  const manifestPath = join(skillDir, 'manifest.json');
-  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-  
-  // Create tar.gz
-  const outputFile = join(distSkillsDir, `${skill}.skill.tar.gz`);
-  
+  writeFileSync(join(tempDir, 'metadata.json'), JSON.stringify(metadata, null, 2));
+
+  // Create tarball
   try {
-    // Use tar to create the package
-    execSync(`tar -czf ${outputFile} -C ${skillDir} cli.js dist skill.json manifest.json`, {
-      stdio: 'inherit'
-    });
-    
-    // Clean up manifest
-    // unlinkSync(manifestPath);
-    
-    // Get file size
-    const stats = existsSync(outputFile);
-    if (stats) {
-      const { execSync } = await import('child_process');
-      const size = execSync(`du -h ${outputFile} | cut -f1`, { encoding: 'utf-8' }).trim();
-      console.log(`   ✅ ${skill}.skill.tar.gz (${size})`);
-    }
+    execSync(`tar -czf "${outputFile}" -C "${tempDir}" .`, { stdio: 'pipe' });
+    const stats = readFileSync(outputFile);
+    const sizeKb = (stats.length / 1024).toFixed(1);
+    console.log(`✓ ${skillName}.skill.tar.gz (${sizeKb} KB)`);
   } catch (error) {
-    console.error(`   ❌ Failed to package ${skill}: ${error}`);
+    console.error(`✗ Failed to package ${skillName}:`, error);
+  }
+
+  // Cleanup temp dir
+  try {
+    execSync(`rm -rf "${tempDir}"`, { stdio: 'pipe' });
+  } catch {
+    // Ignore cleanup errors
   }
 }
 
-console.log('\n📦 All skills packaged to dist-skills/');
+console.log('\n✓ All skills packaged to dist-skills/');

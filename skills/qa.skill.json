@@ -1,0 +1,26 @@
+{
+  "name": "qa",
+  "version": "1.0.0",
+  "description": "Systematic testing as QA Lead with targeted, smoke, and full modes",
+  "author": "nKOxxx",
+  "entry": {
+    "type": "cli",
+    "bin": "superpowers",
+    "command": "qa"
+  },
+  "requires": {
+    "bins": ["node", "npx", "git"],
+    "npm": ["@nko/superpowers"]
+  },
+  "config": {
+    "mode": {
+      "type": "string",
+      "enum": ["targeted", "smoke", "full"],
+      "default": "targeted"
+    },
+    "coverage": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

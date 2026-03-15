@@ -42,12 +42,6 @@ superpowers browse https://example.com --viewport=mobile
 superpowers browse https://example.com --full-page
 ```
 
-### Run predefined flows
-
-```bash
-superpowers browse https://example.com --flows=critical,auth
-```
-
 ### Custom actions
 
 ```bash
@@ -61,23 +55,16 @@ superpowers browse https://example.com --actions="click:.btn,wait:1000,screensho
 - `--height=<pixels>` - Custom viewport height
 - `--full-page` - Capture full page screenshot. Default: false
 - `--output=<dir>` - Output directory for screenshots. Default: ./screenshots
-- `--flows=<names>` - Comma-separated flow names
 - `--wait-for=<selector>` - Wait for element before screenshot
 - `--actions=<actions>` - Comma-separated actions
 - `--timeout=<ms>` - Navigation timeout. Default: 30000
+- `--base64` - Output base64 for Telegram integration
 
 ## Viewport Presets
 
 - `mobile`: 375x667
 - `tablet`: 768x1024
 - `desktop`: 1280x720
-
-## Flows
-
-Predefined flow names (configurable via config):
-- `critical`: ['/','/about','/contact']
-- `auth`: ['/login','/dashboard','/profile']
-- `checkout`: ['/cart','/checkout','/payment']
 
 ## Action Syntax
 
@@ -91,53 +78,6 @@ Actions are comma-separated with colon-separated parameters:
 - `screenshot` - Take screenshot at this point
 
 Example: `click:.menu,wait:500,hover:.dropdown-item,screenshot`
-
-## Configuration
-
-Add to `superpowers.config.json`:
-
-```json
-{
-  "browser": {
-    "defaultViewport": "desktop",
-    "screenshotDir": "./screenshots",
-    "viewports": {
-      "custom": { "width": 1440, "height": 900 }
-    },
-    "flows": {
-      "critical": [
-        { "name": "Homepage", "url": "/" },
-        { "name": "About", "url": "/about" }
-      ],
-      "auth": [
-        { 
-          "name": "Login Flow", 
-          "url": "/login",
-          "actions": [
-            { "type": "type", "selector": "#email", "text": "test@example.com" },
-            { "type": "type", "selector": "#password", "text": "password" },
-            { "type": "click", "selector": "#submit" },
-            { "type": "wait", "delay": 2000 }
-          ]
-        }
-      ]
-    }
-  }
-}
-```
-
-## Output
-
-Screenshots saved to output directory with filenames:
-`<hostname>_<viewport>_<timestamp>.png`
-
-## Examples
-
-```
-User: /browse https://myapp.com
-Agent: Running browser automation...
-✓ Screenshot saved: ./screenshots/myapp-com_desktop_2024-03-15T10-30-00.png
-```
 
 ## Requirements
 

@@ -1,123 +1,245 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.shipCommand = void 0;
-const commander_1 = require("commander");
-const chalk_1 = __importDefault(require("chalk"));
-const child_process_1 = require("child_process");
-const git_js_1 = require("../lib/git.js");
-const utils_js_1 = require("../lib/utils.js");
-const github_js_1 = require("../lib/github.js");
-exports.shipCommand = new commander_1.Command('ship')
-    .description('One-command release pipeline')
-    .requiredOption('-v, --version <type>', 'Version bump: patch, minor, major, or explicit version')
-    .option('-r, --repo <owner/repo>', 'Repository for GitHub release')
-    .option('-d, --dry-run', 'Preview changes without executing')
-    .option('-s, --skip-tests', 'Skip test run before release')
-    .option('-n, --notes <text>', 'Custom release notes')
-    .option('-p, --prerelease', 'Mark as prerelease')
-    .action(async (options) => {
-    console.log(chalk_1.default.blue('══════════════════════════════════════════════════'));
-    console.log(chalk_1.default.blue('Release Pipeline'));
-    console.log(chalk_1.default.blue('══════════════════════════════════════════════════\n'));
+import { execSync } from 'child_process';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { resolve } from 'path';
+export async function shipCommand(options) {
+    console.log('');
+    console.log('══════════════════════════════════════════════════');
+    console.log('Release Pipeline');
+    console.log('══════════════════════════════════════════════════');
+    console.log('');
     try {
-        // Validate git repo
-        if (!(0, git_js_1.isGitRepo)()) {
-            console.error(chalk_1.default.red('✗ Not a git repository'));
-            process.exit(1);
-        }
-        // Check working directory
-        if (!(0, git_js_1.isWorkingDirectoryClean)() && !options.dryRun) {
-            console.error(chalk_1.default.red('✗ Working directory is not clean'));
-            console.log(chalk_1.default.gray('Commit or stash your changes first'));
-            process.exit(1);
-        }
-        // Get current and new version
-        const currentVersion = (0, utils_js_1.getCurrentVersion)();
-        const newVersion = (0, utils_js_1.bumpVersion)(currentVersion, options.version);
-        console.log(chalk_1.default.gray(`Current version: ${currentVersion}`));
-        console.log(chalk_1.default.gray(`New version: ${newVersion}`));
+        // Step 1: Validate
+        console.log('Step 1: Validating...');
+        validateRepo();
+        console.log('✓ Repository validated');
+        console.log('');
+        // Get current version
+        const packageJsonPath = resolve('package.json');
+        const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+        const currentVersion = packageJson.version;
+        // Calculate new version
+        const newVersion = calculateVersion(currentVersion, options.version);
+        console.log(`Current version: ${currentVersion}`);
+        console.log(`New version: ${newVersion}`);
+        console.log('');
         if (options.dryRun) {
-            console.log(chalk_1.default.yellow('\n[DRY RUN] No changes will be made\n'));
-        }
-        // Run tests
-        if (!options.skipTests && !options.dryRun) {
-            console.log(chalk_1.default.blue('\nRunning tests...'));
-            try {
-                (0, child_process_1.execSync)('npm test', { stdio: 'inherit' });
-                console.log(chalk_1.default.green('✓ Tests passed\n'));
-            }
-            catch {
-                console.error(chalk_1.default.red('✗ Tests failed'));
-                process.exit(1);
-            }
-        }
-        else if (options.skipTests) {
-            console.log(chalk_1.default.yellow('\n⚠ Skipping tests\n'));
-        }
-        // Get commits for changelog
-        const commits = (0, git_js_1.getCommitsSinceLastTag)();
-        console.log(chalk_1.default.blue(`Commits since last tag: ${commits.length}`));
-        // Generate changelog
-        const changelog = (0, utils_js_1.generateChangelog)(newVersion, commits, currentVersion);
-        if (options.dryRun) {
-            console.log(chalk_1.default.blue('\nChangelog preview:'));
-            console.log(chalk_1.default.gray('─'.repeat(50)));
-            console.log(changelog);
-            console.log(chalk_1.default.gray('─'.repeat(50)));
-        }
-        if (options.dryRun) {
-            console.log(chalk_1.default.yellow('\n[DRY RUN] Release preview complete'));
-            console.log(chalk_1.default.gray('Remove --dry-run to execute'));
+            console.log('DRY RUN - No changes will be made');
+            console.log('');
             return;
         }
-        // Update version
-        console.log(chalk_1.default.blue('\nUpdating version...'));
-        (0, utils_js_1.updatePackageVersion)(newVersion);
-        console.log(chalk_1.default.green(`✓ Version updated to ${newVersion}`));
-        // Update changelog
-        console.log(chalk_1.default.blue('\nGenerating changelog...'));
-        (0, utils_js_1.updateChangelog)(changelog);
-        console.log(chalk_1.default.green('✓ Changelog updated'));
-        // Create release commit
-        console.log(chalk_1.default.blue('\nCreating release commit...'));
-        (0, git_js_1.commitAll)(`chore(release): v${newVersion}`);
-        console.log(chalk_1.default.green('✓ Commit created'));
-        // Create tag
-        console.log(chalk_1.default.blue('\nCreating git tag...'));
-        (0, git_js_1.createTag)(newVersion);
-        console.log(chalk_1.default.green(`✓ Tag v${newVersion} created`));
-        // Push to remote
-        console.log(chalk_1.default.blue('\nPushing to remote...'));
-        (0, git_js_1.pushToRemote)();
-        console.log(chalk_1.default.green('✓ Pushed to remote'));
-        // Create GitHub release
-        if ((0, github_js_1.hasGitHubToken)()) {
-            const repo = options.repo || (0, git_js_1.getRepoFromRemote)();
-            if (repo) {
-                console.log(chalk_1.default.blue('\nCreating GitHub release...'));
-                const releaseNotes = options.notes
-                    ? `${options.notes}\n\n${changelog}`
-                    : changelog;
-                await (0, github_js_1.createGitHubRelease)(repo, newVersion, releaseNotes, (0, github_js_1.getGitHubToken)(), options.prerelease || false);
-                console.log(chalk_1.default.green('✓ GitHub release created'));
+        // Step 2: Run tests
+        if (!options.skipTests) {
+            console.log('Step 2: Running tests...');
+            try {
+                execSync('npm test', { stdio: 'inherit' });
+                console.log('✓ Tests passed');
             }
-            else {
-                console.log(chalk_1.default.yellow('\n⚠ Could not detect repo, skipping GitHub release'));
+            catch {
+                console.error('✗ Tests failed');
+                process.exit(1);
             }
+            console.log('');
         }
         else {
-            console.log(chalk_1.default.yellow('\n⚠ GH_TOKEN not set, skipping GitHub release'));
+            console.log('Step 2: Skipping tests (--skip-tests)');
+            console.log('');
         }
-        console.log(chalk_1.default.blue('\n══════════════════════════════════════════════════'));
-        console.log(chalk_1.default.green(`✓ Released v${newVersion}`));
-        console.log(chalk_1.default.blue('══════════════════════════════════════════════════'));
+        // Step 3: Update version
+        console.log('Step 3: Updating version...');
+        packageJson.version = newVersion;
+        writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
+        console.log(`✓ Version updated to ${newVersion}`);
+        console.log('');
+        // Step 4: Generate changelog
+        console.log('Step 4: Generating changelog...');
+        const changelog = generateChangelog(newVersion);
+        updateChangelogFile(changelog, newVersion);
+        console.log('✓ Changelog updated');
+        console.log('');
+        // Step 5: Create release commit
+        console.log('Step 5: Creating release commit...');
+        execSync('git add -A');
+        execSync(`git commit -m "chore(release): ${newVersion}"`);
+        console.log('✓ Commit created');
+        console.log('');
+        // Step 6: Create git tag
+        console.log('Step 6: Creating git tag...');
+        const tagName = `v${newVersion}`;
+        execSync(`git tag -a ${tagName} -m "Release ${newVersion}"`);
+        console.log(`✓ Tag ${tagName} created`);
+        console.log('');
+        // Step 7: Push to remote
+        console.log('Step 7: Pushing to remote...');
+        execSync('git push origin HEAD');
+        execSync(`git push origin ${tagName}`);
+        console.log('✓ Pushed to remote');
+        console.log('');
+        // Step 8: Create GitHub release
+        if (process.env.GH_TOKEN) {
+            console.log('Step 8: Creating GitHub release...');
+            const repo = options.repo || detectRepo();
+            if (repo) {
+                createGitHubRelease(repo, tagName, newVersion, changelog, options);
+                console.log('✓ GitHub release created');
+            }
+            else {
+                console.log('⚠ Could not detect repository, skipping GitHub release');
+            }
+            console.log('');
+        }
+        else {
+            console.log('Step 8: Skipping GitHub release (GH_TOKEN not set)');
+            console.log('');
+        }
+        console.log('══════════════════════════════════════════════════');
+        console.log(`✓ Released ${newVersion}`);
+        console.log('══════════════════════════════════════════════════');
+        console.log('');
     }
     catch (error) {
-        console.error(chalk_1.default.red(`\n✗ Error: ${error instanceof Error ? error.message : String(error)}`));
+        console.error('');
+        console.error('✗ Error:', error instanceof Error ? error.message : String(error));
         process.exit(1);
     }
-});
+}
+function validateRepo() {
+    // Check git status
+    try {
+        const status = execSync('git status --porcelain', { encoding: 'utf-8' });
+        if (status.trim()) {
+            throw new Error('Working directory not clean. Commit or stash changes first.');
+        }
+    }
+    catch (error) {
+        if (error instanceof Error && error.message.includes('not clean')) {
+            throw error;
+        }
+        throw new Error('Not a git repository');
+    }
+    // Check package.json exists
+    if (!existsSync(resolve('package.json'))) {
+        throw new Error('package.json not found');
+    }
+}
+function calculateVersion(current, bump) {
+    if (bump.match(/^\d+\.\d+\.\d+$/)) {
+        return bump;
+    }
+    const parts = current.split('.').map(Number);
+    const [major, minor, patch] = parts;
+    switch (bump) {
+        case 'major':
+            return `${major + 1}.0.0`;
+        case 'minor':
+            return `${major}.${minor + 1}.0`;
+        case 'patch':
+            return `${major}.${minor}.${patch + 1}`;
+        default:
+            throw new Error(`Invalid version type: ${bump}. Use major, minor, patch, or explicit version.`);
+    }
+}
+function generateChangelog(version) {
+    const entries = [];
+    try {
+        // Get commits since last tag
+        const lastTag = execSync('git describe --tags --abbrev=0 2>/dev/null || echo ""', { encoding: 'utf-8' }).trim();
+        const range = lastTag ? `${lastTag}..HEAD` : 'HEAD~20';
+        const commits = execSync(`git log ${range} --pretty=format:"%s" --no-merges`, { encoding: 'utf-8' });
+        for (const line of commits.split('\n')) {
+            const match = line.match(/^(feat|fix|chore|docs|style|refactor|test|build)(?:\(([^)]+)\))?:\s*(.+)$/);
+            if (match) {
+                entries.push({
+                    type: match[1],
+                    scope: match[2],
+                    message: match[3]
+                });
+            }
+        }
+    }
+    catch {
+        // Ignore errors, return empty changelog
+    }
+    if (entries.length === 0) {
+        return 'No notable changes.';
+    }
+    // Group by type
+    const groups = {};
+    for (const entry of entries) {
+        if (!groups[entry.type])
+            groups[entry.type] = [];
+        groups[entry.type].push(entry);
+    }
+    const typeLabels = {
+        feat: 'Features',
+        fix: 'Bug Fixes',
+        chore: 'Chores',
+        docs: 'Documentation',
+        style: 'Styling',
+        refactor: 'Refactoring',
+        test: 'Tests',
+        build: 'Build'
+    };
+    let markdown = `## [${version}] - ${new Date().toISOString().split('T')[0]}\n\n`;
+    for (const [type, items] of Object.entries(groups)) {
+        markdown += `### ${typeLabels[type] || type}\n\n`;
+        for (const item of items) {
+            const scope = item.scope ? `**${item.scope}:** ` : '';
+            markdown += `- ${scope}${item.message}\n`;
+        }
+        markdown += '\n';
+    }
+    return markdown.trim();
+}
+function updateChangelogFile(changelog, version) {
+    const changelogPath = resolve('CHANGELOG.md');
+    const header = `# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n`;
+    let existing = '';
+    if (existsSync(changelogPath)) {
+        existing = readFileSync(changelogPath, 'utf-8');
+        // Remove header if exists
+        existing = existing.replace(header, '');
+        // Remove old version header pattern
+        existing = existing.replace(/^# Changelog.*\n\n/, '');
+    }
+    const newContent = header + changelog + '\n\n' + existing;
+    writeFileSync(changelogPath, newContent);
+}
+function detectRepo() {
+    try {
+        const remote = execSync('git remote get-url origin', { encoding: 'utf-8' }).trim();
+        const match = remote.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
+        if (match) {
+            return `${match[1]}/${match[2]}`;
+        }
+    }
+    catch {
+        // Ignore
+    }
+    return null;
+}
+function createGitHubRelease(repo, tag, version, changelog, options) {
+    const token = process.env.GH_TOKEN;
+    if (!token)
+        return;
+    const name = options.notes ? `${version} - ${options.notes}` : `Release ${version}`;
+    const body = changelog.replace(/"/g, '\\"').replace(/\n/g, '\\n');
+    const prerelease = options.prerelease ? 'true' : 'false';
+    const curlCmd = `curl -s -X POST \\
+    -H "Authorization: token ${token}" \\
+    -H "Accept: application/vnd.github.v3+json" \\
+    https://api.github.com/repos/${repo}/releases \\
+    -d '{
+      "tag_name": "${tag}",
+      "name": "${name}",
+      "body": "${body}",
+      "draft": false,
+      "prerelease": ${prerelease}
+    }'`;
+    try {
+        execSync(curlCmd, { encoding: 'utf-8' });
+    }
+    catch (error) {
+        console.error('Warning: Failed to create GitHub release');
+    }
+}
 //# sourceMappingURL=ship.js.map

@@ -1,85 +1,123 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
+import { chromium } from 'playwright';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { join, resolve } from 'path';
+const viewports = {
+    mobile: { width: 375, height: 667 },
+    tablet: { width: 768, height: 1024 },
+    desktop: { width: 1280, height: 720 },
+    wide: { width: 1920, height: 1080 }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.browseCommand = void 0;
-const commander_1 = require("commander");
-const chalk_1 = __importDefault(require("chalk"));
-const browser_js_1 = require("../lib/browser.js");
-// Default flows
-const DEFAULT_FLOWS = {
-    critical: [
-        { name: 'Homepage', url: '/' },
-        { name: 'About', url: '/about' },
-        { name: 'Contact', url: '/contact' },
-    ],
-    auth: [
-        { name: 'Login', url: '/login' },
-        { name: 'Dashboard', url: '/dashboard' },
-        { name: 'Profile', url: '/profile' },
-    ],
-    checkout: [
-        { name: 'Cart', url: '/cart' },
-        { name: 'Checkout', url: '/checkout' },
-        { name: 'Payment', url: '/payment' },
-    ],
-};
-exports.browseCommand = new commander_1.Command('browse')
-    .description('Browser automation with Playwright')
-    .argument('<url>', 'URL to screenshot')
-    .option('-v, --viewport <name>', 'Viewport preset (mobile, tablet, desktop)', 'desktop')
-    .option('-W, --width <pixels>', 'Custom viewport width', parseInt)
-    .option('-H, --height <pixels>', 'Custom viewport height', parseInt)
-    .option('-f, --full-page', 'Capture full page screenshot')
-    .option('-o, --output <dir>', 'Output directory', './screenshots')
-    .option('--flows <names>', 'Comma-separated flow names')
-    .option('-w, --wait-for <selector>', 'Wait for element before screenshot')
-    .option('-a, --actions <actions>', 'Comma-separated actions (click:selector,type:selector|text,wait:ms,scroll,hover:selector,screenshot)')
-    .option('-t, --timeout <ms>', 'Navigation timeout', parseInt)
-    .action(async (url, options) => {
-    console.log(chalk_1.default.blue('══════════════════════════════════════════════════'));
-    console.log(chalk_1.default.blue('Browser Automation'));
-    console.log(chalk_1.default.blue('══════════════════════════════════════════════════\n'));
+export async function browseCommand(url, options) {
+    console.log('');
+    console.log('══════════════════════════════════════════════════');
+    console.log('Browser Automation');
+    console.log('══════════════════════════════════════════════════');
+    console.log('');
+    console.log(`URL: ${url}`);
+    let browser;
     try {
-        // Validate URL
-        if (!url.startsWith('http')) {
-            url = `https://${url}`;
+        // Determine viewport
+        let viewport = viewports[options.viewport] || viewports.desktop;
+        if (options.width && options.height) {
+            viewport = {
+                width: parseInt(options.width, 10),
+                height: parseInt(options.height, 10)
+            };
         }
-        const viewport = (0, browser_js_1.getViewport)(options);
-        console.log(chalk_1.default.gray(`URL: ${url}`));
-        console.log(chalk_1.default.gray(`Viewport: ${viewport.width}x${viewport.height}`));
-        console.log(chalk_1.default.gray(`Output: ${options.output || './screenshots'}`));
-        if (options.flows) {
-            // Run flows
-            const flowNames = options.flows.split(',').map(f => f.trim());
-            console.log(chalk_1.default.gray(`Flows: ${flowNames.join(', ')}\n`));
-            for (const flowName of flowNames) {
-                const flow = DEFAULT_FLOWS[flowName];
-                if (!flow) {
-                    console.log(chalk_1.default.yellow(`⚠ Flow "${flowName}" not found, skipping`));
-                    continue;
-                }
-                console.log(chalk_1.default.blue(`\nRunning flow: ${flowName}`));
-                const screenshots = await (0, browser_js_1.runFlow)(flow, options, url);
-                for (const filepath of screenshots) {
-                    console.log(chalk_1.default.green(`✓ Screenshot: ${filepath}`));
-                }
-            }
+        console.log(`Viewport: ${viewport.width}x${viewport.height}`);
+        // Launch browser
+        browser = await chromium.launch({ headless: true });
+        const context = await browser.newContext({ viewport });
+        const page = await context.newPage();
+        // Navigate
+        console.log('Navigating...');
+        await page.goto(url, {
+            waitUntil: 'networkidle',
+            timeout: parseInt(options.timeout, 10)
+        });
+        // Execute actions if provided
+        if (options.actions) {
+            console.log('Executing actions...');
+            await executeActions(page, options.actions);
         }
-        else {
-            // Single screenshot
+        // Wait for element if specified
+        if (options.waitFor) {
+            console.log(`Waiting for: ${options.waitFor}`);
+            await page.waitForSelector(options.waitFor, { timeout: 10000 });
+        }
+        // Ensure output directory exists
+        const outputDir = resolve(options.output);
+        if (!existsSync(outputDir)) {
+            mkdirSync(outputDir, { recursive: true });
+        }
+        // Generate filename
+        const hostname = new URL(url).hostname.replace(/[^a-zA-Z0-9]/g, '-');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `${hostname}_${options.viewport}_${timestamp}.png`;
+        const filepath = join(outputDir, filename);
+        // Take screenshot
+        const screenshotBuffer = await page.screenshot({
+            fullPage: options.fullPage,
+            type: 'png'
+        });
+        writeFileSync(filepath, screenshotBuffer);
+        console.log('');
+        console.log(`✓ Screenshot saved: ${filepath}`);
+        if (options.base64) {
+            const base64 = screenshotBuffer.toString('base64');
             console.log('');
-            const filepath = await (0, browser_js_1.takeScreenshot)(url, options);
-            console.log(chalk_1.default.green(`✓ Screenshot saved: ${filepath}`));
+            console.log('---BASE64_START---');
+            console.log(base64);
+            console.log('---BASE64_END---');
         }
-        console.log(chalk_1.default.blue('\n══════════════════════════════════════════════════'));
-        console.log(chalk_1.default.green('Done!'));
-        console.log(chalk_1.default.blue('══════════════════════════════════════════════════'));
     }
     catch (error) {
-        console.error(chalk_1.default.red(`\n✗ Error: ${error instanceof Error ? error.message : String(error)}`));
+        console.error('');
+        console.error('✗ Error:', error instanceof Error ? error.message : String(error));
         process.exit(1);
     }
-});
+    finally {
+        if (browser) {
+            await browser.close();
+        }
+    }
+}
+async function executeActions(page, actions) {
+    const actionList = actions.split(',');
+    for (const action of actionList) {
+        const [type, ...params] = action.split(':');
+        switch (type) {
+            case 'click':
+                if (params[0]) {
+                    await page.click(params[0]);
+                    console.log(`  Clicked: ${params[0]}`);
+                }
+                break;
+            case 'type':
+                if (params[0] && params[1]) {
+                    await page.fill(params[0], params[1]);
+                    console.log(`  Typed into: ${params[0]}`);
+                }
+                break;
+            case 'wait':
+                const delay = parseInt(params[0] || '1000', 10);
+                await page.waitForTimeout(delay);
+                console.log(`  Waited: ${delay}ms`);
+                break;
+            case 'scroll':
+                await page.evaluate('window.scrollBy(0, window.innerHeight)');
+                console.log('  Scrolled down');
+                break;
+            case 'hover':
+                if (params[0]) {
+                    await page.hover(params[0]);
+                    console.log(`  Hovered: ${params[0]}`);
+                }
+                break;
+            case 'screenshot':
+                console.log('  Screenshot at this point');
+                break;
+        }
+    }
+}
 //# sourceMappingURL=browse.js.map

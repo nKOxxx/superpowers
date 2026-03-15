@@ -59,34 +59,9 @@ superpowers ceo-review \
 - `--audience=<text>` - Target audience
 - `--competition=<text>` - Competitors
 - `--trust=<text>` - Trust assets you have
-
-## Output Example
-
-```
-══════════════════════════════════════════════════
-AI Code Review
-══════════════════════════════════════════════════
-
-Brand:     ⭐⭐⭐⭐⭐ (5/5)
-Attention: ⭐⭐⭐⭐○ (4/5)
-Trust:     ⭐⭐⭐○○ (3/5)
-
-Total: 12/15 ⭐
-
-Recommendation: BUILD ✅
-
-Rationale:
-  • Strong brand differentiation potential
-  • High user engagement potential
-  • Direct revenue impact should be modeled
-
-Next Steps:
-  1. Define success metrics (DAU, engagement time)
-  2. Coordinate with marketing for launch narrative
-  3. Set 30-day post-launch review date
-
-══════════════════════════════════════════════════
-```
+- `--brand=<score>` - Manual brand score (0-5)
+- `--attention=<score>` - Manual attention score (0-5)
+- `--trust-score=<score>` - Manual trust score (0-5)
 
 ## Scoring Guidelines
 
@@ -110,17 +85,3 @@ Next Steps:
 - **3**: Transparency, user control
 - **2**: Error handling, feedback
 - **1**: No trust impact
-
-## Configuration
-
-Add to `superpowers.config.json`:
-
-```json
-{
-  "ceoReview": {
-    "minimumScore": 10,
-    "requireAllBAT": false,
-    "autoGenerateNextSteps": true
-  }
-}
-```

@@ -1,1 +1,1 @@
-{"version":3,"file":"ship.d.ts","sourceRoot":"","sources":["../../src/commands/ship.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,OAAO,EAAE,MAAM,WAAW,CAAC;AA2BpC,eAAO,MAAM,WAAW,SAgIpB,CAAC"}
+{"version":3,"file":"ship.d.ts","sourceRoot":"","sources":["../../src/commands/ship.ts"],"names":[],"mappings":"AAIA,UAAU,WAAW;IACnB,OAAO,EAAE,MAAM,CAAC;IAChB,IAAI,CAAC,EAAE,MAAM,CAAC;IACd,MAAM,EAAE,OAAO,CAAC;IAChB,SAAS,EAAE,OAAO,CAAC;IACnB,KAAK,CAAC,EAAE,MAAM,CAAC;IACf,UAAU,EAAE,OAAO,CAAC;CACrB;AAQD,wBAAsB,WAAW,CAAC,OAAO,EAAE,WAAW,GAAG,OAAO,CAAC,IAAI,CAAC,CA4GrE"}

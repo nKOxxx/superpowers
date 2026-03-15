@@ -1,3 +1,11 @@
-import { Command } from 'commander';
-export declare const shipCommand: Command;
+interface ShipOptions {
+    version: string;
+    repo?: string;
+    dryRun: boolean;
+    skipTests: boolean;
+    notes?: string;
+    prerelease: boolean;
+}
+export declare function shipCommand(options: ShipOptions): Promise<void>;
+export {};
 //# sourceMappingURL=ship.d.ts.map

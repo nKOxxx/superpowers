@@ -1,160 +1,200 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ceoReviewCommand = void 0;
-const commander_1 = require("commander");
-const chalk_1 = __importDefault(require("chalk"));
-/**
- * Calculate BAT scores from options
- * In a real implementation, this could use AI or user input
- */
-function calculateBATScores(options) {
-    // Default scoring based on feature characteristics
-    const feature = options.feature.toLowerCase();
-    // Brand scoring - features that differentiate and define category
-    let brand = 3;
-    if (feature.includes('ai') || feature.includes('ml'))
-        brand = 4;
-    if (feature.includes('unique') || feature.includes('innovative'))
-        brand = 5;
-    if (feature.includes('table') || feature.includes('basic'))
-        brand = 2;
-    // Attention scoring - features users engage with frequently
-    let attention = 3;
-    if (options.goal?.includes('daily') || options.audience?.includes('all'))
-        attention = 5;
-    if (options.goal?.includes('weekly'))
-        attention = 4;
-    if (feature.includes('admin') || feature.includes('settings'))
-        attention = 2;
-    // Trust scoring - security, reliability, transparency
-    let trust = 3;
-    if (feature.includes('security') || feature.includes('privacy'))
-        trust = 5;
-    if (feature.includes('auth') || feature.includes('backup'))
-        trust = 4;
-    if (options.trust)
-        trust = Math.min(5, trust + 1);
-    return { brand, attention, trust };
-}
-/**
- * Get recommendation based on total score
- */
-function getRecommendation(total) {
-    if (total >= 12)
-        return { text: 'BUILD', color: 'green', emoji: '✅' };
-    if (total >= 10)
-        return { text: 'BUILD', color: 'green', emoji: '✅' };
-    if (total >= 8)
-        return { text: 'CONSIDER', color: 'yellow', emoji: '⚠️' };
-    return { text: "DON'T BUILD", color: 'red', emoji: '❌' };
-}
-/**
- * Generate next steps based on scores and recommendation
- */
-function generateNextSteps(scores, recommendation) {
-    const steps = [];
+export async function ceoReviewCommand(options) {
+    console.log('');
+    console.log('══════════════════════════════════════════════════');
+    console.log(options.feature);
+    console.log('══════════════════════════════════════════════════');
+    console.log('');
+    // Calculate or use provided scores
+    const scores = {
+        brand: options.brand ? parseInt(options.brand, 10) : calculateBrandScore(options),
+        attention: options.attention ? parseInt(options.attention, 10) : calculateAttentionScore(options),
+        trust: options.trustScore ? parseInt(options.trustScore, 10) : calculateTrustScore(options)
+    };
+    // Ensure scores are within bounds
+    scores.brand = Math.max(0, Math.min(5, scores.brand));
+    scores.attention = Math.max(0, Math.min(5, scores.attention));
+    scores.trust = Math.max(0, Math.min(5, scores.trust));
     const total = scores.brand + scores.attention + scores.trust;
-    if (recommendation === 'BUILD') {
-        steps.push('Define success metrics (DAU, engagement, revenue impact)');
-        steps.push('Create detailed technical specification');
-        steps.push('Estimate development timeline and resources');
-        steps.push('Coordinate with marketing for launch narrative');
-        steps.push('Set 30-day post-launch review date');
-    }
-    else if (recommendation === 'CONSIDER') {
-        if (scores.brand < 3) {
-            steps.push('Research how to differentiate this feature from competitors');
-        }
-        if (scores.attention < 3) {
-            steps.push('Validate user demand through surveys or interviews');
-        }
-        if (scores.trust < 3) {
-            steps.push('Identify trust-building opportunities in the feature design');
-        }
-        steps.push('Revisit scoring after gathering more data');
-    }
-    else {
-        steps.push('Focus resources on higher-priority features');
-        steps.push('Revisit if market conditions change');
-        steps.push('Consider if this could be a partnership/integration instead');
-    }
-    return steps;
+    // Display scores
+    console.log(`Brand:     ${renderStars(scores.brand)} (${scores.brand}/5)`);
+    console.log(`Attention: ${renderStars(scores.attention)} (${scores.attention}/5)`);
+    console.log(`Trust:     ${renderStars(scores.trust)} (${scores.trust}/5)`);
+    console.log('');
+    console.log(`Total: ${total}/15 ⭐`);
+    console.log('');
+    // Get recommendation
+    const recommendation = getRecommendation(total, scores);
+    console.log(`Recommendation: ${recommendation.action} ${recommendation.emoji}`);
+    console.log('');
+    // Show rationale
+    console.log('Rationale:');
+    console.log(generateRationale(scores, options));
+    console.log('');
+    // Next steps
+    console.log('Next Steps:');
+    const nextSteps = generateNextSteps(recommendation.action, options);
+    nextSteps.forEach((step, i) => console.log(`  ${i + 1}. ${step}`));
+    console.log('');
+    console.log('══════════════════════════════════════════════════');
+    console.log('');
 }
-/**
- * Render star rating
- */
 function renderStars(score) {
     const filled = '⭐'.repeat(score);
     const empty = '○'.repeat(5 - score);
     return filled + empty;
 }
-exports.ceoReviewCommand = new commander_1.Command('ceo-review')
-    .description('Product strategy review using BAT framework')
-    .requiredOption('-f, --feature <name>', 'Feature name')
-    .option('-g, --goal <text>', 'Business goal')
-    .option('-a, --audience <text>', 'Target audience')
-    .option('-c, --competition <text>', 'Competitors')
-    .option('-t, --trust <text>', 'Trust assets you have')
-    .action(async (options) => {
-    console.log(chalk_1.default.blue('══════════════════════════════════════════════════'));
-    console.log(chalk_1.default.blue(options.feature));
-    console.log(chalk_1.default.blue('══════════════════════════════════════════════════\n'));
-    // Calculate BAT scores
-    const scores = calculateBATScores(options);
-    const total = scores.brand + scores.attention + scores.trust;
-    const recommendation = getRecommendation(total);
-    // Display context if provided
-    if (options.goal) {
-        console.log(chalk_1.default.gray(`Goal: ${options.goal}`));
+function calculateBrandScore(options) {
+    let score = 3; // Default middle score
+    // Adjust based on feature characteristics
+    const feature = options.feature.toLowerCase();
+    // High brand impact features
+    if (feature.includes('ai') || feature.includes('ml'))
+        score += 1;
+    if (feature.includes('innovation') || feature.includes('breakthrough'))
+        score += 1;
+    if (options.goal?.includes('differentiate') || options.goal?.includes('unique'))
+        score += 1;
+    // Lower brand impact
+    if (feature.includes('maintenance') || feature.includes('fix'))
+        score -= 1;
+    if (feature.includes('me too') || feature.includes('copy'))
+        score -= 2;
+    return Math.max(0, Math.min(5, score));
+}
+function calculateAttentionScore(options) {
+    let score = 3; // Default middle score
+    const feature = options.feature.toLowerCase();
+    // High attention features
+    if (feature.includes('notification') || feature.includes('alert'))
+        score += 1;
+    if (feature.includes('dashboard') || feature.includes('home'))
+        score += 1;
+    if (options.audience?.includes('all') || options.audience?.includes('everyone'))
+        score += 1;
+    if (options.goal?.includes('daily') || options.goal?.includes('frequent'))
+        score += 1;
+    // Lower attention
+    if (feature.includes('admin') || feature.includes('settings'))
+        score -= 1;
+    if (options.audience?.includes('internal') || options.audience?.includes('dev'))
+        score -= 1;
+    return Math.max(0, Math.min(5, score));
+}
+function calculateTrustScore(options) {
+    let score = 3; // Default middle score
+    const feature = options.feature.toLowerCase();
+    // High trust features
+    if (feature.includes('security') || feature.includes('auth'))
+        score += 2;
+    if (feature.includes('privacy') || feature.includes('encrypt'))
+        score += 2;
+    if (feature.includes('backup') || feature.includes('recovery'))
+        score += 1;
+    if (options.trust?.includes('certified') || options.trust?.includes('audited'))
+        score += 1;
+    // Lower trust
+    if (feature.includes('experimental') || feature.includes('beta'))
+        score -= 1;
+    if (options.trust?.includes('untested') || options.trust?.includes('new vendor'))
+        score -= 1;
+    return Math.max(0, Math.min(5, score));
+}
+function getRecommendation(total, scores) {
+    if (total >= 12) {
+        return {
+            action: 'BUILD',
+            emoji: '✅',
+            description: 'Strong signal, proceed with confidence'
+        };
     }
-    if (options.audience) {
-        console.log(chalk_1.default.gray(`Audience: ${options.audience}`));
+    else if (total >= 10) {
+        return {
+            action: 'BUILD',
+            emoji: '✅',
+            description: 'Good signal, validate assumptions before full commitment'
+        };
     }
-    if (options.competition) {
-        console.log(chalk_1.default.gray(`Competition: ${options.competition}`));
+    else if (total >= 8) {
+        return {
+            action: 'CONSIDER',
+            emoji: '⚠️',
+            description: 'Mixed signal, need more data before deciding'
+        };
     }
-    if (options.goal || options.audience || options.competition) {
-        console.log('');
+    else {
+        return {
+            action: 'DONT_BUILD',
+            emoji: '❌',
+            description: 'Weak signal, focus resources elsewhere'
+        };
     }
-    // Display BAT scores
-    console.log(`Brand:     ${renderStars(scores.brand)} (${scores.brand}/5)`);
-    console.log(`Attention: ${renderStars(scores.attention)} (${scores.attention}/5)`);
-    console.log(`Trust:     ${renderStars(scores.trust)} (${scores.trust}/5)`);
-    console.log(chalk_1.default.blue('\n──────────────────────────────────────────────────'));
-    console.log(`Total: ${total}/15 ⭐`);
-    console.log('');
-    // Display recommendation
-    const recColor = recommendation.color;
-    console.log(chalk_1.default[recColor](`Recommendation: ${recommendation.text} ${recommendation.emoji}`));
-    // Generate and display rationale
-    console.log(chalk_1.default.blue('\nRationale:'));
+}
+function generateRationale(scores, options) {
+    const points = [];
+    // Brand rationale
     if (scores.brand >= 4) {
-        console.log(chalk_1.default.gray('  • Strong brand differentiation potential'));
+        points.push('Strong brand differentiation potential');
     }
     else if (scores.brand <= 2) {
-        console.log(chalk_1.default.gray('  • May not differentiate from competitors'));
+        points.push('Limited brand impact - consider strategic positioning');
     }
+    // Attention rationale
     if (scores.attention >= 4) {
-        console.log(chalk_1.default.gray('  • High user engagement potential'));
+        points.push('High user engagement potential');
     }
     else if (scores.attention <= 2) {
-        console.log(chalk_1.default.gray('  • Low user engagement expected'));
+        points.push('Limited user attention - niche use case');
     }
+    // Trust rationale
     if (scores.trust >= 4) {
-        console.log(chalk_1.default.gray('  • Significant trust-building opportunity'));
+        points.push('Builds significant user trust');
     }
-    if (total >= 10) {
-        console.log(chalk_1.default.gray('  • Above threshold for investment'));
+    else if (scores.trust <= 2) {
+        points.push('Trust concerns need addressing');
     }
-    // Next steps
-    console.log(chalk_1.default.blue('\nNext Steps:'));
-    const steps = generateNextSteps(scores, recommendation.text);
-    for (let i = 0; i < steps.length; i++) {
-        console.log(chalk_1.default.gray(`  ${i + 1}. ${steps[i]}`));
+    // Business goal
+    if (options.goal) {
+        if (options.goal.includes('revenue') || options.goal.includes('profit')) {
+            points.push('Direct revenue impact should be modeled');
+        }
+        if (options.goal.includes('retention') || options.goal.includes('churn')) {
+            points.push('User retention implications should be measured');
+        }
     }
-    console.log(chalk_1.default.blue('\n══════════════════════════════════════════════════'));
-});
+    // Competition
+    if (options.competition) {
+        points.push(`Competitive landscape: ${options.competition}`);
+    }
+    if (points.length === 0) {
+        points.push('Standard feature with moderate impact across all dimensions');
+    }
+    return points.map(p => `• ${p}`).join('\n');
+}
+function generateNextSteps(action, options) {
+    const steps = [];
+    switch (action) {
+        case 'BUILD':
+            steps.push('Define success metrics (DAU, engagement time, conversion)');
+            steps.push('Create technical specification and resource estimate');
+            steps.push('Coordinate with marketing for launch narrative');
+            if (options.audience) {
+                steps.push(`Validate with ${options.audience} through user interviews`);
+            }
+            steps.push('Set 30-day post-launch review date');
+            break;
+        case 'CONSIDER':
+            steps.push('Conduct user research to validate assumptions');
+            steps.push('Build proof-of-concept to test technical feasibility');
+            steps.push('Analyze competitive alternatives in detail');
+            steps.push('Revisit BAT scoring in 2 weeks with new data');
+            break;
+        case 'DONT_BUILD':
+            steps.push('Document rationale for future reference');
+            steps.push('Identify 1-2 alternative features with higher BAT scores');
+            steps.push('Monitor market conditions for changes that might affect scoring');
+            steps.push('Archive for potential future reconsideration');
+            break;
+    }
+    return steps;
+}
 //# sourceMappingURL=ceo-review.js.map

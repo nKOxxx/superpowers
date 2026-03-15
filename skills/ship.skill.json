@@ -1,0 +1,31 @@
+{
+  "name": "ship",
+  "version": "1.0.0",
+  "description": "One-command release pipeline with versioning, changelog, and GitHub releases",
+  "author": "nKOxxx",
+  "entry": {
+    "type": "cli",
+    "bin": "superpowers",
+    "command": "ship"
+  },
+  "requires": {
+    "bins": ["node", "npx", "git"],
+    "npm": ["@nko/superpowers"]
+  },
+  "env": {
+    "GH_TOKEN": {
+      "description": "GitHub personal access token for creating releases",
+      "required": false
+    }
+  },
+  "config": {
+    "version": {
+      "type": "string",
+      "description": "patch, minor, major, or explicit version"
+    },
+    "dryRun": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

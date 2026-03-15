@@ -230,3 +230,4 @@ export async function run(options) {
         process.exit(1);
     }
 }
+//# sourceMappingURL=index.js.map
