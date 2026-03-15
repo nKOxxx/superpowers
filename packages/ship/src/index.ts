@@ -241,7 +241,7 @@ function checkGitStatus(projectPath: string): { clean: boolean; branch: string }
   }
 }
 
-export async function ship(options: ShipOptions = {}): Promise<ShipResult> {
+export async function shipCommand(options: ShipOptions = {}): Promise<ShipResult> {
   const {
     bump = 'patch',
     dryRun = false,

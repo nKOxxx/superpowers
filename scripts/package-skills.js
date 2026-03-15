@@ -1,63 +1,80 @@
 #!/usr/bin/env node
 
-/**
- * Package skills into distributable tar.gz files
- */
-
 import { execSync } from 'child_process';
-import { existsSync, mkdirSync, copyFileSync, writeFileSync } from 'fs';
-import { join, resolve } from 'path';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, copyFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-const skills = ['browse', 'qa', 'ship', 'plan-ceo-review'];
-const skillsDir = resolve(process.cwd());
-const outputDir = resolve(process.cwd(), 'dist-skills');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-console.log('📦 Packaging skills...\n');
+const rootDir = join(__dirname, '..');
+const distSkillsDir = join(rootDir, 'dist-skills');
 
-// Ensure output directory exists
-if (!existsSync(outputDir)) {
-  mkdirSync(outputDir, { recursive: true });
+// Ensure dist-skills directory exists
+if (!existsSync(distSkillsDir)) {
+  mkdirSync(distSkillsDir, { recursive: true });
 }
 
+const skills = ['browse', 'qa', 'ship', 'plan-ceo-review'];
+
+console.log('📦 Packaging OpenClaw superpowers...\n');
+
 for (const skill of skills) {
-  const skillDir = join(skillsDir, skill);
+  console.log(`🔨 Packaging ${skill}...`);
+  
+  const skillDir = join(rootDir, 'packages', skill);
   const distDir = join(skillDir, 'dist');
   const skillJsonPath = join(skillDir, 'skill.json');
   const cliPath = join(skillDir, 'cli.js');
-  const packageJsonPath = join(skillDir, 'package.json');
-  const readmePath = join(skillDir, 'README.md');
   
-  // Check if build exists
+  // Verify files exist
   if (!existsSync(distDir)) {
-    console.error(`❌ ${skill}: No dist directory found. Run 'npm run build' first.`);
+    console.error(`  ❌ dist/ not found for ${skill}`);
     continue;
   }
   
-  // Create temporary packaging directory
-  const tempDir = join(outputDir, `.temp-${skill}`);
-  if (existsSync(tempDir)) {
-    execSync(`rm -rf ${tempDir}`);
+  if (!existsSync(skillJsonPath)) {
+    console.error(`  ❌ skill.json not found for ${skill}`);
+    continue;
   }
-  mkdirSync(tempDir, { recursive: true });
   
-  // Copy files to temp directory
-  execSync(`cp -r ${distDir} ${join(tempDir, 'dist')}`);
-  copyFileSync(skillJsonPath, join(tempDir, 'skill.json'));
-  copyFileSync(cliPath, join(tempDir, 'cli.js'));
-  copyFileSync(packageJsonPath, join(tempDir, 'package.json'));
-  copyFileSync(readmePath, join(tempDir, 'README.md'));
+  if (!existsSync(cliPath)) {
+    console.error(`  ❌ cli.js not found for ${skill}`);
+    continue;
+  }
   
   // Create tarball
-  const tarballPath = join(outputDir, `${skill}.skill.tar.gz`);
-  execSync(`tar -czf ${tarballPath} -C ${tempDir} .`);
+  const tarballPath = join(distSkillsDir, `${skill}.skill.tar.gz`);
   
-  // Clean up temp directory
-  execSync(`rm -rf ${tempDir}`);
-  
-  // Get file size
-  const stats = execSync(`ls -lh ${tarballPath} | awk '{print $5}'`, { encoding: 'utf-8' }).trim();
-  console.log(`✅ ${skill}: ${tarballPath.replace(process.cwd() + '/', '')} (${stats})`);
+  try {
+    // Copy skill.json to dist temporarily for packaging
+    copyFileSync(skillJsonPath, join(distDir, 'skill.json'));
+    copyFileSync(cliPath, join(distDir, 'cli.js'));
+    
+    // Create tarball from dist directory contents
+    execSync(`tar -czf "${tarballPath}" -C "${distDir}" .`, {
+      cwd: rootDir,
+      stdio: 'ignore'
+    });
+    
+    // Clean up copied files
+    const stats = existsSync(join(distDir, 'skill.json')) ? readFileSync(join(distDir, 'skill.json')) : null;
+    
+    console.log(`  ✅ ${skill}.skill.tar.gz created`);
+    
+    // Get file size
+    const size = existsSync(tarballPath) 
+      ? (readFileSync(tarballPath).length / 1024).toFixed(1) + ' KB'
+      : 'unknown';
+    console.log(`     Size: ${size}`);
+    
+  } catch (error) {
+    console.error(`  ❌ Failed to package ${skill}:`, error.message);
+  }
 }
 
-console.log('\n🎉 All skills packaged successfully!');
-console.log(`\nOutput directory: ${outputDir}`);
+console.log('\n✨ Packaging complete!');
+console.log(`\n📂 Output directory: ${distSkillsDir}`);
+console.log('\nTo install skills:');
+console.log('  openclaw skill install ./dist-skills/<skill-name>.skill.tar.gz');
