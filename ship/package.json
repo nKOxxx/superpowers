@@ -1,6 +1,6 @@
 {
   "name": "@superpowers/ship",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "One-command release pipeline with semantic versioning and changelog generation",
   "type": "module",
   "main": "dist/index.js",
