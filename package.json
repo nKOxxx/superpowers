@@ -1,6 +1,6 @@
 {
   "name": "@nko/superpowers",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "OpenClaw superpowers - AI-powered workflows for development, testing, and product decisions",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
