@@ -22,7 +22,9 @@ program
   .version(packageJson.version);
 
 // Import and register commands
-import('./packages/browse/dist/index.js').then(({ browseCommand }) => {
+async function main() {
+  // Browse command
+  const { browseCommand } = await import('./packages/browse/dist/index.js');
   program
     .command('browse <url>')
     .description('Browser automation with Playwright - capture screenshots and test flows')
@@ -39,9 +41,9 @@ import('./packages/browse/dist/index.js').then(({ browseCommand }) => {
         process.exit(1);
       }
     });
-});
 
-import('./packages/qa/dist/index.js').then(({ qaCommand }) => {
+  // QA command
+  const { qaCommand } = await import('./packages/qa/dist/index.js');
   program
     .command('qa')
     .description('Systematic testing as QA Lead - targeted, smoke, or full regression')
@@ -56,9 +58,9 @@ import('./packages/qa/dist/index.js').then(({ qaCommand }) => {
         process.exit(1);
       }
     });
-});
 
-import('./packages/ship/dist/index.js').then(({ shipCommand }) => {
+  // Ship command
+  const { shipCommand } = await import('./packages/ship/dist/index.js');
   program
     .command('ship')
     .description('One-command release pipeline - version bump, changelog, tag, release')
@@ -72,17 +74,27 @@ import('./packages/ship/dist/index.js').then(({ shipCommand }) => {
     .action(async (options) => {
       try {
         const result = await shipCommand(options);
+        if (result.dryRun) {
+          console.log(chalk.blue('🔍 DRY RUN - No changes made'));
+        }
+        console.log(chalk.green(`📦 Version: ${result.version.current} → ${result.version.next}`));
+        for (const step of result.steps) {
+          const icon = step.success ? chalk.green('✅') : chalk.red('❌');
+          console.log(`${icon} ${step.name}: ${step.output || ''}`);
+        }
         if (!result.success) {
+          console.error(chalk.red('Error:'), result.error);
           process.exit(1);
         }
+        console.log(chalk.green('🚀 Release complete!'));
       } catch (error) {
         console.error(chalk.red('Error:'), error.message);
         process.exit(1);
       }
     });
-});
 
-import('./packages/plan-ceo-review/dist/index.js').then(({ planCEOReview }) => {
+  // Plan CEO Review command
+  const { planCEOReview } = await import('./packages/plan-ceo-review/dist/index.js');
   program
     .command('plan-ceo-review <question>')
     .description('BAT framework product strategy review - Brand, Attention, Trust scoring')
@@ -98,6 +110,11 @@ import('./packages/plan-ceo-review/dist/index.js').then(({ planCEOReview }) => {
         process.exit(1);
       }
     });
-});
 
-program.parse();
+  program.parse();
+}
+
+main().catch(error => {
+  console.error(chalk.red('Fatal error:'), error.message);
+  process.exit(1);
+});
