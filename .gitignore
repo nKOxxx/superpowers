@@ -4,8 +4,6 @@ dist/
 .env
 .env.local
 .DS_Store
-*.skill.tar.gz
-dist-skills/
 screenshots/
 coverage/
 .vscode/

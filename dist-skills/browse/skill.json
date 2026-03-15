@@ -1,0 +1,9 @@
+{
+  "name": "browse",
+  "description": "Browser automation for visual testing and QA with Playwright",
+  "version": "1.0.0",
+  "entry": "dist/cli.js",
+  "bin": {
+    "superpowers": "dist/cli.js"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "plan-ceo-review",
+  "description": "Product strategy review using BAT framework",
+  "version": "1.0.0",
+  "entry": "dist/cli.js",
+  "bin": {
+    "superpowers": "dist/cli.js"
+  }
+}

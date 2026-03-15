@@ -1,0 +1,9 @@
+{
+  "name": "qa",
+  "description": "Systematic testing as QA Lead",
+  "version": "1.0.0",
+  "entry": "dist/cli.js",
+  "bin": {
+    "superpowers": "dist/cli.js"
+  }
+}
