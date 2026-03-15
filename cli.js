@@ -29,7 +29,11 @@ program
   .option('-w, --wait <ms>', 'Wait time in ms after page load', '1000')
   .action(async (url, options) => {
     const { browse } = await import('./skills/browse/dist/index.js');
-    await browse({ url, ...options });
+    const result = await browse({ url, ...options });
+    if (result.success && result.base64) {
+      console.log(result.base64);
+    }
+    process.exit(result.success ? 0 : 1);
   });
 
 // QA command
