@@ -1,8 +1,22 @@
 {
   "name": "ship",
+  "description": "One-command release pipeline - version bump, changelog, tag, release",
   "version": "1.0.0",
-  "description": "One-command release pipeline",
-  "command": "ship",
-  "entry": "dist/ship/cli.js",
-  "runtime": "node"
+  "entry": "dist/ship/index.js",
+  "commands": {
+    "ship": {
+      "description": "Ship a new release",
+      "options": {
+        "version": {
+          "type": "string",
+          "description": "Version bump: patch, minor, major, or explicit version",
+          "required": true
+        },
+        "dry-run": {
+          "type": "boolean",
+          "description": "Preview changes without executing"
+        }
+      }
+    }
+  }
 }

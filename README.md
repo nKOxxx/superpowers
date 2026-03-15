@@ -1,6 +1,6 @@
-# Superpowers for OpenClaw
+# @nko/superpowers
 
-AI-powered workflows for development, testing, and product decisions.
+OpenClaw superpowers - AI-powered workflows for development, testing, and product decisions.
 
 ## Installation
 
@@ -8,69 +8,103 @@ AI-powered workflows for development, testing, and product decisions.
 npm install -g @nko/superpowers
 ```
 
-## Skills
+## Commands
 
 ### `/browse` - Browser Automation
-Visual testing and UI validation with Playwright.
+
+Capture screenshots and automate browser flows with Playwright.
 
 ```bash
+# Capture desktop screenshot
 superpowers browse https://example.com
-superpowers browse https://example.com --viewport=mobile --full-page
+
+# Mobile viewport
+superpowers browse https://example.com --viewport=mobile
+
+# Full page screenshot
+superpowers browse https://example.com --full-page
+
+# Specific element
+superpowers browse https://example.com --selector="#hero"
+
+# Custom viewport
+superpowers browse https://example.com --viewport=800x600
 ```
 
 ### `/qa` - Systematic Testing
-Acts as QA Lead to analyze code changes and run appropriate tests.
+
+Run tests based on code changes.
 
 ```bash
-superpowers qa                    # Targeted mode (default)
-superpowers qa --mode=smoke       # Quick validation
-superpowers qa --mode=full        # Full regression
-superpowers qa --coverage         # With coverage report
+# Targeted mode (tests based on git diff)
+superpowers qa --mode=targeted
+
+# Smoke tests
+superpowers qa --mode=smoke
+
+# Full regression
+superpowers qa --mode=full
+
+# With coverage
+superpowers qa --coverage
+
+# Watch mode
+superpowers qa --watch
 ```
 
 ### `/ship` - Release Pipeline
-One-command release: version bump, changelog, git tag, GitHub release.
+
+One-command release: version bump, changelog, tag, and GitHub release.
 
 ```bash
+# Patch release
 superpowers ship --version=patch
+
+# Minor release
 superpowers ship --version=minor
+
+# Major release
 superpowers ship --version=major
-superpowers ship --version=1.2.3 --dry-run
+
+# Specific version
+superpowers ship --version=1.2.3
+
+# Dry run (preview only)
+superpowers ship --version=patch --dry-run
 ```
 
-### `/plan-ceo-review` - Product Strategy
-BAT framework (Brand, Attention, Trust) for build decisions.
+Requires `GH_TOKEN` environment variable for GitHub releases.
+
+### `/plan-ceo-review` - BAT Framework
+
+Product strategy review using Brand, Attention, Trust scoring.
 
 ```bash
-superpowers ceo-review --feature="AI feature" --goal="Reduce time 50%"
+# Auto-score based on description
+superpowers ceo-review "Mobile App: User authentication flow"
+
+# With manual scores
+superpowers ceo-review "Premium API tier" --brand=5 --attention=4 --trust=5
+
+# With business goal
+superpowers ceo-review "AI-powered chat" --goal="Increase user engagement" --brand=4 --attention=5 --trust=3
 ```
 
-## Configuration
+**BAT Scoring (0-5 each):**
+- **Brand**: Alignment with brand values and positioning
+- **Attention**: Ability to capture and retain attention
+- **Trust**: Builds user trust and credibility
 
-Create `superpowers.config.json` in your project root:
-
-```json
-{
-  "browser": {
-    "defaultViewport": "desktop",
-    "screenshotDir": "./screenshots"
-  },
-  "qa": {
-    "defaultMode": "targeted",
-    "testCommand": "npm test"
-  },
-  "ship": {
-    "requireCleanWorkingDir": true,
-    "changelogPath": "CHANGELOG.md"
-  }
-}
-```
+**10-Star Methodology:**
+- 10+ stars (2/3 categories ≥4): **Build**
+- 6-9 stars: **Consider** with modifications
+- <6 stars: **Don't build**
 
 ## Requirements
 
-- Node.js >= 18.0.0
-- Git (for `/ship` and `/qa`)
-- `GH_TOKEN` environment variable (for GitHub releases)
+- Node.js 18+
+- Git (for ship and qa commands)
+- Playwright browsers (installed automatically)
 
 ## License
 

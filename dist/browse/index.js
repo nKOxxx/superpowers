@@ -1,136 +1,139 @@
-import { chromium } from 'playwright';
-import { existsSync, mkdirSync } from 'fs';
-import { join, parse } from 'path';
+import { Command } from 'commander';
+import chalk from 'chalk';
 import ora from 'ora';
-import { loadConfig, VIEWPORT_PRESETS, formatDate } from '../utils/config.js';
-import { printHeader, printSuccess, printError, printInfo } from '../utils/format.js';
-function parseActions(actionsStr) {
-    if (!actionsStr)
-        return [];
-    return actionsStr.split(',').map(part => {
-        const [type, ...params] = part.split(':');
-        switch (type) {
-            case 'click':
-                return { type: 'click', selector: params[0] };
-            case 'type': {
-                const [selector, text] = params.join(':').split('|');
-                return { type: 'type', selector, text };
-            }
-            case 'wait':
-                return { type: 'wait', delay: parseInt(params[0], 10) };
-            case 'scroll':
-                return { type: 'scroll' };
-            case 'hover':
-                return { type: 'hover', selector: params[0] };
-            case 'screenshot':
-                return { type: 'screenshot' };
-            default:
-                return { type: 'wait', delay: 1000 };
-        }
-    });
-}
-async function executeActions(page, actions, outputDir, hostname) {
-    let screenshotCount = 0;
-    for (const action of actions) {
-        switch (action.type) {
-            case 'click':
-                if (action.selector) {
-                    await page.click(action.selector);
-                }
-                break;
-            case 'type':
-                if (action.selector && action.text) {
-                    await page.fill(action.selector, action.text);
-                }
-                break;
-            case 'wait':
-                await page.waitForTimeout(action.delay || 1000);
-                break;
-            case 'scroll':
-                await page.evaluate('window.scrollBy(0, window.innerHeight)');
-                break;
-            case 'hover':
-                if (action.selector) {
-                    await page.hover(action.selector);
-                }
-                break;
-            case 'screenshot':
-                screenshotCount++;
-                const screenshotPath = join(outputDir, `${hostname}_action-${screenshotCount}_${formatDate()}.png`);
-                await page.screenshot({ path: screenshotPath });
-                printSuccess(`Action screenshot: ${screenshotPath}`);
-                break;
-        }
+import { chromium } from 'playwright';
+const viewports = {
+    mobile: { width: 375, height: 667 },
+    tablet: { width: 768, height: 1024 },
+    desktop: { width: 1920, height: 1080 }
+};
+function parseViewport(viewport) {
+    if (viewport in viewports) {
+        return viewports[viewport];
     }
+    // Parse custom dimensions like "800x600"
+    const match = viewport.match(/^(\d+)x(\d+)$/);
+    if (match) {
+        return { width: parseInt(match[1]), height: parseInt(match[2]) };
+    }
+    return viewports.desktop;
 }
-export async function browseCommand(url, options) {
-    printHeader('Browser Automation');
-    const config = loadConfig();
-    const spinner = ora('Launching browser...').start();
-    let browser = null;
+function parseActions(actionsJson) {
     try {
-        // Parse viewport
-        let viewport = VIEWPORT_PRESETS[options.viewport] || VIEWPORT_PRESETS.desktop;
-        if (options.width && options.height) {
-            viewport = {
-                width: parseInt(options.width, 10),
-                height: parseInt(options.height, 10)
-            };
-        }
-        else if (config.browser?.viewports?.[options.viewport]) {
-            viewport = config.browser.viewports[options.viewport];
-        }
-        // Ensure output directory exists
-        if (!existsSync(options.output)) {
-            mkdirSync(options.output, { recursive: true });
-        }
-        // Launch browser
-        browser = await chromium.launch({ headless: true });
-        const context = await browser.newContext({ viewport });
-        const page = await context.newPage();
-        spinner.text = `Navigating to ${url}...`;
-        // Navigate
-        await page.goto(url, {
-            waitUntil: 'networkidle',
-            timeout: parseInt(options.timeout, 10)
-        });
-        // Wait for specific element if requested
-        if (options.waitFor) {
-            spinner.text = `Waiting for ${options.waitFor}...`;
-            await page.waitForSelector(options.waitFor, { timeout: 10000 });
-        }
-        // Execute custom actions if provided
-        if (options.actions) {
-            spinner.text = 'Executing actions...';
-            const actions = parseActions(options.actions);
-            const hostname = parse(new URL(url).hostname).name;
-            await executeActions(page, actions, options.output, hostname);
-        }
-        spinner.text = 'Capturing screenshot...';
-        // Generate filename
-        const hostname = parse(new URL(url).hostname).name;
-        const viewportName = options.width ? `${viewport.width}x${viewport.height}` : options.viewport;
-        const filename = `${hostname}_${viewportName}_${formatDate()}.png`;
-        const filepath = join(options.output, filename);
-        // Capture screenshot
-        await page.screenshot({
-            path: filepath,
-            fullPage: options.fullPage
-        });
-        spinner.stop();
-        printSuccess(`Screenshot saved: ${filepath}`);
-        printInfo(`Viewport: ${viewport.width}x${viewport.height}`);
-        printInfo(`Full page: ${options.fullPage ? 'Yes' : 'No'}`);
+        return JSON.parse(actionsJson);
     }
-    catch (error) {
-        spinner.stop();
-        printError(`Browser automation failed: ${error instanceof Error ? error.message : String(error)}`);
-        process.exit(1);
+    catch {
+        console.error(chalk.red('Invalid actions JSON format'));
+        return [];
+    }
+}
+async function executeAction(page, action) {
+    switch (action.type) {
+        case 'click':
+            if (action.selector) {
+                await page.click(action.selector);
+            }
+            break;
+        case 'type':
+            if (action.selector && action.text) {
+                await page.fill(action.selector, action.text);
+            }
+            break;
+        case 'wait':
+            await page.waitForTimeout(action.delay || 1000);
+            break;
+        case 'scroll': {
+            const direction = action.direction || 'down';
+            const amount = action.amount || 500;
+            const scrollMap = {
+                up: { x: 0, y: -amount },
+                down: { x: 0, y: amount },
+                left: { x: -amount, y: 0 },
+                right: { x: amount, y: 0 }
+            };
+            const scroll = scrollMap[direction] || { x: 0, y: amount };
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await page.evaluate(({ x, y }) => {
+                globalThis.scrollBy(x, y);
+            }, scroll);
+            break;
+        }
+        case 'hover':
+            if (action.selector) {
+                await page.hover(action.selector);
+            }
+            break;
+    }
+}
+export async function captureScreenshot(url, options) {
+    const viewport = options.viewport ? parseViewport(options.viewport) : viewports.desktop;
+    const browser = await chromium.launch({ headless: true });
+    try {
+        const context = await browser.newContext({
+            viewport: { width: viewport.width, height: viewport.height }
+        });
+        const page = await context.newPage();
+        // Navigate to URL
+        await page.goto(url, { waitUntil: 'networkidle' });
+        // Execute any actions
+        if (options.actions) {
+            const actions = parseActions(options.actions);
+            for (const action of actions) {
+                await executeAction(page, action);
+            }
+        }
+        // Capture screenshot
+        let screenshot;
+        if (options.selector) {
+            const element = await page.$(options.selector);
+            if (!element) {
+                throw new Error(`Element not found: ${options.selector}`);
+            }
+            screenshot = await element.screenshot({ type: 'png' });
+        }
+        else {
+            screenshot = await page.screenshot({
+                fullPage: options.fullPage || false,
+                type: 'png'
+            });
+        }
+        return {
+            screenshot: screenshot.toString('base64'),
+            url,
+            viewport
+        };
     }
     finally {
-        if (browser) {
-            await browser.close();
-        }
+        await browser.close();
     }
 }
+export const browseCommand = new Command('browse')
+    .description('Browser automation with Playwright - capture screenshots and test flows')
+    .argument('<url>', 'URL to browse')
+    .option('-v, --viewport <viewport>', 'Viewport preset (mobile, tablet, desktop) or custom WxH', 'desktop')
+    .option('-f, --full-page', 'Capture full page screenshot')
+    .option('-s, --selector <selector>', 'Capture specific element by CSS selector')
+    .option('-a, --actions <json>', 'JSON array of actions to perform before capture')
+    .option('-o, --output <path>', 'Output file path (defaults to stdout as base64)')
+    .action(async (url, options) => {
+    const spinner = ora('Launching browser...').start();
+    try {
+        spinner.text = `Navigating to ${url}...`;
+        const result = await captureScreenshot(url, options);
+        spinner.succeed(chalk.green(`Screenshot captured: ${result.viewport.width}x${result.viewport.height}`));
+        if (options.output) {
+            const fs = await import('fs');
+            fs.writeFileSync(options.output, result.screenshot, 'base64');
+            console.log(chalk.blue(`Screenshot saved to: ${options.output}`));
+        }
+        else {
+            // Output base64 for Telegram integration
+            console.log(result.screenshot);
+        }
+    }
+    catch (error) {
+        spinner.fail(chalk.red(`Failed: ${error instanceof Error ? error.message : String(error)}`));
+        process.exit(1);
+    }
+});
 //# sourceMappingURL=index.js.map

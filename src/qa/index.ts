@@ -1,257 +1,232 @@
-import { execSync } from 'child_process';
-import { existsSync } from 'fs';
+import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
-import { loadConfig } from '../utils/config.js';
-import { printHeader, printSuccess, printError, printInfo, printWarning } from '../utils/format.js';
+import { execSync, spawn } from 'child_process';
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
 
-export interface QAOptions {
-  mode: string;
-  diff: string;
-  coverage: boolean;
-  parallel: boolean;
+interface QAOptions {
+  mode?: 'targeted' | 'smoke' | 'full';
+  coverage?: boolean;
+  watch?: boolean;
 }
 
-interface TestFramework {
-  name: string;
+type TestFramework = 'vitest' | 'jest' | 'mocha' | 'unknown';
+
+interface FrameworkConfig {
+  name: TestFramework;
   configFiles: string[];
-  testCommand: string;
-  coverageCommand?: string;
+  packageScripts: string[];
+  runCommand: string;
+  coverageFlag: string;
+  watchFlag: string;
 }
 
-const TEST_FRAMEWORKS: TestFramework[] = [
+const frameworks: FrameworkConfig[] = [
   {
     name: 'vitest',
     configFiles: ['vitest.config.ts', 'vitest.config.js', 'vitest.config.mjs'],
-    testCommand: 'npx vitest run',
-    coverageCommand: 'npx vitest run --coverage'
+    packageScripts: ['test', 'vitest'],
+    runCommand: 'npx vitest run',
+    coverageFlag: '--coverage',
+    watchFlag: '--watch'
   },
   {
     name: 'jest',
-    configFiles: ['jest.config.js', 'jest.config.ts', 'package.json'],
-    testCommand: 'npm test',
-    coverageCommand: 'npm run test:coverage'
+    configFiles: ['jest.config.ts', 'jest.config.js', 'jest.config.json'],
+    packageScripts: ['test', 'jest'],
+    runCommand: 'npx jest',
+    coverageFlag: '--coverage',
+    watchFlag: '--watch'
   },
   {
     name: 'mocha',
-    configFiles: ['.mocharc.js', '.mocharc.json', 'package.json'],
-    testCommand: 'npx mocha',
+    configFiles: ['.mocharc.json', '.mocharc.js', 'mocha.opts'],
+    packageScripts: ['test', 'mocha'],
+    runCommand: 'npx mocha',
+    coverageFlag: '',
+    watchFlag: '--watch'
   }
 ];
 
-function detectTestFramework(): TestFramework | null {
-  for (const framework of TEST_FRAMEWORKS) {
-    for (const configFile of framework.configFiles) {
-      if (existsSync(configFile)) {
-        if (configFile === 'package.json') {
-          try {
-            const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf-8'));
-            if (pkg.devDependencies?.[framework.name] || pkg.dependencies?.[framework.name]) {
-              return framework;
-            }
-          } catch {
-            continue;
-          }
-        } else {
-          return framework;
+function detectFramework(): TestFramework {
+  // Check for config files
+  for (const fw of frameworks) {
+    for (const configFile of fw.configFiles) {
+      if (existsSync(join(process.cwd(), configFile))) {
+        return fw.name;
+      }
+    }
+  }
+  
+  // Check package.json scripts
+  const packageJsonPath = join(process.cwd(), 'package.json');
+  if (existsSync(packageJsonPath)) {
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    const scripts = packageJson.scripts || {};
+    
+    for (const fw of frameworks) {
+      for (const script of fw.packageScripts) {
+        if (scripts[script] && scripts[script].includes(fw.name)) {
+          return fw.name;
         }
       }
     }
   }
-  return null;
+  
+  // Check node_modules
+  for (const fw of frameworks) {
+    if (existsSync(join(process.cwd(), 'node_modules', fw.name))) {
+      return fw.name;
+    }
+  }
+  
+  return 'unknown';
 }
 
-function getChangedFiles(diffRange: string): string[] {
+function getChangedFiles(): string[] {
   try {
-    const output = execSync(`git diff --name-only ${diffRange}`, { encoding: 'utf-8' });
+    const output = execSync('git diff --name-only HEAD~1 HEAD', { encoding: 'utf-8' });
     return output.trim().split('\n').filter(f => f.length > 0);
   } catch {
     return [];
   }
 }
 
-function mapToTestFiles(changedFiles: string[]): string[] {
-  const testFiles = new Set<string>();
+function mapSourceToTest(file: string): string | null {
+  // Map src/file.ts to test/file.test.ts or __tests__/file.test.ts
+  const patterns = [
+    { from: /^src\/(.*)\.ts$/, to: 'test/$1.test.ts' },
+    { from: /^src\/(.*)\.ts$/, to: '__tests__/$1.test.ts' },
+    { from: /^src\/(.*)\.ts$/, to: 'tests/$1.test.ts' },
+    { from: /^src\/(.*)\.ts$/, to: '$1.test.ts' },
+    { from: /^(.*)\.ts$/, to: '$1.test.ts' }
+  ];
   
-  for (const file of changedFiles) {
-    // Skip non-source files (dist, node_modules, archives, etc.)
-    if (file.includes('/dist/') || 
-        file.startsWith('dist/') || 
-        file.startsWith('dist-skills/') || 
-        file.startsWith('node_modules/') || 
-        file.startsWith('.git/') ||
-        file.endsWith('.tar.gz') ||
-        file.endsWith('.zip')) {
-      continue;
-    }
-    
-    // Skip test files themselves (check file name, not full path)
-    const fileName = file.split('/').pop() || '';
-    if (fileName.includes('.test.') || fileName.includes('.spec.')) {
-      testFiles.add(file);
-      continue;
-    }
-    
-    // Only process actual source files (.ts, .tsx, .js, .jsx)
-    if (!file.match(/\.(ts|tsx|js|jsx)$/)) {
-      continue;
-    }
-    
-    // Map source files to test files
-    const patterns = [
-      file.replace(/^src\//, 'tests/').replace(/\.ts$/, '.test.ts'),
-      file.replace(/^src\//, 'tests/').replace(/\.tsx$/, '.test.tsx'),
-      file.replace(/^src\//, 'test/').replace(/\.ts$/, '.test.ts'),
-      file.replace(/\.ts$/, '.test.ts'),
-      file.replace(/\.tsx$/, '.test.tsx'),
-      file.replace(/\.js$/, '.test.js'),
-    ].filter(p => p !== file); // Filter out patterns that are the same as the original file
-    
-    for (const pattern of patterns) {
-      if (existsSync(pattern)) {
-        testFiles.add(pattern);
-      }
-    }
-    
-    // Add component tests for React components
-    if (file.includes('components/') && file.endsWith('.tsx')) {
-      const componentName = file.split('/').pop()?.replace('.tsx', '');
-      if (componentName) {
-        const componentTests = [
-          `tests/components/${componentName}.test.tsx`,
-          `src/components/${componentName}.test.tsx`,
-        ];
-        for (const testPath of componentTests) {
-          if (existsSync(testPath)) {
-            testFiles.add(testPath);
-          }
-        }
-      }
+  for (const pattern of patterns) {
+    const match = file.match(pattern.from);
+    if (match) {
+      return pattern.to.replace('$1', match[1]);
     }
   }
-  
-  return Array.from(testFiles);
+  return null;
 }
 
-function runTests(command: string, coverage: boolean): { success: boolean; output: string } {
-  try {
-    const output = execSync(command, { 
-      encoding: 'utf-8',
-      stdio: 'pipe'
+function getFrameworkConfig(framework: TestFramework): FrameworkConfig {
+  return frameworks.find(f => f.name === framework) || frameworks[0];
+}
+
+async function runTests(
+  framework: TestFramework,
+  options: QAOptions,
+  testFiles?: string[]
+): Promise<{ success: boolean; output: string }> {
+  const config = getFrameworkConfig(framework);
+  let command = config.runCommand;
+  
+  if (options.coverage && config.coverageFlag) {
+    command += ` ${config.coverageFlag}`;
+  }
+  
+  if (options.watch && config.watchFlag) {
+    command += ` ${config.watchFlag}`;
+  }
+  
+  if (testFiles && testFiles.length > 0 && framework === 'vitest') {
+    // For vitest, we can filter by test name pattern
+    command += ` ${testFiles.join(' ')}`;
+  }
+  
+  if (testFiles && testFiles.length > 0 && framework === 'jest') {
+    command += ` ${testFiles.join(' ')}`;
+  }
+  
+  return new Promise((resolve) => {
+    const child = spawn('sh', ['-c', command], {
+      stdio: 'pipe',
+      cwd: process.cwd()
     });
-    return { success: true, output };
-  } catch (error) {
-    return { 
-      success: false, 
-      output: error instanceof Error ? error.message : String(error)
-    };
-  }
+    
+    let output = '';
+    
+    child.stdout?.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    child.stderr?.on('data', (data) => {
+      output += data.toString();
+    });
+    
+    child.on('close', (code) => {
+      resolve({
+        success: code === 0,
+        output
+      });
+    });
+  });
 }
 
-export async function qaCommand(options: QAOptions): Promise<void> {
-  printHeader(`QA Mode: ${options.mode.toUpperCase()}`);
-  
-  const config = loadConfig();
-  const spinner = ora('Detecting test framework...').start();
-  
-  try {
-    // Detect test framework
-    const framework = detectTestFramework();
+export const qaCommand = new Command('qa')
+  .description('Systematic testing as QA Lead - targeted, smoke, or full regression')
+  .option('-m, --mode <mode>', 'Test mode: targeted, smoke, full', 'targeted')
+  .option('-c, --coverage', 'Enable coverage reporting')
+  .option('-w, --watch', 'Watch mode for development')
+  .action(async (options: QAOptions) => {
+    const spinner = ora('Detecting test framework...').start();
     
-    if (!framework) {
-      spinner.stop();
-      printError('No test framework detected. Supported: vitest, jest, mocha');
+    const framework = detectFramework();
+    
+    if (framework === 'unknown') {
+      spinner.fail(chalk.red('No test framework detected. Install vitest, jest, or mocha.'));
       process.exit(1);
     }
     
-    spinner.text = `Framework detected: ${framework.name}`;
+    spinner.succeed(chalk.green(`Framework detected: ${framework}`));
     
-    let testCommand = framework.testCommand;
-    let testFiles: string[] = [];
+    let testFiles: string[] | undefined;
     
-    // Determine test mode
-    switch (options.mode) {
-      case 'targeted': {
-        spinner.text = 'Analyzing git diff...';
-        const changedFiles = getChangedFiles(options.diff);
-        
-        if (changedFiles.length === 0) {
-          spinner.stop();
-          printWarning('No changed files detected. Running smoke tests.');
-          testCommand += framework.name === 'vitest' ? ' -t="smoke"' : ' --grep="smoke|basic|critical"';
-        } else {
-          testFiles = mapToTestFiles(changedFiles);
-          
-          if (testFiles.length === 0) {
-            spinner.stop();
-            printWarning('No test files mapped from changes. Running smoke tests.');
-            testCommand += framework.name === 'vitest' ? ' -t="smoke"' : ' --grep="smoke|basic|critical"';
-          } else {
-            spinner.stop();
-            printInfo(`Files changed: ${changedFiles.length}`);
-            changedFiles.slice(0, 5).forEach(f => console.log(`  - ${f}`));
-            if (changedFiles.length > 5) {
-              console.log(`  ... and ${changedFiles.length - 5} more`);
-            }
-            
-            printInfo(`Tests selected: ${testFiles.length}`);
-            testFiles.forEach(f => console.log(`  - ${f}`));
-            
-            if (framework.name === 'vitest') {
-              testCommand += ` ${testFiles.join(' ')}`;
-            } else if (framework.name === 'jest') {
-              testCommand += ` ${testFiles.join(' ')}`;
-            }
-          }
+    if (options.mode === 'targeted') {
+      spinner.start('Analyzing git diff for targeted tests...');
+      const changedFiles = getChangedFiles();
+      const sourceFiles = changedFiles.filter(f => 
+        f.endsWith('.ts') || f.endsWith('.js') || f.endsWith('.tsx') || f.endsWith('.jsx')
+      );
+      
+      testFiles = sourceFiles
+        .map(mapSourceToTest)
+        .filter((f): f is string => f !== null)
+        .filter(f => existsSync(join(process.cwd(), f)));
+      
+      if (testFiles.length === 0) {
+        spinner.warn(chalk.yellow('No test files mapped from changes. Running smoke tests.'));
+        options.mode = 'smoke';
+      } else {
+        spinner.succeed(chalk.green(`Found ${testFiles.length} relevant test files`));
+        console.log(chalk.gray(testFiles.map(f => `  - ${f}`).join('\n')));
+      }
+    } else if (options.mode === 'smoke') {
+      spinner.info(chalk.blue('Running smoke tests (quick validation)...'));
+    } else {
+      spinner.info(chalk.blue('Running full regression suite...'));
+    }
+    
+    const testSpinner = ora(`Running ${options.mode} tests...`).start();
+    
+    try {
+      const result = await runTests(framework, options, testFiles);
+      
+      if (result.success) {
+        testSpinner.succeed(chalk.green('All tests passed!'));
+        if (options.coverage) {
+          console.log(chalk.blue('\nCoverage report generated'));
         }
-        break;
-      }
-      
-      case 'smoke': {
-        spinner.text = 'Running smoke tests...';
-        testCommand += framework.name === 'vitest' ? ' -t="smoke"' : ' --grep="smoke|basic|critical"';
-        break;
-      }
-      
-      case 'full': {
-        spinner.text = 'Running full test suite...';
-        break;
-      }
-      
-      default: {
-        spinner.stop();
-        printError(`Unknown mode: ${options.mode}`);
+      } else {
+        testSpinner.fail(chalk.red('Tests failed'));
+        console.log(result.output);
         process.exit(1);
       }
-    }
-    
-    // Add coverage if requested
-    if (options.coverage && framework.coverageCommand) {
-      testCommand = framework.coverageCommand;
-      if (testFiles.length > 0 && options.mode === 'targeted') {
-        testCommand += ` ${testFiles.join(' ')}`;
-      }
-    }
-    
-    spinner.text = `Running: ${testCommand}`;
-    
-    const result = runTests(testCommand, options.coverage);
-    
-    spinner.stop();
-    
-    console.log();
-    console.log(result.output);
-    
-    if (result.success) {
-      printSuccess('All tests passed');
-    } else {
-      printError('Tests failed');
+    } catch (error) {
+      testSpinner.fail(chalk.red(`Test execution failed: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);
     }
-    
-  } catch (error) {
-    spinner.stop();
-    printError(`QA failed: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
-  }
-}
+  });

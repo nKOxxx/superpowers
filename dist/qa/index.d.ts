@@ -1,8 +1,3 @@
-export interface QAOptions {
-    mode: string;
-    diff: string;
-    coverage: boolean;
-    parallel: boolean;
-}
-export declare function qaCommand(options: QAOptions): Promise<void>;
+import { Command } from 'commander';
+export declare const qaCommand: Command;
 //# sourceMappingURL=index.d.ts.map

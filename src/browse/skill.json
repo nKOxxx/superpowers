@@ -1,8 +1,27 @@
 {
   "name": "browse",
+  "description": "Browser automation for visual testing and QA with Playwright",
   "version": "1.0.0",
-  "description": "Browser automation with Playwright",
-  "command": "browse",
-  "entry": "dist/browse/cli.js",
-  "runtime": "node"
+  "entry": "dist/browse/index.js",
+  "commands": {
+    "browse": {
+      "description": "Capture screenshots and automate browser flows",
+      "args": ["url"],
+      "options": {
+        "viewport": {
+          "type": "string",
+          "description": "Viewport preset (mobile, tablet, desktop) or custom WxH",
+          "default": "desktop"
+        },
+        "full-page": {
+          "type": "boolean",
+          "description": "Capture full page screenshot"
+        },
+        "selector": {
+          "type": "string",
+          "description": "Capture specific element by CSS selector"
+        }
+      }
+    }
+  }
 }
