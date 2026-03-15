@@ -23,6 +23,7 @@
     "exactOptionalPropertyTypes": false
   },
   "include": [
+    "src/**/*",
     "browse/scripts/**/*",
     "qa/scripts/**/*",
     "ship/scripts/**/*",
