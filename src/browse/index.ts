@@ -1,5 +1,5 @@
 import { chromium, type Browser, type Page } from 'playwright';
-import chalk from 'chalk';
+import pc from 'picocolors';
 import ora, { type Ora } from 'ora';
 import fs from 'fs/promises';
 import path from 'path';
@@ -158,10 +158,10 @@ export async function browseCommand(url: string, options: BrowseOptions): Promis
       await captureScreenshot(page, options, null, null, viewport);
     }
     
-    spinner.succeed(chalk.green('Browser automation complete'));
+    spinner.succeed(pc.green('Browser automation complete'));
     
   } catch (error) {
-    spinner.fail(chalk.red(`Browser automation failed: ${error instanceof Error ? error.message : String(error)}`));
+    spinner.fail(pc.red(`Browser automation failed: ${error instanceof Error ? error.message : String(error)}`));
     throw error;
   } finally {
     if (browser) {
@@ -232,6 +232,6 @@ async function captureScreenshot(
     fullPage: options.fullPage 
   });
   
-  console.log(chalk.green(`✓ Screenshot saved: ${filepath}`));
+  console.log(pc.green(`✓ Screenshot saved: ${filepath}`));
   return filepath;
 }

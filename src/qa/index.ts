@@ -1,7 +1,7 @@
 import { execSync, spawn } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
-import chalk from 'chalk';
+import pc from 'picocolors';
 import ora from 'ora';
 
 interface QAOptions {
@@ -19,9 +19,9 @@ interface TestResult {
 }
 
 export async function qaCommand(options: QAOptions): Promise<void> {
-  console.log(chalk.blue('══════════════════════════════════════════════════'));
-  console.log(chalk.blue(`QA Mode: ${options.mode.toUpperCase()}`));
-  console.log(chalk.blue('══════════════════════════════════════════════════\n'));
+  console.log(pc.blue('══════════════════════════════════════════════════'));
+  console.log(pc.blue(`QA Mode: ${options.mode.toUpperCase()}`));
+  console.log(pc.blue('══════════════════════════════════════════════════\n'));
   
   const spinner = ora('Analyzing repository...').start();
   
@@ -58,7 +58,7 @@ export async function qaCommand(options: QAOptions): Promise<void> {
     }
     
   } catch (error) {
-    spinner.fail(chalk.red(`QA failed: ${error instanceof Error ? error.message : String(error)}`));
+    spinner.fail(pc.red(`QA failed: ${error instanceof Error ? error.message : String(error)}`));
     throw error;
   }
 }
@@ -88,17 +88,17 @@ async function runTargetedTests(
   options: QAOptions
 ): Promise<void> {
   if (changedFiles.length === 0) {
-    console.log(chalk.yellow('No changed files detected. Running smoke tests instead...'));
+    console.log(pc.yellow('No changed files detected. Running smoke tests instead...'));
     await runSmokeTests(framework, options);
     return;
   }
   
-  console.log(chalk.cyan(`Files Changed: ${changedFiles.length}`));
+  console.log(pc.cyan(`Files Changed: ${changedFiles.length}`));
   for (const file of changedFiles.slice(0, 10)) {
-    console.log(chalk.gray(`  - ${file}`));
+    console.log(pc.gray(`  - ${file}`));
   }
   if (changedFiles.length > 10) {
-    console.log(chalk.gray(`  ... and ${changedFiles.length - 10} more`));
+    console.log(pc.gray(`  ... and ${changedFiles.length - 10} more`));
   }
   console.log();
   
@@ -106,14 +106,14 @@ async function runTargetedTests(
   const testFiles = mapFilesToTests(changedFiles);
   
   if (testFiles.length === 0) {
-    console.log(chalk.yellow('No test files mapped. Running smoke tests instead...'));
+    console.log(pc.yellow('No test files mapped. Running smoke tests instead...'));
     await runSmokeTests(framework, options);
     return;
   }
   
-  console.log(chalk.cyan(`Tests Selected: ${testFiles.length}`));
+  console.log(pc.cyan(`Tests Selected: ${testFiles.length}`));
   for (const file of testFiles) {
-    console.log(chalk.gray(`  - ${file}`));
+    console.log(pc.gray(`  - ${file}`));
   }
   console.log();
   
@@ -155,7 +155,7 @@ function mapFilesToTests(changedFiles: string[]): string[] {
 }
 
 async function runSmokeTests(framework: string, options: QAOptions): Promise<void> {
-  console.log(chalk.cyan('Running smoke tests...\n'));
+  console.log(pc.cyan('Running smoke tests...\n'));
   
   // For smoke tests, just run a basic build check if no specific smoke tests
   try {
@@ -163,10 +163,10 @@ async function runSmokeTests(framework: string, options: QAOptions): Promise<voi
     execSync('npm run build --if-present', { stdio: 'pipe' });
     spinner.succeed('Build check passed');
     
-    console.log(chalk.blue('──────────────────────────────────────────────────'));
-    console.log(chalk.green('Passed: Build successful'));
-    console.log(`Status: ${chalk.green('PASSED')}`);
-    console.log(chalk.blue('──────────────────────────────────────────────────'));
+    console.log(pc.blue('──────────────────────────────────────────────────'));
+    console.log(pc.green('Passed: Build successful'));
+    console.log(`Status: ${pc.green('PASSED')}`);
+    console.log(pc.blue('──────────────────────────────────────────────────'));
   } catch {
     // Fall back to running tests
     await runTestCommand(framework, [], options);
@@ -174,7 +174,7 @@ async function runSmokeTests(framework: string, options: QAOptions): Promise<voi
 }
 
 async function runFullTests(framework: string, options: QAOptions): Promise<void> {
-  console.log(chalk.cyan('Running full test suite...\n'));
+  console.log(pc.cyan('Running full test suite...\n'));
   await runTestCommand(framework, [], options);
 }
 
@@ -257,7 +257,7 @@ async function runTestCommand(
     });
     
     child.on('error', (error) => {
-      spinner.fail(chalk.red(`Failed to run tests: ${error.message}`));
+      spinner.fail(pc.red(`Failed to run tests: ${error.message}`));
       reject(error);
     });
   });
@@ -292,17 +292,17 @@ function parseTestResults(output: string): TestResult[] {
 }
 
 function printResults(results: TestResult[]): void {
-  console.log(chalk.blue('──────────────────────────────────────────────────'));
+  console.log(pc.blue('──────────────────────────────────────────────────'));
   
   const passed = results.filter(r => r.passed).length;
   const failed = results.filter(r => !r.passed).length;
   
-  console.log(chalk.green(`Passed: ${passed}/${results.length}`));
+  console.log(pc.green(`Passed: ${passed}/${results.length}`));
   if (failed > 0) {
-    console.log(chalk.red(`Failed: ${failed}/${results.length}`));
+    console.log(pc.red(`Failed: ${failed}/${results.length}`));
   }
   
-  const status = failed === 0 ? chalk.green('PASSED') : chalk.red('FAILED');
+  const status = failed === 0 ? pc.green('PASSED') : pc.red('FAILED');
   console.log(`Status: ${status}`);
-  console.log(chalk.blue('──────────────────────────────────────────────────'));
+  console.log(pc.blue('──────────────────────────────────────────────────'));
 }

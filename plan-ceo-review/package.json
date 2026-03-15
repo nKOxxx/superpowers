@@ -1,0 +1,21 @@
+{
+  "name": "@openclaw/plan-ceo-review-skill",
+  "version": "1.0.0",
+  "description": "BAT framework for product decisions for OpenClaw",
+  "main": "dist/handler.js",
+  "types": "dist/handler.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

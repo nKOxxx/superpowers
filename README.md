@@ -1,133 +1,184 @@
-# 🦞 Superpowers for OpenClaw
+# OpenClaw Superpowers
 
 AI-powered workflows for development, testing, and product decisions.
 
-## Overview
-
-Superpowers is a collection of TypeScript-based skills for OpenClaw that provide opinionated workflows inspired by [gstack](https://github.com/print) conceived by Garry Tan.
-
 ## Skills
 
-### `/browse` - Browser Automation
+### 🔍 `/browse` - Browser Automation
 
-Visual testing and browser automation using Playwright.
+Powered by Playwright for screenshots, visual testing, and flow-based interactions.
 
 ```bash
-superpowers browse https://example.com
-superpowers browse https://example.com --viewport=mobile
-superpowers browse https://example.com --flows=critical,auth
+# Basic screenshot
+/browse https://example.com
+
+# Mobile viewport
+/browse https://example.com --viewport=mobile
+
+# Full page screenshot
+/browse https://example.com --full-page
+
+# Flow-based testing
+/browse https://example.com --flow='[
+  { "action": "click", "selector": "#menu" },
+  { "action": "wait", "ms": 500 },
+  { "action": "click", "selector": "#item-1" }
+]'
 ```
 
 **Features:**
-- Screenshot capture (single URL, full page, element-specific)
-- Multiple viewport presets (mobile, tablet, desktop)
-- Flow-based testing (sequence of page navigations)
-- Custom actions (click, type, wait, scroll, hover)
+- Screenshots (single, full-page, element-specific)
+- Viewport presets (mobile, tablet, desktop)
+- Flow-based testing with actions: click, type, wait, scroll, hover
+- Telegram integration with inline buttons
 
-### `/qa` - Systematic Testing
+---
 
-Acts as QA Lead to analyze changes and run systematic tests.
+### 🧪 `/qa` - Systematic Testing
+
+QA Lead mode with targeted, smoke, and full regression testing.
 
 ```bash
-superpowers qa              # Run targeted tests
-superpowers qa --mode=smoke # Quick smoke tests
-superpowers qa --mode=full  # Full regression suite
+# Targeted mode (default) - analyze git diff, run relevant tests
+/qa
+
+# Smoke tests - quick validation
+/qa --mode=smoke
+
+# Full regression with coverage
+/qa --mode=full --coverage
 ```
 
 **Features:**
-- Targeted mode: Analyzes git diff and runs relevant tests
-- Smoke mode: Quick validation of core functionality
-- Full mode: Complete regression test suite
-- Coverage reporting
+- Targeted mode: analyze git diff, run relevant tests
+- Smoke mode: quick validation
+- Full mode: complete regression suite
+- Auto-detect vitest/jest/mocha
+- Parse test results and report failures
 
-### `/ship` - Release Pipeline
+---
 
-One-command release: version bump, changelog, GitHub release.
+### 🚀 `/ship` - One-Command Release
+
+Semantic versioning, changelog generation, and GitHub releases.
 
 ```bash
-superpowers ship --version=patch
-superpowers ship --version=minor --dry-run
-superpowers ship --version=1.2.3 --notes="Hotfix release"
+# Patch release
+/ship --version=patch
+
+# Minor release with dry run
+/ship --version=minor --dry-run
+
+# Major release
+/ship --version=major
+
+# Beta prerelease
+/ship --version=minor --prerelease=beta
 ```
 
 **Features:**
-- Semantic versioning (patch, minor, major, explicit)
+- Semantic versioning (patch, minor, major)
 - Conventional commit changelog generation
-- Git tag creation and push
+- Git tag + push
 - GitHub release creation
-- Dry-run preview mode
+- Dry-run mode
 
-### `/plan-ceo-review` - Product Strategy
+---
 
-BAT framework + 10-star methodology for build decisions.
+### 📊 `/plan-ceo-review` - BAT Framework
+
+Product strategy review with Brand, Attention, Trust scoring.
 
 ```bash
-superpowers ceo-review --feature="AI code review"
-superpowers ceo-review --feature="mobile app" --goal="increase engagement 50%"
+# Basic review
+/plan-ceo-review "Should we build a mobile app?"
+
+# Interactive mode (Telegram)
+/plan-ceo-review "Should we add AI features?"
 ```
 
 **Features:**
-- BAT framework scoring (Brand, Attention, Trust)
+- Brand, Attention, Trust scoring (0-5 each)
 - 10-star methodology thresholds
 - Build/consider/don't build recommendations
-- Next steps generation
+- Interactive questionnaire via Telegram
+
+---
 
 ## Installation
 
 ```bash
-npm install
-npm run build
-```
+cd /Users/ares/.openclaw/workspace/superpowers
 
-## Usage with OpenClaw
+# Install dependencies for all skills
+for dir in browse qa ship plan-ceo-review; do
+  cd $dir && npm install && cd ..
+done
 
-Add to your OpenClaw skills directory:
-
-```bash
-ln -s $(pwd)/skills ~/.openclaw/workspace/skills/superpowers
+# Build all skills
+for dir in browse qa ship plan-ceo-review; do
+  cd $dir && npm run build && cd ..
+done
 ```
 
 ## Configuration
 
-Create a `superpowers.config.json` file:
+### Environment Variables
 
-```json
-{
-  "browser": {
-    "defaultViewport": "desktop",
-    "screenshotDir": "./screenshots",
-    "viewports": {
-      "custom": { "width": 1440, "height": 900 }
-    },
-    "flows": {
-      "critical": [
-        { "name": "Homepage", "url": "/" },
-        { "name": "About", "url": "/about" }
-      ]
-    }
-  },
-  "qa": {
-    "defaultMode": "targeted",
-    "testCommand": "npm test",
-    "coverageThreshold": 80
-  },
-  "ship": {
-    "requireCleanWorkingDir": true,
-    "runTestsBeforeRelease": true,
-    "changelogPath": "CHANGELOG.md"
-  }
-}
+```bash
+# Browse
+export BROWSE_DEFAULT_TIMEOUT=30000
+export BROWSE_HEADLESS=true
+
+# QA
+export QA_DEFAULT_MODE=targeted
+export QA_TIMEOUT=60000
+
+# Ship
+export GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+export SHIP_DEFAULT_BRANCH=main
+export SHIP_CHANGELOG_FILE=CHANGELOG.md
+
+# Plan CEO Review
+export BAT_DEFAULT_INTERACTIVE=true
 ```
 
-## Environment Variables
+## OpenClaw Integration
 
-- `GH_TOKEN` - GitHub personal access token (for `/ship`)
-- `BROWSE_HEADLESS` - Set to `false` to see browser (for `/browse`)
+Each skill follows the OpenClaw format:
 
-## Requirements
+```
+skills/
+├── browse/
+│   ├── SKILL.md        # Documentation
+│   ├── handler.ts      # Entry point
+│   └── package.json    # Dependencies
+├── qa/
+│   └── ...
+├── ship/
+│   └── ...
+└── plan-ceo-review/
+    └── ...
+```
 
-- Node.js >= 18.0.0
-- Playwright browsers installed (`npx playwright install`)
+## Development
+
+```bash
+# Run skill directly
+node browse/dist/handler.js https://example.com
+
+# With options
+node browse/dist/handler.js https://example.com --viewport=mobile --full-page
+
+# QA skill
+node qa/dist/handler.js --mode=smoke
+
+# Ship skill
+node ship/dist/handler.js --version=patch --dry-run
+
+# Plan CEO Review
+node plan-ceo-review/dist/handler.js "Should we build X?"
+```
 
 ## License
 
