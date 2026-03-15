@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, copyFileSync, writeFileSync } from 'fs';
 import { join, resolve } from 'path';
 
 const skills = ['browse', 'qa', 'ship', 'plan-ceo-review'];
-const packagesDir = resolve(process.cwd(), 'packages');
+const skillsDir = resolve(process.cwd());
 const outputDir = resolve(process.cwd(), 'dist-skills');
 
 console.log('📦 Packaging skills...\n');
@@ -20,7 +20,7 @@ if (!existsSync(outputDir)) {
 }
 
 for (const skill of skills) {
-  const skillDir = join(packagesDir, skill);
+  const skillDir = join(skillsDir, skill);
   const distDir = join(skillDir, 'dist');
   const skillJsonPath = join(skillDir, 'skill.json');
   const cliPath = join(skillDir, 'cli.js');

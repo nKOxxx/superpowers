@@ -1,86 +1,77 @@
-# @superpowers/qa
+# QA Skill
 
-Systematic testing as QA Lead - analyzes code changes and runs appropriate tests.
+Systematic testing with auto-detection for OpenClaw.
 
-## Installation
+## Features
 
-```bash
-npm install @superpowers/qa
-```
+- **Auto-detect** test framework (Vitest, Jest, Mocha)
+- **Three modes**: targeted, smoke, full
+- **Changed file detection** - run only related tests
+- **Coverage reporting**
+- **Watch mode**
 
 ## Usage
 
-### CLI
-
 ```bash
-# Run targeted tests based on changed files
-qa
-
-# Run smoke tests (quick sanity check)
-qa --mode smoke
-
-# Run full test suite with coverage
-qa --mode full --coverage
-
-# Watch mode
-qa --watch
-
-# Update snapshots
-qa --update
-
-# Compare against different git ref
-qa --since origin/main
+qa [options] [files...]
 ```
 
-### Programmatic
+## Options
 
-```typescript
-import { qaCommand } from '@superpowers/qa';
-
-await qaCommand({
-  mode: 'targeted',
-  coverage: true,
-  watch: false,
-  update: false,
-  since: 'HEAD~1',
-});
-```
+- `-m, --mode <mode>` - Test mode: targeted, smoke, full (default: targeted)
+- `-f, --framework <framework>` - Test framework: vitest, jest, mocha, auto
+- `-c, --coverage` - Enable coverage reporting
+- `-w, --watch` - Watch mode
+- `--changed` - Run tests related to changed files (git)
+- `--fail-fast` - Stop on first failure
 
 ## Test Modes
 
-- **targeted** (default) - Analyzes git diff and runs only related tests
-- **smoke** - Quick sanity tests with timeouts
-- **full** - Complete test suite with coverage
+### Targeted (default)
+Runs tests related to changed files or specific files.
 
-## Supported Frameworks
-
-- **Vitest** - Detects `vitest.config.ts/js` or `vite.config.ts/js`
-- **Jest** - Detects `jest.config.ts/js/mjs`
-- **Mocha** - Detects `.mocharc.json/js` or `mocha.opts`
-- **Playwright** - Detects `playwright.config.ts/js`
-
-## CLI Options
-
-```
-Usage: qa [options]
-
-Options:
-  -m, --mode <mode>    Test mode (targeted, smoke, full) (default: "targeted")
-  -c, --coverage       Enable coverage reporting (default: false)
-  -w, --watch          Watch mode (default: false)
-  -u, --update         Update snapshots (default: false)
-  --since <ref>        Git ref to compare against for targeted mode (default: "HEAD~1")
-  -h, --help          display help for command
+```bash
+qa
+qa --changed
+qa src/utils.test.ts
 ```
 
-## Test File Mapping
+### Smoke
+Runs only smoke/basic tests (tests with "smoke" or "basic" in name).
 
-Targeted mode automatically maps changed source files to test files:
+```bash
+qa --mode smoke
+```
 
-- `src/utils/helpers.ts` → `src/utils/helpers.test.ts`
-- `lib/auth.js` → `lib/auth.test.js`
-- `components/Button.tsx` → `components/__tests__/Button.test.tsx`
+### Full
+Runs all tests in the project.
 
-## License
+```bash
+qa --mode full --coverage
+```
 
-MIT
+## Framework Detection
+
+The skill automatically detects your test framework by:
+1. Looking for config files (vitest.config.ts, jest.config.js, etc.)
+2. Checking package.json dependencies
+3. Scanning for test files
+
+## Examples
+
+```bash
+# Run targeted tests (changed files only)
+qa --changed
+
+# Run all tests with coverage
+qa --mode full --coverage
+
+# Run smoke tests
+qa --mode smoke
+
+# Run specific framework
+qa --framework vitest --watch
+
+# Run specific test file
+qa src/components/Button.test.tsx
+```

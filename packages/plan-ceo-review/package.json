@@ -1,36 +1,24 @@
 {
-  "name": "@superpowers/plan-ceo-review",
+  "name": "plan-ceo-review",
   "version": "1.0.0",
-  "description": "Product strategy review using BAT framework (Brand, Attention, Trust) and 10-star methodology",
+  "description": "BAT framework for product decisions - Brand/Attention/Trust scoring",
   "type": "module",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "bin": {
     "plan-ceo-review": "./cli.js"
   },
   "scripts": {
     "build": "tsc",
-    "clean": "rm -rf dist",
-    "prepack": "npm run build"
+    "package": "npm run build && npm run pack-skill",
+    "pack-skill": "mkdir -p ../../dist-skills && tar -czf ../../dist-skills/plan-ceo-review.skill.tar.gz -C .. plan-ceo-review/dist plan-ceo-review/skill.json plan-ceo-review/cli.js plan-ceo-review/package.json --exclude='*.map'",
+    "clean": "rm -rf dist"
   },
-  "keywords": [
-    "openclaw",
-    "skill",
-    "product",
-    "strategy",
-    "bat",
-    "framework",
-    "review"
-  ],
-  "author": "nKO",
-  "license": "MIT",
   "dependencies": {
-    "chalk": "^5.3.0",
     "commander": "^11.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.0"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -98,11 +98,17 @@ async function executeActions(page, actions) {
             case 'scroll':
                 if (action.x !== undefined && action.y !== undefined) {
                     console.log(chalk.gray(`  Scrolling to (${action.x}, ${action.y})`));
-                    await page.evaluate(({ x, y }) => window.scrollTo(x, y), { x: action.x, y: action.y });
+                    // @ts-ignore - page.evaluate runs in browser context
+                    await page.evaluate((coords) => {
+                        window.scrollTo(coords.x, coords.y);
+                    }, { x: action.x, y: action.y });
                 }
                 else {
                     console.log(chalk.gray('  Scrolling to bottom'));
-                    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+                    // @ts-ignore - page.evaluate runs in browser context
+                    await page.evaluate(() => {
+                        window.scrollTo(0, document.body.scrollHeight);
+                    });
                 }
                 break;
             case 'hover':
