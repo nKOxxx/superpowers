@@ -1,3 +1,3 @@
 import { Command } from 'commander';
-export declare function qaCommand(program: Command): void;
+export declare const qaCommand: Command;
 //# sourceMappingURL=qa.d.ts.map

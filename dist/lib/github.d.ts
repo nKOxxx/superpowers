@@ -1,39 +1,23 @@
-import type { GitHubRelease } from '../types/index.js';
 /**
- * Parse owner/repo string format
+ * GitHub API utilities
  */
-export declare function parseRepoString(repoString: string): {
-    owner: string;
-    repo: string;
-};
+export interface GitHubRelease {
+    id: number;
+    tag_name: string;
+    name: string;
+    body: string;
+    html_url: string;
+}
 /**
- * Create GitHub API client
+ * Create a GitHub release
  */
-export declare function createGitHubClient(): {
-    token: string;
-};
+export declare function createGitHubRelease(repo: string, version: string, changelog: string, token: string, prerelease?: boolean): Promise<GitHubRelease>;
 /**
- * Get GitHub token from environment
+ * Check if GH_TOKEN is available
  */
-export declare function getToken(): string | null;
+export declare function hasGitHubToken(): boolean;
 /**
- * Check if GitHub CLI is available
+ * Get GH_TOKEN
  */
-export declare function hasGHCLI(): boolean;
-/**
- * Create a GitHub release using gh CLI (preferred) or API
- */
-export declare function createRelease(owner: string, repo: string, release: GitHubRelease): Promise<{
-    success: boolean;
-    url?: string;
-    error?: string;
-}>;
-/**
- * Get repository info
- */
-export declare function getRepoInfo(owner: string, repo: string): Promise<{
-    success: boolean;
-    default_branch?: string;
-    error?: string;
-}>;
+export declare function getGitHubToken(): string | undefined;
 //# sourceMappingURL=github.d.ts.map

@@ -1,4 +1,10 @@
-import chalk from 'chalk';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.planCeoReviewCommand = planCeoReviewCommand;
+const chalk_1 = __importDefault(require("chalk"));
 const SCORE_DESCRIPTIONS = {
     brand: {
         0: 'Actively damages brand',
@@ -25,14 +31,14 @@ const SCORE_DESCRIPTIONS = {
         5: 'Trust breakthrough'
     }
 };
-export async function planCeoReviewCommand(feature, options) {
-    console.log(chalk.blue('📊 CEO Review:'), chalk.cyan(feature));
+async function planCeoReviewCommand(feature, options) {
+    console.log(chalk_1.default.blue('📊 CEO Review:'), chalk_1.default.cyan(feature));
     console.log('');
     // Calculate or parse scores
     let scores;
     if (options.auto) {
         scores = autoCalculateScores(feature);
-        console.log(chalk.gray('Auto-calculated scores based on feature description'));
+        console.log(chalk_1.default.gray('Auto-calculated scores based on feature description'));
     }
     else {
         scores = {
@@ -48,44 +54,44 @@ export async function planCeoReviewCommand(feature, options) {
     const threshold = 10; // 10-star methodology
     const passed = total >= threshold;
     // Display BAT scores
-    console.log(chalk.blue('🎯 BAT Framework Scores'));
-    console.log(chalk.gray('─'.repeat(50)));
+    console.log(chalk_1.default.blue('🎯 BAT Framework Scores'));
+    console.log(chalk_1.default.gray('─'.repeat(50)));
     displayScore('Brand', scores.brand, SCORE_DESCRIPTIONS.brand[scores.brand]);
     displayScore('Attention', scores.attention, SCORE_DESCRIPTIONS.attention[scores.attention]);
     displayScore('Trust', scores.trust, SCORE_DESCRIPTIONS.trust[scores.trust]);
-    console.log(chalk.gray('─'.repeat(50)));
-    console.log(`Total Score: ${passed ? chalk.green(total) : chalk.yellow(total)}/15`);
+    console.log(chalk_1.default.gray('─'.repeat(50)));
+    console.log(`Total Score: ${passed ? chalk_1.default.green(total) : chalk_1.default.yellow(total)}/15`);
     console.log(`Threshold: ${threshold}/15 (10-star methodology)`);
-    console.log(`Status: ${passed ? chalk.green('✅ PASS') : chalk.yellow('⚠️ BELOW THRESHOLD')}`);
+    console.log(`Status: ${passed ? chalk_1.default.green('✅ PASS') : chalk_1.default.yellow('⚠️ BELOW THRESHOLD')}`);
     console.log('');
     // Generate recommendation
     const recommendation = generateRecommendation(scores, total, feature);
     // Display recommendation
-    console.log(chalk.blue('📋 Recommendation'));
-    console.log(chalk.gray('─'.repeat(50)));
+    console.log(chalk_1.default.blue('📋 Recommendation'));
+    console.log(chalk_1.default.gray('─'.repeat(50)));
     const decisionColor = {
-        'build': chalk.green,
-        'consider': chalk.yellow,
-        'dont-build': chalk.red
+        'build': chalk_1.default.green,
+        'consider': chalk_1.default.yellow,
+        'dont-build': chalk_1.default.red
     };
     console.log(`Decision: ${decisionColor[recommendation.decision](recommendation.decision.toUpperCase())}`);
     console.log(`Confidence: ${recommendation.confidence}%`);
     console.log('');
-    console.log(chalk.cyan('Reasoning:'));
+    console.log(chalk_1.default.cyan('Reasoning:'));
     recommendation.reasoning.forEach(reason => {
-        console.log(chalk.gray(`  • ${reason}`));
+        console.log(chalk_1.default.gray(`  • ${reason}`));
     });
     console.log('');
-    console.log(chalk.cyan('Next Steps:'));
+    console.log(chalk_1.default.cyan('Next Steps:'));
     recommendation.nextSteps.forEach(step => {
-        console.log(chalk.gray(`  → ${step}`));
+        console.log(chalk_1.default.gray(`  → ${step}`));
     });
     console.log('');
-    console.log(chalk.blue('💡 BAT Framework Summary'));
-    console.log(chalk.gray('Build when 2/3 of:'));
-    console.log(chalk.gray('  • Brand: Aligns with and enhances brand'));
-    console.log(chalk.gray('  • Attention: Captures meaningful demand/signal'));
-    console.log(chalk.gray('  • Trust: Builds or maintains user trust'));
+    console.log(chalk_1.default.blue('💡 BAT Framework Summary'));
+    console.log(chalk_1.default.gray('Build when 2/3 of:'));
+    console.log(chalk_1.default.gray('  • Brand: Aligns with and enhances brand'));
+    console.log(chalk_1.default.gray('  • Attention: Captures meaningful demand/signal'));
+    console.log(chalk_1.default.gray('  • Trust: Builds or maintains user trust'));
 }
 function validateScores(scores) {
     return {
@@ -96,8 +102,8 @@ function validateScores(scores) {
 }
 function displayScore(name, score, description) {
     const bar = '█'.repeat(score) + '░'.repeat(5 - score);
-    const color = score >= 4 ? chalk.green : score >= 3 ? chalk.yellow : chalk.red;
-    console.log(`${name.padEnd(10)} ${color(bar)} ${score}/5 - ${chalk.gray(description)}`);
+    const color = score >= 4 ? chalk_1.default.green : score >= 3 ? chalk_1.default.yellow : chalk_1.default.red;
+    console.log(`${name.padEnd(10)} ${color(bar)} ${score}/5 - ${chalk_1.default.gray(description)}`);
 }
 function autoCalculateScores(feature) {
     const lower = feature.toLowerCase();

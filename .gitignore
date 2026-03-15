@@ -1,17 +1,23 @@
+# Ignore files for packaging
+
 # Dependencies
 node_modules/
 
 # Build output
 dist/
-dist-skills/
+*.tsbuildinfo
 
-# Logs
+# Testing
+coverage/
 *.log
-npm-debug.log*
 
 # Environment
 .env
 .env.local
+
+# OS
+.DS_Store
+Thumbs.db
 
 # IDE
 .vscode/
@@ -19,15 +25,6 @@ npm-debug.log*
 *.swp
 *.swo
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Test coverage
-coverage/
-.nyc_output/
-
-# Playwright
-test-results/
-playwright-report/
-playwright/.cache/
+# Package outputs
+dist-skills/
+*.tgz

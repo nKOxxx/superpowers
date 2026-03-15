@@ -1,3 +1,3 @@
 import { Command } from 'commander';
-export declare function shipCommand(program: Command): void;
+export declare const shipCommand: Command;
 //# sourceMappingURL=ship.d.ts.map

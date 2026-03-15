@@ -3,208 +3,83 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.browseCommand = browseCommand;
-const playwright_1 = require("playwright");
-const promises_1 = require("fs/promises");
-const fs_1 = require("fs");
-const path_1 = require("path");
-const picocolors_1 = __importDefault(require("picocolors"));
-const config_js_1 = require("../lib/config.js");
-const VIEWPORT_PRESETS = {
-    mobile: { width: 375, height: 667 },
-    tablet: { width: 768, height: 1024 },
-    desktop: { width: 1280, height: 720 },
-    wide: { width: 1920, height: 1080 },
+exports.browseCommand = void 0;
+const commander_1 = require("commander");
+const chalk_1 = __importDefault(require("chalk"));
+const browser_js_1 = require("../lib/browser.js");
+// Default flows
+const DEFAULT_FLOWS = {
+    critical: [
+        { name: 'Homepage', url: '/' },
+        { name: 'About', url: '/about' },
+        { name: 'Contact', url: '/contact' },
+    ],
+    auth: [
+        { name: 'Login', url: '/login' },
+        { name: 'Dashboard', url: '/dashboard' },
+        { name: 'Profile', url: '/profile' },
+    ],
+    checkout: [
+        { name: 'Cart', url: '/cart' },
+        { name: 'Checkout', url: '/checkout' },
+        { name: 'Payment', url: '/payment' },
+    ],
 };
-function browseCommand(program) {
-    program
-        .command('browse <url>')
-        .description('Browser automation and screenshot capture')
-        .option('-v, --viewport <name>', 'Viewport preset (mobile, tablet, desktop, wide)', 'desktop')
-        .option('-W, --width <pixels>', 'Custom viewport width')
-        .option('-H, --height <pixels>', 'Custom viewport height')
-        .option('-f, --full-page', 'Capture full page screenshot')
-        .option('-o, --output <dir>', 'Output directory for screenshots', './screenshots')
-        .option('--flows <names>', 'Comma-separated flow names from config')
-        .option('--wait-for <selector>', 'Wait for element before screenshot')
-        .option('--actions <actions>', 'Comma-separated actions (click:sel,wait:1000,type:sel|text)')
-        .option('-t, --timeout <ms>', 'Navigation timeout', '30000')
-        .action(async (url, options) => {
-        try {
-            await runBrowse(url, options);
-        }
-        catch (error) {
-            console.error(picocolors_1.default.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
-            process.exit(1);
-        }
-    });
-}
-async function runBrowse(url, options) {
-    const config = (0, config_js_1.mergeWithDefaults)((0, config_js_1.loadConfig)());
-    const screenshotDir = (0, path_1.resolve)(options.output || config.browser.screenshotDir || './screenshots');
-    // Ensure output directory exists
-    if (!(0, fs_1.existsSync)(screenshotDir)) {
-        await (0, promises_1.mkdir)(screenshotDir, { recursive: true });
-    }
-    // Determine viewport
-    let viewport;
-    if (options.width && options.height) {
-        viewport = { width: parseInt(options.width), height: parseInt(options.height) };
-    }
-    else if (options.viewport && config.browser.viewports?.[options.viewport]) {
-        viewport = config.browser.viewports[options.viewport];
-    }
-    else {
-        const viewportKey = (options.viewport || config.browser.defaultViewport);
-        viewport = VIEWPORT_PRESETS[viewportKey] || VIEWPORT_PRESETS.desktop;
-    }
-    const headless = process.env.BROWSE_HEADLESS !== 'false';
-    const browser = await playwright_1.chromium.launch({ headless });
-    console.log(picocolors_1.default.cyan('══════════════════════════════════════════════════'));
-    console.log(picocolors_1.default.cyan('Browser Automation'));
-    console.log(picocolors_1.default.cyan('══════════════════════════════════════════════════'));
-    console.log();
+exports.browseCommand = new commander_1.Command('browse')
+    .description('Browser automation with Playwright')
+    .argument('<url>', 'URL to screenshot')
+    .option('-v, --viewport <name>', 'Viewport preset (mobile, tablet, desktop)', 'desktop')
+    .option('-W, --width <pixels>', 'Custom viewport width', parseInt)
+    .option('-H, --height <pixels>', 'Custom viewport height', parseInt)
+    .option('-f, --full-page', 'Capture full page screenshot')
+    .option('-o, --output <dir>', 'Output directory', './screenshots')
+    .option('--flows <names>', 'Comma-separated flow names')
+    .option('-w, --wait-for <selector>', 'Wait for element before screenshot')
+    .option('-a, --actions <actions>', 'Comma-separated actions (click:selector,type:selector|text,wait:ms,scroll,hover:selector,screenshot)')
+    .option('-t, --timeout <ms>', 'Navigation timeout', parseInt)
+    .action(async (url, options) => {
+    console.log(chalk_1.default.blue('══════════════════════════════════════════════════'));
+    console.log(chalk_1.default.blue('Browser Automation'));
+    console.log(chalk_1.default.blue('══════════════════════════════════════════════════\n'));
     try {
+        // Validate URL
+        if (!url.startsWith('http')) {
+            url = `https://${url}`;
+        }
+        const viewport = (0, browser_js_1.getViewport)(options);
+        console.log(chalk_1.default.gray(`URL: ${url}`));
+        console.log(chalk_1.default.gray(`Viewport: ${viewport.width}x${viewport.height}`));
+        console.log(chalk_1.default.gray(`Output: ${options.output || './screenshots'}`));
         if (options.flows) {
-            // Run predefined flows
+            // Run flows
             const flowNames = options.flows.split(',').map(f => f.trim());
+            console.log(chalk_1.default.gray(`Flows: ${flowNames.join(', ')}\n`));
             for (const flowName of flowNames) {
-                const flow = config.browser.flows?.[flowName];
+                const flow = DEFAULT_FLOWS[flowName];
                 if (!flow) {
-                    console.warn(picocolors_1.default.yellow(`Warning: Flow '${flowName}' not found in config`));
+                    console.log(chalk_1.default.yellow(`⚠ Flow "${flowName}" not found, skipping`));
                     continue;
                 }
-                await runFlow(browser, url, flow, viewport, screenshotDir, options);
+                console.log(chalk_1.default.blue(`\nRunning flow: ${flowName}`));
+                const screenshots = await (0, browser_js_1.runFlow)(flow, options, url);
+                for (const filepath of screenshots) {
+                    console.log(chalk_1.default.green(`✓ Screenshot: ${filepath}`));
+                }
             }
-        }
-        else if (options.actions) {
-            // Run custom actions
-            const actions = parseActions(options.actions);
-            await runActions(browser, url, actions, viewport, screenshotDir, options);
         }
         else {
-            // Simple screenshot
-            await captureScreenshot(browser, url, viewport, screenshotDir, options);
+            // Single screenshot
+            console.log('');
+            const filepath = await (0, browser_js_1.takeScreenshot)(url, options);
+            console.log(chalk_1.default.green(`✓ Screenshot saved: ${filepath}`));
         }
-        console.log();
-        console.log(picocolors_1.default.green('✓ Browser automation completed'));
+        console.log(chalk_1.default.blue('\n══════════════════════════════════════════════════'));
+        console.log(chalk_1.default.green('Done!'));
+        console.log(chalk_1.default.blue('══════════════════════════════════════════════════'));
     }
-    finally {
-        await browser.close();
+    catch (error) {
+        console.error(chalk_1.default.red(`\n✗ Error: ${error instanceof Error ? error.message : String(error)}`));
+        process.exit(1);
     }
-}
-async function captureScreenshot(browser, url, viewport, outputDir, options) {
-    const context = await browser.newContext({ viewport });
-    const page = await context.newPage();
-    const timeout = parseInt(options.timeout || '30000');
-    await page.goto(url, { timeout, waitUntil: 'networkidle' });
-    if (options.waitFor) {
-        await page.waitForSelector(options.waitFor, { timeout });
-    }
-    const hostname = new URL(url).hostname.replace(/[^a-zA-Z0-9]/g, '-');
-    const viewportName = `${viewport.width}x${viewport.height}`;
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `${hostname}_${viewportName}_${timestamp}.png`;
-    const filepath = (0, path_1.join)(outputDir, filename);
-    await page.screenshot({
-        path: filepath,
-        fullPage: options.fullPage || false,
-    });
-    console.log(picocolors_1.default.green(`✓ Screenshot saved: ${filepath}`));
-    await context.close();
-}
-async function runFlow(browser, baseUrl, flow, viewport, outputDir, options) {
-    const context = await browser.newContext({ viewport });
-    const page = await context.newPage();
-    const timeout = parseInt(options.timeout || '30000');
-    for (const step of flow) {
-        console.log(picocolors_1.default.blue(`  → ${step.name}`));
-        const url = step.url.startsWith('http') ? step.url : new URL(step.url, baseUrl).toString();
-        await page.goto(url, { timeout, waitUntil: 'networkidle' });
-        if (step.actions) {
-            for (const action of step.actions) {
-                await executeAction(page, action, timeout);
-            }
-        }
-        const hostname = new URL(baseUrl).hostname.replace(/[^a-zA-Z0-9]/g, '-');
-        const stepName = step.name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-');
-        const viewportName = `${viewport.width}x${viewport.height}`;
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `${hostname}_${stepName}_${viewportName}_${timestamp}.png`;
-        const filepath = (0, path_1.join)(outputDir, filename);
-        await page.screenshot({ path: filepath, fullPage: options.fullPage || false });
-        console.log(picocolors_1.default.green(`    ✓ ${filepath}`));
-    }
-    await context.close();
-}
-async function runActions(browser, url, actions, viewport, outputDir, options) {
-    const context = await browser.newContext({ viewport });
-    const page = await context.newPage();
-    const timeout = parseInt(options.timeout || '30000');
-    await page.goto(url, { timeout, waitUntil: 'networkidle' });
-    const screenshots = [];
-    for (const action of actions) {
-        if (action.type === 'screenshot') {
-            const hostname = new URL(url).hostname.replace(/[^a-zA-Z0-9]/g, '-');
-            const viewportName = `${viewport.width}x${viewport.height}`;
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const filename = `${hostname}_action_${screenshots.length}_${viewportName}_${timestamp}.png`;
-            const filepath = (0, path_1.join)(outputDir, filename);
-            await page.screenshot({ path: filepath, fullPage: options.fullPage || false });
-            screenshots.push(filepath);
-            console.log(picocolors_1.default.green(`  ✓ Screenshot: ${filepath}`));
-        }
-        else {
-            await executeAction(page, action, timeout);
-        }
-    }
-    await context.close();
-}
-async function executeAction(page, action, timeout) {
-    switch (action.type) {
-        case 'click':
-            if (action.selector) {
-                await page.click(action.selector, { timeout });
-            }
-            break;
-        case 'type':
-            if (action.selector && action.text !== undefined) {
-                await page.fill(action.selector, action.text, { timeout });
-            }
-            break;
-        case 'wait':
-            await page.waitForTimeout(action.delay || 1000);
-            break;
-        case 'scroll':
-            await page.evaluate('window.scrollBy(0, window.innerHeight)');
-            break;
-        case 'hover':
-            if (action.selector) {
-                await page.hover(action.selector, { timeout });
-            }
-            break;
-    }
-}
-function parseActions(actionsStr) {
-    return actionsStr.split(',').map(action => {
-        const [type, ...params] = action.split(':');
-        switch (type) {
-            case 'click':
-                return { type: 'click', selector: params[0] };
-            case 'type':
-                const [selector, text] = params.join(':').split('|');
-                return { type: 'type', selector, text };
-            case 'wait':
-                return { type: 'wait', delay: parseInt(params[0]) || 1000 };
-            case 'scroll':
-                return { type: 'scroll' };
-            case 'hover':
-                return { type: 'hover', selector: params[0] };
-            case 'screenshot':
-                return { type: 'screenshot' };
-            default:
-                return { type: 'wait', delay: 1000 };
-        }
-    });
-}
+});
 //# sourceMappingURL=browse.js.map

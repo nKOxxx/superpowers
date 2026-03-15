@@ -2,7 +2,7 @@
  * Browse skill - Browser automation with Playwright
  */
 import { chromium, Page, ViewportSize } from 'playwright';
-import { Logger, parseEnvOptions, exitWithError, exitWithSuccess, ensureDir } from '@nko/superpowers-shared';
+import { Logger, ensureDir } from '@nko/superpowers-shared';
 import * as path from 'path';
 
 const logger = new Logger({ prefix: 'browse' });
@@ -35,8 +35,52 @@ interface BrowseAction {
   y?: number;
 }
 
+function parseArgs(): { url: string; options: BrowseOptions } {
+  const args = process.argv.slice(2);
+  const url = args[0];
+  const options: BrowseOptions = {};
+
+  for (let i = 1; i < args.length; i++) {
+    const arg = args[i];
+    switch (arg) {
+      case '--full-page':
+        options.fullPage = true;
+        break;
+      case '--element':
+        options.element = args[++i];
+        break;
+      case '--viewport':
+        options.viewport = args[++i] as BrowseOptions['viewport'];
+        break;
+      case '--width':
+        options.width = args[++i];
+        break;
+      case '--height':
+        options.height = args[++i];
+        break;
+      case '--actions':
+        options.actions = args[++i];
+        break;
+      case '--wait-for':
+        options.waitFor = args[++i];
+        break;
+      case '--base64':
+        options.base64 = true;
+        break;
+      case '--output':
+      case '-o':
+        options.output = args[++i];
+        break;
+      case '--timeout':
+        options.timeout = args[++i];
+        break;
+    }
+  }
+
+  return { url, options };
+}
+
 function parseViewport(options: BrowseOptions): ViewportSize {
-  // Custom dimensions take priority
   if (options.width && options.height) {
     return {
       width: parseInt(options.width, 10),
@@ -44,7 +88,6 @@ function parseViewport(options: BrowseOptions): ViewportSize {
     };
   }
 
-  // Use preset
   const preset = options.viewport || 'desktop';
   const viewport = VIEWPORT_PRESETS[preset];
   
@@ -96,8 +139,7 @@ async function executeAction(page: Page, action: BrowseAction): Promise<void> {
     
     case 'scroll':
       await page.evaluate((scrollTo: { x?: number; y?: number }) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (globalThis as any).scrollTo(scrollTo.x || 0, scrollTo.y || 0);
+        (globalThis as unknown as Window).scrollTo(scrollTo.x || 0, scrollTo.y || 0);
       }, { x: action.x, y: action.y });
       logger.debug(`Scrolled to: ${action.x || 0}, ${action.y || 0}`);
       break;
@@ -112,7 +154,6 @@ async function executeAction(page: Page, action: BrowseAction): Promise<void> {
       logger.warn(`Unknown action type: ${(action as BrowseAction).type}`);
   }
 
-  // Small delay after each action
   await page.waitForTimeout(delay);
 }
 
@@ -129,18 +170,15 @@ async function captureScreenshot(
     const page = await context.newPage();
     const timeout = parseInt(options.timeout || '30000', 10);
 
-    // Navigate to URL
     await page.goto(url, { waitUntil: 'networkidle', timeout });
     spinner.succeed(`Loaded: ${url}`);
 
-    // Wait for specific element if requested
     if (options.waitFor) {
       const waitSpinner = logger.spinner(`Waiting for element: ${options.waitFor}`);
       await page.waitForSelector(options.waitFor, { timeout });
       waitSpinner.succeed(`Element found: ${options.waitFor}`);
     }
 
-    // Execute action sequence
     const actions = parseActions(options.actions);
     if (actions.length > 0) {
       const actionSpinner = logger.spinner(`Executing ${actions.length} action(s)`);
@@ -150,7 +188,6 @@ async function captureScreenshot(
       actionSpinner.succeed('Actions completed');
     }
 
-    // Handle output path
     let outputPath: string | undefined;
     if (options.output) {
       outputPath = options.output;
@@ -164,7 +201,6 @@ async function captureScreenshot(
       ensureDir(path.dirname(outputPath));
     }
 
-    // Handle full page or element screenshot
     if (options.element) {
       const element = page.locator(options.element).first();
       
@@ -190,21 +226,20 @@ async function captureScreenshot(
 }
 
 export async function main(): Promise<void> {
-  const url = process.env.SUPERPOWER_URL;
+  const { url, options } = parseArgs();
   
   if (!url) {
-    exitWithError('Error: URL is required');
+    console.error('Error: URL is required');
+    process.exit(1);
   }
 
-  // Validate URL
   try {
     new URL(url);
   } catch {
-    exitWithError(`Error: Invalid URL: ${url}`);
+    console.error(`Error: Invalid URL: ${url}`);
+    process.exit(1);
   }
 
-  const options = parseEnvOptions() as BrowseOptions;
-  
   logger.info(`Starting browser automation for: ${url}`);
   logger.info(`Viewport: ${options.viewport || 'desktop'}`);
 
@@ -212,17 +247,24 @@ export async function main(): Promise<void> {
     const result = await captureScreenshot(url, options);
 
     if (result.base64) {
-      // Output base64 for Telegram integration
       console.log('\n--- BASE64_START ---');
       console.log(result.base64);
       console.log('--- BASE64_END ---\n');
-      exitWithSuccess('Screenshot captured (base64 output above)');
+      console.log('Screenshot captured (base64 output above)');
+      process.exit(0);
     } else if (result.path) {
       const absolutePath = path.resolve(result.path);
-      exitWithSuccess(`Screenshot saved to: ${absolutePath}`);
+      console.log(`Screenshot saved to: ${absolutePath}`);
+      process.exit(0);
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    exitWithError(`Screenshot failed: ${message}`);
+    console.error(`Screenshot failed: ${message}`);
+    process.exit(1);
   }
+}
+
+// Run main if this file is executed directly
+if (require.main === module) {
+  main();
 }

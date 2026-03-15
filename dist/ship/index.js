@@ -1,38 +1,44 @@
-import { execSync } from 'child_process';
-import chalk from 'chalk';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
-export async function shipCommand(options) {
-    console.log(chalk.blue('🚢 Ship'), chalk.cyan(options.version || 'patch'));
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.shipCommand = shipCommand;
+const child_process_1 = require("child_process");
+const chalk_1 = __importDefault(require("chalk"));
+const fs_1 = require("fs");
+const path_1 = require("path");
+async function shipCommand(options) {
+    console.log(chalk_1.default.blue('🚢 Ship'), chalk_1.default.cyan(options.version || 'patch'));
     if (options.dryRun) {
-        console.log(chalk.yellow('🔍 DRY RUN - No changes will be applied'));
+        console.log(chalk_1.default.yellow('🔍 DRY RUN - No changes will be applied'));
     }
     // Check if we're in a git repo
     if (!isGitRepo()) {
-        console.error(chalk.red('❌ Not a git repository'));
+        console.error(chalk_1.default.red('❌ Not a git repository'));
         process.exit(1);
     }
     // Check for uncommitted changes
     if (hasUncommittedChanges()) {
-        console.error(chalk.red('❌ Uncommitted changes detected. Commit or stash first.'));
+        console.error(chalk_1.default.red('❌ Uncommitted changes detected. Commit or stash first.'));
         process.exit(1);
     }
     // Get current version
     const currentVersion = getCurrentVersion();
-    console.log(chalk.gray(`Current version: ${currentVersion}`));
+    console.log(chalk_1.default.gray(`Current version: ${currentVersion}`));
     // Calculate new version
     const newVersion = calculateNewVersion(currentVersion, options.version || 'patch');
-    console.log(chalk.cyan(`New version: ${newVersion}`));
+    console.log(chalk_1.default.cyan(`New version: ${newVersion}`));
     // Generate changelog
     const changelog = generateChangelog();
-    console.log(chalk.gray(`Changelog entries: ${changelog.length}`));
+    console.log(chalk_1.default.gray(`Changelog entries: ${changelog.length}`));
     // Preview changes
     if (options.dryRun) {
-        console.log('\n' + chalk.blue('📋 Preview:'));
-        console.log(chalk.gray('Version bump:'), `${currentVersion} → ${newVersion}`);
-        console.log(chalk.gray('Changelog:'));
+        console.log('\n' + chalk_1.default.blue('📋 Preview:'));
+        console.log(chalk_1.default.gray('Version bump:'), `${currentVersion} → ${newVersion}`);
+        console.log(chalk_1.default.gray('Changelog:'));
         changelog.slice(0, 10).forEach(entry => {
-            console.log(chalk.gray(`  - ${entry}`));
+            console.log(chalk_1.default.gray(`  - ${entry}`));
         });
         return;
     }
@@ -52,12 +58,12 @@ export async function shipCommand(options) {
     if (!options.skipRelease && process.env.GH_TOKEN) {
         await createGitHubRelease(newVersion, changelog);
     }
-    console.log(chalk.green('\n✅ Released successfully!'));
-    console.log(chalk.cyan(`Version: ${newVersion}`));
+    console.log(chalk_1.default.green('\n✅ Released successfully!'));
+    console.log(chalk_1.default.cyan(`Version: ${newVersion}`));
 }
 function isGitRepo() {
     try {
-        execSync('git rev-parse --git-dir', { stdio: 'pipe' });
+        (0, child_process_1.execSync)('git rev-parse --git-dir', { stdio: 'pipe' });
         return true;
     }
     catch {
@@ -66,7 +72,7 @@ function isGitRepo() {
 }
 function hasUncommittedChanges() {
     try {
-        const status = execSync('git status --porcelain', { encoding: 'utf-8' });
+        const status = (0, child_process_1.execSync)('git status --porcelain', { encoding: 'utf-8' });
         return status.trim().length > 0;
     }
     catch {
@@ -74,11 +80,11 @@ function hasUncommittedChanges() {
     }
 }
 function getCurrentVersion() {
-    const packageJsonPath = resolve('package.json');
-    if (!existsSync(packageJsonPath)) {
+    const packageJsonPath = (0, path_1.resolve)('package.json');
+    if (!(0, fs_1.existsSync)(packageJsonPath)) {
         return '0.0.0';
     }
-    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    const packageJson = JSON.parse((0, fs_1.readFileSync)(packageJsonPath, 'utf-8'));
     return packageJson.version || '0.0.0';
 }
 function parseVersion(version) {
@@ -119,7 +125,7 @@ function generateChangelog() {
         // Get commits since last tag
         const lastTag = getLastTag();
         const range = lastTag ? `${lastTag}..HEAD` : 'HEAD';
-        const output = execSync(`git log ${range} --pretty=format:"%h|%s|%b---END---"`, { encoding: 'utf-8' });
+        const output = (0, child_process_1.execSync)(`git log ${range} --pretty=format:"%h|%s|%b---END---"`, { encoding: 'utf-8' });
         const commits = output.split('---END---').filter(c => c.trim());
         const entries = [];
         for (const commit of commits) {
@@ -154,65 +160,65 @@ function parseCommitMessage(message) {
 }
 function getLastTag() {
     try {
-        return execSync('git describe --tags --abbrev=0', { encoding: 'utf-8' }).trim();
+        return (0, child_process_1.execSync)('git describe --tags --abbrev=0', { encoding: 'utf-8' }).trim();
     }
     catch {
         return null;
     }
 }
 function updateVersion(newVersion) {
-    const packageJsonPath = resolve('package.json');
-    if (!existsSync(packageJsonPath)) {
+    const packageJsonPath = (0, path_1.resolve)('package.json');
+    if (!(0, fs_1.existsSync)(packageJsonPath)) {
         return;
     }
-    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    const packageJson = JSON.parse((0, fs_1.readFileSync)(packageJsonPath, 'utf-8'));
     packageJson.version = newVersion;
-    writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
-    console.log(chalk.gray('Updated package.json'));
+    (0, fs_1.writeFileSync)(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
+    console.log(chalk_1.default.gray('Updated package.json'));
 }
 function updateChangelogFile(version, entries) {
-    const changelogPath = resolve('CHANGELOG.md');
+    const changelogPath = (0, path_1.resolve)('CHANGELOG.md');
     const date = new Date().toISOString().split('T')[0];
     let existingContent = '';
-    if (existsSync(changelogPath)) {
-        existingContent = readFileSync(changelogPath, 'utf-8');
+    if ((0, fs_1.existsSync)(changelogPath)) {
+        existingContent = (0, fs_1.readFileSync)(changelogPath, 'utf-8');
     }
     const newSection = `## [${version}] - ${date}\n\n${entries.map(e => `- ${e}`).join('\n')}\n\n`;
     const newContent = existingContent.startsWith('# Changelog')
         ? existingContent.replace('# Changelog\n\n', `# Changelog\n\n${newSection}`)
         : `# Changelog\n\n${newSection}${existingContent}`;
-    writeFileSync(changelogPath, newContent);
-    console.log(chalk.gray('Updated CHANGELOG.md'));
+    (0, fs_1.writeFileSync)(changelogPath, newContent);
+    console.log(chalk_1.default.gray('Updated CHANGELOG.md'));
 }
 function commitVersionBump(version) {
     try {
-        execSync('git add package.json CHANGELOG.md', { stdio: 'pipe' });
-        execSync(`git commit -m "chore(release): ${version}"`, { stdio: 'pipe' });
-        console.log(chalk.gray('Committed version bump'));
+        (0, child_process_1.execSync)('git add package.json CHANGELOG.md', { stdio: 'pipe' });
+        (0, child_process_1.execSync)(`git commit -m "chore(release): ${version}"`, { stdio: 'pipe' });
+        console.log(chalk_1.default.gray('Committed version bump'));
     }
     catch (error) {
-        console.warn(chalk.yellow('Warning: Could not commit version bump'));
+        console.warn(chalk_1.default.yellow('Warning: Could not commit version bump'));
     }
 }
 function createGitTag(version) {
     try {
         const tagName = `v${version}`;
-        execSync(`git tag -a ${tagName} -m "Release ${version}"`, { stdio: 'pipe' });
-        console.log(chalk.gray(`Created tag: ${tagName}`));
+        (0, child_process_1.execSync)(`git tag -a ${tagName} -m "Release ${version}"`, { stdio: 'pipe' });
+        console.log(chalk_1.default.gray(`Created tag: ${tagName}`));
     }
     catch (error) {
-        console.error(chalk.red('Error creating tag:'), error);
+        console.error(chalk_1.default.red('Error creating tag:'), error);
         throw error;
     }
 }
 function pushToRemote(version) {
     try {
-        execSync('git push', { stdio: 'pipe' });
-        execSync(`git push origin v${version}`, { stdio: 'pipe' });
-        console.log(chalk.gray('Pushed to remote'));
+        (0, child_process_1.execSync)('git push', { stdio: 'pipe' });
+        (0, child_process_1.execSync)(`git push origin v${version}`, { stdio: 'pipe' });
+        console.log(chalk_1.default.gray('Pushed to remote'));
     }
     catch (error) {
-        console.warn(chalk.yellow('Warning: Could not push to remote'));
+        console.warn(chalk_1.default.yellow('Warning: Could not push to remote'));
     }
 }
 async function createGitHubRelease(version, changelog) {
@@ -221,14 +227,14 @@ async function createGitHubRelease(version, changelog) {
     const body = changelog.map(e => `- ${e}`).join('\n') || 'No changes';
     try {
         // Check if gh CLI is available
-        execSync('which gh', { stdio: 'pipe' });
+        (0, child_process_1.execSync)('which gh', { stdio: 'pipe' });
         const command = `gh release create ${tagName} --title "${title}" --notes "${body}"`;
-        execSync(command, { stdio: 'pipe' });
-        console.log(chalk.gray('Created GitHub release'));
+        (0, child_process_1.execSync)(command, { stdio: 'pipe' });
+        console.log(chalk_1.default.gray('Created GitHub release'));
     }
     catch (error) {
-        console.warn(chalk.yellow('Warning: Could not create GitHub release'));
-        console.warn(chalk.yellow('Ensure GH_TOKEN is set or gh CLI is authenticated'));
+        console.warn(chalk_1.default.yellow('Warning: Could not create GitHub release'));
+        console.warn(chalk_1.default.yellow('Ensure GH_TOKEN is set or gh CLI is authenticated'));
     }
 }
 //# sourceMappingURL=index.js.map

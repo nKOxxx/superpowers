@@ -1,12 +1,11 @@
 {
   "name": "browse",
   "version": "1.0.0",
-  "description": "Browser automation with Playwright for visual testing and QA",
-  "entry": "dist/index.js",
-  "bin": "browse",
-  "capabilities": [
-    "screenshot",
-    "browser-automation",
-    "visual-testing"
-  ]
+  "description": "Browser automation for visual testing and QA with Playwright",
+  "entry": "cli.js",
+  "bin": "superpowers browse",
+  "requires": {
+    "bins": ["node", "npx"],
+    "npm": ["@nko/superpowers"]
+  }
 }

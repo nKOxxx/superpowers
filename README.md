@@ -1,6 +1,6 @@
 # @nko/superpowers
 
-OpenClaw superpowers - AI-powered development workflows
+OpenClaw superpowers - 4 TypeScript skills for browser automation, QA testing, release pipeline, and product strategy.
 
 ## Installation
 
@@ -12,96 +12,96 @@ npm install -g @nko/superpowers
 
 ### `/browse` - Browser Automation
 
-Playwright-based browser automation for screenshots and visual testing.
+Screenshot capture and visual testing with Playwright.
 
 ```bash
-# Basic screenshot
+# Screenshot a URL
 superpowers browse https://example.com
-
-# Full page capture
-superpowers browse https://example.com --full-page
 
 # Mobile viewport
 superpowers browse https://example.com --viewport=mobile
 
-# Custom viewport
-superpowers browse https://example.com --width=1440 --height=900
+# Full page screenshot
+superpowers browse https://example.com --full-page
 
-# Element screenshot
-superpowers browse https://example.com --element="header"
+# Run predefined flows
+superpowers browse https://example.com --flows=critical,auth
 
-# With actions (click, type, wait, scroll, hover)
-superpowers browse https://example.com --actions='[
-  {"type": "click", "target": "button"},
-  {"type": "wait", "duration": 1000}
-]'
+# Custom actions
+superpowers browse https://example.com --actions="click:.btn,wait:1000,screenshot"
 ```
 
 ### `/qa` - Systematic Testing
 
-Auto-detects test framework and runs targeted, smoke, or full tests.
+QA Lead automation with targeted, smoke, and full test modes.
 
 ```bash
-# Targeted - runs tests for changed files
-superpowers qa --mode=targeted
+# Run targeted tests (based on git diff)
+superpowers qa
 
-# Smoke tests
+# Smoke test
 superpowers qa --mode=smoke
 
-# Full test suite
+# Full regression suite
 superpowers qa --mode=full
 
 # With coverage
-superpowers qa --mode=full --coverage
+superpowers qa --coverage
 ```
-
-Supported frameworks: Vitest, Jest, Mocha
 
 ### `/ship` - Release Pipeline
 
-One-command release with semantic versioning and changelog generation.
+One-command release: version bump, changelog, git tag, push, GitHub release.
 
 ```bash
-# Patch release
+# Release patch version
 superpowers ship --version=patch
 
-# Minor release
+# Release minor version
 superpowers ship --version=minor
 
-# Major release
+# Release major version
 superpowers ship --version=major
 
-# Specific version
-superpowers ship --version=1.2.3
-
-# Dry run (preview)
+# Preview without executing
 superpowers ship --version=patch --dry-run
-
-# Skip push/release
-superpowers ship --version=patch --skip-push --skip-release
 ```
 
-Requires `GH_TOKEN` environment variable for GitHub releases.
+**Note:** Set `GH_TOKEN` environment variable for GitHub releases.
 
 ### `/plan-ceo-review` - Product Strategy
 
-BAT framework evaluation for product decisions.
+BAT framework evaluation (Brand, Attention, Trust) with 10-star methodology.
 
 ```bash
-# Manual scoring
-superpowers plan-ceo-review "Feature Name: Description" \
-  --brand=4 --attention=5 --trust=3
+# Basic evaluation
+superpowers ceo-review --feature="mobile app"
 
-# Auto-calculate from description
-superpowers plan-ceo-review "Premium secure messaging platform" --auto
+# Full context
+superpowers ceo-review \
+  --feature="AI code review" \
+  --goal="Reduce review time 50%" \
+  --audience="Dev teams"
 ```
 
-**BAT Framework:**
-- **Brand** (0-5): Does it align with and enhance brand?
-- **Attention** (0-5): Does it capture meaningful demand?
-- **Trust** (0-5): Does it build user trust?
+## Requirements
 
-**10-Star Methodology:** 10/15 minimum to build, 2/3 dimensions strong.
+- Node.js >= 18.0.0
+- Git (for ship and qa skills)
+- GH_TOKEN environment variable (for ship GitHub releases)
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Build
+npm run build
+
+# Package skills
+npm run package:skills
+```
 
 ## Repository
 

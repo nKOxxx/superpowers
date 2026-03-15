@@ -14,7 +14,7 @@ program
 
 // Helper to run a skill via node
 function runSkill(skillName, extraArgs = []) {
-  const skillPath = path.join(__dirname, skillName, 'dist', 'index.js');
+  const skillPath = path.join(__dirname, 'skills', skillName, 'dist', 'index.js');
   
   if (!fs.existsSync(skillPath)) {
     console.error(`Error: Skill '${skillName}' not found at ${skillPath}`);
@@ -41,7 +41,7 @@ program
   .option('-e, --element <selector>', 'Capture specific element')
   .option('-v, --viewport <preset>', 'Viewport preset: mobile, tablet, desktop', 'desktop')
   .option('-w, --width <pixels>', 'Custom viewport width')
-  .option('-h, --height <pixels>', 'Custom viewport height')
+  .option('--height <pixels>', 'Custom viewport height')
   .option('-a, --actions <json>', 'Action sequence as JSON array')
   .option('--wait-for <selector>', 'Wait for element before screenshot')
   .option('--base64', 'Output as base64 for Telegram')

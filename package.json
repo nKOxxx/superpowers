@@ -1,48 +1,46 @@
 {
   "name": "@nko/superpowers",
   "version": "1.0.0",
-  "description": "AI-powered workflows for development, testing, and product decisions",
-  "main": "cli.js",
+  "description": "OpenClaw superpowers - 4 TypeScript skills for browser automation, QA testing, release pipeline, and product strategy",
+  "main": "dist/index.js",
   "bin": {
-    "superpowers": "./cli.js"
+    "superpowers": "dist/cli.js"
   },
   "scripts": {
-    "build": "npm run build:shared && npm run build:skills",
-    "build:shared": "cd shared && npm run build",
-    "build:skills": "npm run build:browse && npm run build:qa && npm run build:ship && npm run build:plan-ceo-review",
-    "build:browse": "cd skills/browse && npm run build",
-    "build:qa": "cd skills/qa && npm run build",
-    "build:ship": "cd skills/ship && npm run build",
-    "build:plan-ceo-review": "cd skills/plan-ceo-review && npm run build",
-    "package": "npm run package:browse && npm run package:qa && npm run package:ship && npm run package:plan-ceo-review",
-    "package:browse": "cd skills/browse && npm run package",
-    "package:qa": "cd skills/qa && npm run package",
-    "package:ship": "cd skills/ship && npm run package",
-    "package:plan-ceo-review": "cd skills/plan-ceo-review && npm run package",
-    "test": "npm run test:browse && npm run test:qa && npm run test:ship && npm run test:plan-ceo-review",
-    "test:browse": "cd skills/browse && npm test",
-    "test:qa": "cd skills/qa && npm test",
-    "test:ship": "cd skills/ship && npm test",
-    "test:plan-ceo-review": "cd skills/plan-ceo-review && npm test"
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest",
+    "package:skills": "node scripts/package-skills.js",
+    "prepublishOnly": "npm run build && npm run package:skills"
   },
   "keywords": [
     "openclaw",
-    "superpowers",
-    "browser-automation",
+    "skills",
+    "browser",
+    "automation",
     "qa",
+    "testing",
     "release",
-    "product-management"
+    "product-strategy"
   ],
-  "author": "nKO",
+  "author": "nKOxxx",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nKOxxx/superpowers"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "commander": "^11.1.0"
+    "commander": "^12.0.0",
+    "chalk": "^5.3.0",
+    "playwright": "^1.41.0",
+    "compressing": "^1.10.0"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "typescript": "^5.3.0"
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
   }
 }

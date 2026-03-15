@@ -1,80 +1,92 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.isGitRepo = isGitRepo;
-exports.getCurrentBranch = getCurrentBranch;
 exports.isWorkingDirectoryClean = isWorkingDirectoryClean;
-exports.getLatestTag = getLatestTag;
+exports.getCurrentBranch = getCurrentBranch;
+exports.getLastTag = getLastTag;
+exports.getCommitsSinceLastTag = getCommitsSinceLastTag;
 exports.getChangedFiles = getChangedFiles;
-exports.getCommitsSince = getCommitsSince;
 exports.createTag = createTag;
 exports.pushToRemote = pushToRemote;
-exports.createCommit = createCommit;
-exports.runTests = runTests;
-exports.getRemoteUrl = getRemoteUrl;
-exports.parseRepoFromRemote = parseRepoFromRemote;
+exports.commitAll = commitAll;
+exports.getRepoFromRemote = getRepoFromRemote;
+exports.detectTestFramework = detectTestFramework;
+exports.mapToTestFiles = mapToTestFiles;
 const child_process_1 = require("child_process");
 const fs_1 = require("fs");
 const path_1 = require("path");
 /**
- * Check if we're in a git repository
+ * Check if current directory is a git repository
  */
-function isGitRepo(cwd = process.cwd()) {
-    return (0, fs_1.existsSync)((0, path_1.join)(cwd, '.git'));
-}
-/**
- * Get current git branch
- */
-function getCurrentBranch(cwd = process.cwd()) {
+function isGitRepo() {
     try {
-        return (0, child_process_1.execSync)('git branch --show-current', { cwd, encoding: 'utf-8' }).trim();
-    }
-    catch {
-        return 'main';
-    }
-}
-/**
- * Check if working directory is clean
- */
-function isWorkingDirectoryClean(cwd = process.cwd()) {
-    try {
-        const status = (0, child_process_1.execSync)('git status --porcelain', { cwd, encoding: 'utf-8' }).trim();
-        return status === '';
+        (0, child_process_1.execSync)('git rev-parse --git-dir', { stdio: 'pipe' });
+        return true;
     }
     catch {
         return false;
     }
 }
 /**
- * Get the latest git tag
+ * Check if working directory is clean
  */
-function getLatestTag(cwd = process.cwd()) {
+function isWorkingDirectoryClean() {
     try {
-        return (0, child_process_1.execSync)('git describe --tags --abbrev=0', { cwd, encoding: 'utf-8' }).trim();
+        const status = (0, child_process_1.execSync)('git status --porcelain', { encoding: 'utf-8' });
+        return status.trim() === '';
+    }
+    catch {
+        return false;
+    }
+}
+/**
+ * Get current git branch
+ */
+function getCurrentBranch() {
+    try {
+        return (0, child_process_1.execSync)('git branch --show-current', { encoding: 'utf-8' }).trim();
+    }
+    catch {
+        return 'main';
+    }
+}
+/**
+ * Get the last tag
+ */
+function getLastTag() {
+    try {
+        return (0, child_process_1.execSync)('git describe --tags --abbrev=0', { encoding: 'utf-8' }).trim();
     }
     catch {
         return null;
     }
 }
 /**
- * Get list of files changed since a commit/tag
+ * Get commits since last tag or from beginning
  */
-function getChangedFiles(since = 'HEAD~1', cwd = process.cwd()) {
+function getCommitsSinceLastTag() {
+    const lastTag = getLastTag();
+    const range = lastTag ? `${lastTag}..HEAD` : 'HEAD';
     try {
-        const output = (0, child_process_1.execSync)(`git diff --name-only ${since}`, { cwd, encoding: 'utf-8' });
-        return output.trim().split('\n').filter(f => f.length > 0);
+        const output = (0, child_process_1.execSync)(`git log ${range} --pretty=format:"%H|%s|%ci"`, { encoding: 'utf-8' });
+        if (!output.trim())
+            return [];
+        return output.trim().split('\n').map(line => {
+            const [hash, message, date] = line.split('|');
+            return { hash, message, date };
+        });
     }
     catch {
         return [];
     }
 }
 /**
- * Get conventional commits since a tag
+ * Get files changed in a git diff range
  */
-function getCommitsSince(tag, cwd = process.cwd()) {
+function getChangedFiles(range = 'HEAD~1') {
     try {
-        const range = tag ? `${tag}..HEAD` : 'HEAD';
-        const output = (0, child_process_1.execSync)(`git log ${range} --pretty=format:"%s"`, { cwd, encoding: 'utf-8' });
-        return output.trim().split('\n').filter(c => c.length > 0);
+        const output = (0, child_process_1.execSync)(`git diff ${range} --name-only`, { encoding: 'utf-8' });
+        return output.trim().split('\n').filter(f => f);
     }
     catch {
         return [];
@@ -83,63 +95,86 @@ function getCommitsSince(tag, cwd = process.cwd()) {
 /**
  * Create a git tag
  */
-function createTag(version, message, cwd = process.cwd()) {
-    (0, child_process_1.execSync)(`git tag -a v${version} -m "${message}"`, { cwd, stdio: 'inherit' });
+function createTag(version) {
+    (0, child_process_1.execSync)(`git tag -a v${version} -m "Release v${version}"`, { stdio: 'inherit' });
 }
 /**
- * Push commits and tags
+ * Push to remote
  */
-function pushToRemote(cwd = process.cwd()) {
-    (0, child_process_1.execSync)('git push && git push --tags', { cwd, stdio: 'inherit' });
+function pushToRemote(branch) {
+    const b = branch || getCurrentBranch();
+    (0, child_process_1.execSync)(`git push origin ${b}`, { stdio: 'inherit' });
+    (0, child_process_1.execSync)('git push --tags', { stdio: 'inherit' });
 }
 /**
- * Create a commit
+ * Commit all changes
  */
-function createCommit(message, files = ['.'], cwd = process.cwd()) {
-    (0, child_process_1.execSync)(`git add ${files.join(' ')} && git commit -m "${message}"`, { cwd, stdio: 'inherit' });
+function commitAll(message) {
+    (0, child_process_1.execSync)('git add -A', { stdio: 'pipe' });
+    (0, child_process_1.execSync)(`git commit -m "${message}"`, { stdio: 'inherit' });
 }
 /**
- * Run tests via npm/yarn/pnpm
+ * Get repository owner/repo from git remote
  */
-async function runTests(command, cwd = process.cwd()) {
-    return new Promise((resolve) => {
-        const child = (0, child_process_1.spawn)('sh', ['-c', command], {
-            cwd,
-            stdio: 'pipe',
-        });
-        let output = '';
-        child.stdout?.on('data', (data) => {
-            output += data.toString();
-        });
-        child.stderr?.on('data', (data) => {
-            output += data.toString();
-        });
-        child.on('close', (code) => {
-            resolve({ success: code === 0, output });
-        });
-    });
-}
-/**
- * Get repository remote URL
- */
-function getRemoteUrl(cwd = process.cwd()) {
+function getRepoFromRemote() {
     try {
-        return (0, child_process_1.execSync)('git remote get-url origin', { cwd, encoding: 'utf-8' }).trim();
+        const remote = (0, child_process_1.execSync)('git remote get-url origin', { encoding: 'utf-8' }).trim();
+        // Handle both HTTPS and SSH formats
+        const match = remote.match(/github\.com[:\/]([^/]+)\/([^/.]+)/);
+        if (match) {
+            return `${match[1]}/${match[2]}`;
+        }
+        return null;
     }
     catch {
         return null;
     }
 }
 /**
- * Parse owner/repo from git remote URL
+ * Detect test framework
  */
-function parseRepoFromRemote(url) {
-    // Handle HTTPS: https://github.com/owner/repo.git
-    // Handle SSH: git@github.com:owner/repo.git
-    const match = url.match(/github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/);
-    if (match) {
-        return { owner: match[1], repo: match[2] };
-    }
+function detectTestFramework() {
+    const packageJsonPath = (0, path_1.join)(process.cwd(), 'package.json');
+    if (!(0, fs_1.existsSync)(packageJsonPath))
+        return null;
+    const packageJson = JSON.parse((0, fs_1.readFileSync)(packageJsonPath, 'utf-8'));
+    const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
+    if (deps.vitest)
+        return 'vitest';
+    if (deps.jest)
+        return 'jest';
+    if (deps.mocha)
+        return 'mocha';
     return null;
+}
+/**
+ * Map source files to test files
+ */
+function mapToTestFiles(changedFiles) {
+    const testFiles = new Set();
+    for (const file of changedFiles) {
+        // Skip test files themselves
+        if (file.includes('.test.') || file.includes('.spec.')) {
+            testFiles.add(file);
+            continue;
+        }
+        // Map src files to test files
+        if (file.startsWith('src/')) {
+            // Try different patterns
+            const patterns = [
+                file.replace('src/', 'tests/').replace(/\.ts$/, '.test.ts'),
+                file.replace('src/', 'test/').replace(/\.ts$/, '.test.ts'),
+                file.replace(/\.ts$/, '.test.ts'),
+                file.replace('src/', '__tests__/').replace(/\.ts$/, '.test.ts'),
+            ];
+            for (const pattern of patterns) {
+                if ((0, fs_1.existsSync)(pattern)) {
+                    testFiles.add(pattern);
+                    break;
+                }
+            }
+        }
+    }
+    return Array.from(testFiles);
 }
 //# sourceMappingURL=git.js.map

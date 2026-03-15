@@ -1,3 +1,3 @@
 import { Command } from 'commander';
-export declare function ceoReviewCommand(program: Command): void;
+export declare const ceoReviewCommand: Command;
 //# sourceMappingURL=ceo-review.d.ts.map

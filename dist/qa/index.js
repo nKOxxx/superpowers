@@ -1,7 +1,13 @@
-import { execSync } from 'child_process';
-import chalk from 'chalk';
-import { existsSync, readFileSync } from 'fs';
-import { resolve } from 'path';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.qaCommand = qaCommand;
+const child_process_1 = require("child_process");
+const chalk_1 = __importDefault(require("chalk"));
+const fs_1 = require("fs");
+const path_1 = require("path");
 const frameworks = {
     vitest: {
         name: 'Vitest',
@@ -32,10 +38,10 @@ const frameworks = {
         configFiles: []
     }
 };
-export async function qaCommand(options) {
-    console.log(chalk.blue('🧪 QA Mode:'), chalk.cyan(options.mode || 'targeted'));
+async function qaCommand(options) {
+    console.log(chalk_1.default.blue('🧪 QA Mode:'), chalk_1.default.cyan(options.mode || 'targeted'));
     const framework = detectFramework();
-    console.log(chalk.gray(`Framework: ${frameworks[framework].name}`));
+    console.log(chalk_1.default.gray(`Framework: ${frameworks[framework].name}`));
     const config = frameworks[framework];
     switch (options.mode) {
         case 'targeted':
@@ -48,23 +54,23 @@ export async function qaCommand(options) {
             await runFullTests(config, options);
             break;
         default:
-            console.error(chalk.red(`Unknown mode: ${options.mode}`));
+            console.error(chalk_1.default.red(`Unknown mode: ${options.mode}`));
             process.exit(1);
     }
 }
 function detectFramework() {
-    const packageJsonPath = resolve('package.json');
-    if (!existsSync(packageJsonPath)) {
+    const packageJsonPath = (0, path_1.resolve)('package.json');
+    if (!(0, fs_1.existsSync)(packageJsonPath)) {
         return 'unknown';
     }
-    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    const packageJson = JSON.parse((0, fs_1.readFileSync)(packageJsonPath, 'utf-8'));
     const devDeps = { ...packageJson.devDependencies, ...packageJson.dependencies };
     // Check config files first
     for (const [fw, config] of Object.entries(frameworks)) {
         if (fw === 'unknown')
             continue;
         for (const configFile of config.configFiles) {
-            if (existsSync(configFile)) {
+            if ((0, fs_1.existsSync)(configFile)) {
                 return fw;
             }
         }
@@ -79,47 +85,47 @@ function detectFramework() {
     return 'unknown';
 }
 async function runTargetedTests(config, options) {
-    console.log(chalk.blue('🎯 Targeted Tests'));
-    console.log(chalk.gray('Analyzing git diff for changed files...'));
+    console.log(chalk_1.default.blue('🎯 Targeted Tests'));
+    console.log(chalk_1.default.gray('Analyzing git diff for changed files...'));
     try {
         const changedFiles = getChangedFiles();
-        console.log(chalk.gray(`Changed files: ${changedFiles.length}`));
+        console.log(chalk_1.default.gray(`Changed files: ${changedFiles.length}`));
         if (changedFiles.length === 0) {
-            console.log(chalk.yellow('No changes detected. Running smoke tests...'));
+            console.log(chalk_1.default.yellow('No changes detected. Running smoke tests...'));
             await runSmokeTests(config, options);
             return;
         }
         // Map source files to test files
         const testFiles = mapToTestFiles(changedFiles);
-        console.log(chalk.gray(`Related test files: ${testFiles.length}`));
+        console.log(chalk_1.default.gray(`Related test files: ${testFiles.length}`));
         if (testFiles.length === 0) {
-            console.log(chalk.yellow('No test files found for changes. Running smoke tests...'));
+            console.log(chalk_1.default.yellow('No test files found for changes. Running smoke tests...'));
             await runSmokeTests(config, options);
             return;
         }
         for (const file of changedFiles) {
-            console.log(chalk.gray(`  📄 ${file}`));
+            console.log(chalk_1.default.gray(`  📄 ${file}`));
         }
         for (const file of testFiles) {
-            console.log(chalk.cyan(`  🧪 ${file}`));
+            console.log(chalk_1.default.cyan(`  🧪 ${file}`));
         }
         // Run only the relevant tests
         const testPattern = testFiles.join(' ');
         await runTestCommand(config, testPattern, options);
     }
     catch (error) {
-        console.error(chalk.red('Error in targeted tests:'), error);
+        console.error(chalk_1.default.red('Error in targeted tests:'), error);
         process.exit(1);
     }
 }
 async function runSmokeTests(config, options) {
-    console.log(chalk.blue('💨 Smoke Tests'));
+    console.log(chalk_1.default.blue('💨 Smoke Tests'));
     const testFiles = findTestFiles();
     const smokeTests = testFiles.filter(f => f.includes('.smoke.') ||
         f.includes('.spec.') ||
         f.includes('.test.')).slice(0, 5); // Limit to 5 smoke tests
     if (smokeTests.length === 0) {
-        console.log(chalk.yellow('No smoke tests found. Running full test suite...'));
+        console.log(chalk_1.default.yellow('No smoke tests found. Running full test suite...'));
         await runFullTests(config, options);
         return;
     }
@@ -127,7 +133,7 @@ async function runSmokeTests(config, options) {
     await runTestCommand(config, testPattern, options);
 }
 async function runFullTests(config, options) {
-    console.log(chalk.blue('🔥 Full Test Suite'));
+    console.log(chalk_1.default.blue('🔥 Full Test Suite'));
     await runTestCommand(config, '', options);
 }
 async function runTestCommand(config, testPattern, options) {
@@ -138,20 +144,20 @@ async function runTestCommand(config, testPattern, options) {
     if (testPattern) {
         command += ` ${testPattern}`;
     }
-    console.log(chalk.gray(`Running: ${command}`));
+    console.log(chalk_1.default.gray(`Running: ${command}`));
     console.log('');
     try {
-        execSync(command, { stdio: 'inherit' });
-        console.log(chalk.green('✅ All tests passed'));
+        (0, child_process_1.execSync)(command, { stdio: 'inherit' });
+        console.log(chalk_1.default.green('✅ All tests passed'));
     }
     catch (error) {
-        console.error(chalk.red('❌ Tests failed'));
+        console.error(chalk_1.default.red('❌ Tests failed'));
         process.exit(1);
     }
 }
 function getChangedFiles() {
     try {
-        const output = execSync('git diff --name-only --diff-filter=ACM HEAD~1', { encoding: 'utf-8' });
+        const output = (0, child_process_1.execSync)('git diff --name-only --diff-filter=ACM HEAD~1', { encoding: 'utf-8' });
         return output.trim().split('\n').filter(f => f.length > 0);
     }
     catch (error) {
@@ -180,7 +186,7 @@ function mapToTestFiles(sourceFiles) {
             `test/${dir}${basename}.test${ext}`
         ];
         for (const testFile of potentialTests) {
-            if (existsSync(testFile)) {
+            if ((0, fs_1.existsSync)(testFile)) {
                 testFiles.push(testFile);
             }
         }
@@ -189,7 +195,7 @@ function mapToTestFiles(sourceFiles) {
 }
 function findTestFiles() {
     try {
-        const output = execSync('find . -type f -name "*.test.*" -o -name "*.spec.*" | head -20', { encoding: 'utf-8' });
+        const output = (0, child_process_1.execSync)('find . -type f -name "*.test.*" -o -name "*.spec.*" | head -20', { encoding: 'utf-8' });
         return output.trim().split('\n').filter(f => f.length > 0);
     }
     catch (error) {

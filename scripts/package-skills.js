@@ -1,61 +1,56 @@
 #!/usr/bin/env node
-import { execSync } from 'child_process';
-import { existsSync, mkdirSync, copyFileSync, writeFileSync, readFileSync } from 'fs';
+
+/**
+ * Package skills into .skill files
+ * Each .skill file is a zip containing the skill folder contents
+ */
+
+import { zip } from 'compressing';
+import { readdirSync, statSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
-const skills = ['browse', 'qa', 'ship', 'plan-ceo-review'];
-const distDir = './dist';
-const outputDir = './dist-skills';
+const skillsDir = join(process.cwd(), 'skills');
+const outputDir = join(process.cwd(), 'dist-skills');
 
+// Create output directory if needed
 if (!existsSync(outputDir)) {
   mkdirSync(outputDir, { recursive: true });
 }
 
-for (const skill of skills) {
-  console.log(`📦 Packaging ${skill}...`);
+async function packageSkill(skillName) {
+  const skillPath = join(skillsDir, skillName);
+  const outputPath = join(outputDir, `${skillName}.skill`);
   
-  const skillDir = join(distDir, skill);
-  const tempDir = join(outputDir, `.temp-${skill}`);
+  console.log(`Packaging ${skillName}...`);
   
-  // Create temp directory
-  execSync(`rm -rf ${tempDir} && mkdir -p ${tempDir}`, { stdio: 'inherit' });
-  
-  // Copy compiled files
-  execSync(`cp -r ${skillDir}/* ${tempDir}/`, { stdio: 'inherit' });
-  
-  // Copy skill.json
-  copyFileSync(
-    join('src', skill, 'skill.json'),
-    join(tempDir, 'skill.json')
-  );
-  
-  // Copy cli.js for standalone usage
-  copyFileSync(
-    join('src', skill, 'cli.js'),
-    join(tempDir, 'cli.js')
-  );
-  
-  // Create package.json for skill
-  const skillPackage = {
-    name: `@nko/superpowers-${skill}`,
-    version: '1.0.0',
-    type: 'module',
-    main: 'index.js',
-    bin: skill === 'browse' ? { [`superpowers-${skill}`]: 'cli.js' } : undefined
-  };
-  writeFileSync(
-    join(tempDir, 'package.json'),
-    JSON.stringify(skillPackage, null, 2)
-  );
-  
-  // Create tar.gz
-  const outputFile = join(outputDir, `${skill}.skill.tar.gz`);
-  execSync(`tar -czf ${outputFile} -C ${tempDir} .`, { stdio: 'inherit' });
-  
-  // Cleanup temp
-  execSync(`rm -rf ${tempDir}`, { stdio: 'inherit' });
-  
-  console.log(`✅ ${skill}.skill.tar.gz created`);
+  try {
+    await zip.compressDir(skillPath, outputPath);
+    const stats = statSync(outputPath);
+    console.log(`✓ ${skillName}.skill (${(stats.size / 1024).toFixed(1)}KB)`);
+    return true;
+  } catch (error) {
+    console.error(`✗ ${skillName}: ${error}`);
+    return false;
+  }
 }
 
-console.log('\n🎉 All skills packaged!');
+async function main() {
+  console.log('Packaging skills...\n');
+  
+  const skills = readdirSync(skillsDir).filter(name => {
+    const path = join(skillsDir, name);
+    return statSync(path).isDirectory();
+  });
+  
+  let success = 0;
+  for (const skill of skills) {
+    if (await packageSkill(skill)) {
+      success++;
+    }
+  }
+  
+  console.log(`\n${success}/${skills.length} skills packaged`);
+  console.log(`Output: ${outputDir}`);
+}
+
+main().catch(console.error);

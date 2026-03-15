@@ -1,41 +1,11 @@
 {
   "name": "plan-ceo-review",
   "version": "1.0.0",
-  "description": "Product strategy review with BAT framework (Brand, Attention, Trust)",
-  "author": "nKO",
+  "description": "Product strategy review using BAT framework (Brand, Attention, Trust)",
   "entry": "cli.js",
-  "command": "superpowers plan-ceo-review",
-  "arguments": [
-    {
-      "name": "feature",
-      "description": "Feature name and description (e.g., \"Feature Name: Description\")",
-      "required": true
-    }
-  ],
-  "options": [
-    {
-      "name": "brand",
-      "alias": "b",
-      "description": "Brand score (0-5)",
-      "type": "number"
-    },
-    {
-      "name": "attention",
-      "alias": "a",
-      "description": "Attention score (0-5)",
-      "type": "number"
-    },
-    {
-      "name": "trust",
-      "alias": "t",
-      "description": "Trust score (0-5)",
-      "type": "number"
-    },
-    {
-      "name": "auto-score",
-      "description": "Auto-calculate scores based on feature description",
-      "type": "boolean"
-    }
-  ],
-  "dependencies": {}
+  "bin": "superpowers ceo-review",
+  "requires": {
+    "bins": ["node", "npx"],
+    "npm": ["@nko/superpowers"]
+  }
 }

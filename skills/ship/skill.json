@@ -1,22 +1,14 @@
 {
   "name": "ship",
   "version": "1.0.0",
-  "description": "One-command release pipeline - versioning, changelog, git tags, GitHub releases",
-  "author": "nKO",
+  "description": "One-command release pipeline with versioning, changelog, and GitHub releases",
   "entry": "cli.js",
-  "command": "superpowers ship",
-  "options": [
-    {
-      "name": "version",
-      "alias": "v",
-      "description": "Version bump: patch, minor, major, or explicit semver"
-    },
-    {
-      "name": "dry-run",
-      "alias": "d",
-      "description": "Preview changes without applying",
-      "type": "boolean"
-    }
-  ],
-  "dependencies": {}
+  "bin": "superpowers ship",
+  "requires": {
+    "bins": ["node", "npx", "git"],
+    "npm": ["@nko/superpowers"]
+  },
+  "env": {
+    "GH_TOKEN": "GitHub personal access token with repo scope"
+  }
 }

@@ -1,55 +1,50 @@
+import type { GitCommit } from '../types/index.js';
 /**
- * Check if we're in a git repository
+ * Check if current directory is a git repository
  */
-export declare function isGitRepo(cwd?: string): boolean;
-/**
- * Get current git branch
- */
-export declare function getCurrentBranch(cwd?: string): string;
+export declare function isGitRepo(): boolean;
 /**
  * Check if working directory is clean
  */
-export declare function isWorkingDirectoryClean(cwd?: string): boolean;
+export declare function isWorkingDirectoryClean(): boolean;
 /**
- * Get the latest git tag
+ * Get current git branch
  */
-export declare function getLatestTag(cwd?: string): string | null;
+export declare function getCurrentBranch(): string;
 /**
- * Get list of files changed since a commit/tag
+ * Get the last tag
  */
-export declare function getChangedFiles(since?: string, cwd?: string): string[];
+export declare function getLastTag(): string | null;
 /**
- * Get conventional commits since a tag
+ * Get commits since last tag or from beginning
  */
-export declare function getCommitsSince(tag: string | null, cwd?: string): string[];
+export declare function getCommitsSinceLastTag(): GitCommit[];
+/**
+ * Get files changed in a git diff range
+ */
+export declare function getChangedFiles(range?: string): string[];
 /**
  * Create a git tag
  */
-export declare function createTag(version: string, message: string, cwd?: string): void;
+export declare function createTag(version: string): void;
 /**
- * Push commits and tags
+ * Push to remote
  */
-export declare function pushToRemote(cwd?: string): void;
+export declare function pushToRemote(branch?: string): void;
 /**
- * Create a commit
+ * Commit all changes
  */
-export declare function createCommit(message: string, files?: string[], cwd?: string): void;
+export declare function commitAll(message: string): void;
 /**
- * Run tests via npm/yarn/pnpm
+ * Get repository owner/repo from git remote
  */
-export declare function runTests(command: string, cwd?: string): Promise<{
-    success: boolean;
-    output: string;
-}>;
+export declare function getRepoFromRemote(): string | null;
 /**
- * Get repository remote URL
+ * Detect test framework
  */
-export declare function getRemoteUrl(cwd?: string): string | null;
+export declare function detectTestFramework(): 'vitest' | 'jest' | 'mocha' | null;
 /**
- * Parse owner/repo from git remote URL
+ * Map source files to test files
  */
-export declare function parseRepoFromRemote(url: string): {
-    owner: string;
-    repo: string;
-} | null;
+export declare function mapToTestFiles(changedFiles: string[]): string[];
 //# sourceMappingURL=git.d.ts.map

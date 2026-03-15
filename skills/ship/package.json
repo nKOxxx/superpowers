@@ -1,0 +1,20 @@
+{
+  "name": "ship",
+  "version": "1.0.0",
+  "description": "One-command release pipeline",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "echo 'Ship skill tests not implemented yet'",
+    "package": "tar -czf ../../dist-skills/ship.skill.tar.gz skill.json dist/ package.json"
+  },
+  "dependencies": {
+    "@nko/superpowers-shared": "file:../../shared"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  }
+}

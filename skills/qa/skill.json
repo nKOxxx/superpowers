@@ -1,13 +1,11 @@
 {
   "name": "qa",
   "version": "1.0.0",
-  "description": "Systematic testing as QA Lead with auto-detect framework support",
-  "entry": "dist/index.js",
-  "bin": "qa",
-  "capabilities": [
-    "testing",
-    "qa",
-    "coverage",
-    "test-framework"
-  ]
+  "description": "Systematic testing as QA Lead with targeted, smoke, and full modes",
+  "entry": "cli.js",
+  "bin": "superpowers qa",
+  "requires": {
+    "bins": ["node", "npx", "git"],
+    "npm": ["@nko/superpowers"]
+  }
 }

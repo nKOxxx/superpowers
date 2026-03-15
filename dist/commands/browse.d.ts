@@ -1,3 +1,3 @@
 import { Command } from 'commander';
-export declare function browseCommand(program: Command): void;
+export declare const browseCommand: Command;
 //# sourceMappingURL=browse.d.ts.map
