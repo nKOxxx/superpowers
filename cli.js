@@ -51,7 +51,7 @@ const program = new Command();
 program
   .name('superpowers')
   .description('OpenClaw superpowers - Browser automation, QA, release pipeline, and product strategy')
-  .version('1.0.0');
+  .version('1.0.1');
 
 // Browse command
 program
@@ -61,37 +61,30 @@ program
   .option('-w, --width <pixels>', 'Custom viewport width')
   .option('-h, --height <pixels>', 'Custom viewport height')
   .option('-f, --full-page', 'Capture full page screenshot')
-  .option('-o, --output <dir>', 'Output directory', './screenshots')
+  .option('-e, --element <selector>', 'Capture specific element')
+  .option('-o, --output <path>', 'Output file path')
   .option('--wait-for <selector>', 'Wait for element before screenshot')
-  .option('-a, --actions <actions>', 'Comma-separated actions (click:sel,wait:ms,scroll,hover:sel,screenshot)')
-  .option('-t, --timeout <ms>', 'Navigation timeout', '30000')
+  .option('-a, --actions <json>', 'Action sequence as JSON array')
+  .option('-t, --timeout <ms>', 'Timeout in milliseconds', '30000')
+  .option('--base64', 'Output as base64')
   .action(async (url, options) => {
-    const { BrowserSkill } = require('./dist/browse/index.js');
-    const spinner = createSpinner('Launching browser...').start();
-    const skill = new BrowserSkill();
-
+    const { browseCommand } = await import('./browse/dist/index.js');
+    
     try {
-      let viewport = options.viewport;
-      if (options.width && options.height) {
-        viewport = { width: parseInt(options.width), height: parseInt(options.height) };
-      }
-
-      spinner.text = 'Capturing screenshot...';
-      const screenshots = await skill.screenshot({
-        url,
-        viewport,
+      await browseCommand(url, {
+        viewport: options.viewport,
+        width: options.width,
+        height: options.height,
         fullPage: options.fullPage,
+        selector: options.element,
         output: options.output,
         waitFor: options.waitFor,
         actions: options.actions,
-        timeout: parseInt(options.timeout)
+        timeout: options.timeout,
+        base64: options.base64
       });
-
-      await skill.close();
-      spinner.succeed(`Screenshot saved: ${screenshots[0]}`);
     } catch (error) {
-      await skill.close();
-      spinner.fail(error.message);
+      console.error('Error:', error.message);
       process.exit(1);
     }
   });
@@ -101,32 +94,23 @@ program
   .command('qa')
   .description('Run tests as QA Lead')
   .option('-m, --mode <mode>', 'Test mode (targeted, smoke, full)', 'targeted')
-  .option('-d, --diff <range>', 'Git diff range for targeted mode', 'HEAD~1')
   .option('-c, --coverage', 'Enable coverage reporting')
-  .option('-p, --parallel', 'Run tests in parallel')
+  .option('-f, --framework <framework>', 'Test framework (vitest, jest, mocha)')
+  .option('--ci', 'CI mode (non-interactive)')
+  .option('--watch', 'Watch mode')
   .action(async (options) => {
-    const { QASkill } = require('./dist/qa/index.js');
-    const spinner = createSpinner('Detecting test framework...').start();
-    const skill = new QASkill();
-
+    const { qaCommand } = await import('./qa/dist/index.js');
+    
     try {
-      const framework = await skill.detectFramework();
-      spinner.text = `Running ${options.mode} tests with ${framework}...`;
-
-      const { results, summary } = await skill.run({
+      await qaCommand({
         mode: options.mode,
-        diff: options.diff,
         coverage: options.coverage,
-        parallel: options.parallel
+        framework: options.framework,
+        ci: options.ci,
+        watch: options.watch
       });
-
-      spinner.stop();
-      console.log(summary);
-
-      const failed = results.filter(r => r.status === 'failed').length;
-      process.exit(failed > 0 ? 1 : 0);
     } catch (error) {
-      spinner.fail(error.message);
+      console.error('Error:', error.message);
       process.exit(1);
     }
   });
@@ -136,72 +120,53 @@ program
   .command('ship')
   .description('Release a new version')
   .requiredOption('--version <type>', 'Version bump (patch, minor, major, or explicit)')
-  .option('-r, --repo <owner/repo>', 'Repository for GitHub release')
   .option('-d, --dry-run', 'Preview changes without executing')
-  .option('-s, --skip-tests', 'Skip test run before release')
-  .option('-n, --notes <text>', 'Custom release notes')
-  .option('--prerelease', 'Mark as prerelease')
+  .option('--no-changelog', 'Skip changelog generation')
+  .option('--no-tag', 'Skip git tag creation')
+  .option('--no-release', 'Skip GitHub release creation')
+  .option('-r, --repo <repo>', 'GitHub repository (owner/repo)')
   .action(async (options) => {
-    const { ShipSkill } = require('./dist/ship/index.js');
-    const spinner = createSpinner('Preparing release...').start();
-    const skill = new ShipSkill();
-
+    const { shipCommand } = await import('./ship/dist/index.js');
+    
     try {
-      spinner.text = 'Validating repository...';
-
-      const result = await skill.ship({
+      await shipCommand({
         version: options.version,
-        repo: options.repo,
         dryRun: options.dryRun,
-        skipTests: options.skipTests,
-        notes: options.notes,
-        prerelease: options.prerelease
+        changelog: options.changelog,
+        tag: options.tag,
+        release: options.release,
+        repo: options.repo
       });
-
-      spinner.stop();
-
-      if (options.dryRun) {
-        console.log('\nDRY RUN - No changes made\n');
-      } else {
-        console.log(`\n✓ Released ${result.tag}\n`);
-        console.log(`Commits: ${result.commits.length}`);
-        console.log(`Pushed: ${result.pushed ? 'Yes' : 'No'}`);
-        console.log(`GitHub Release: ${result.released ? 'Yes' : 'No'}`);
-      }
     } catch (error) {
-      spinner.fail(error.message);
+      console.error('Error:', error.message);
       process.exit(1);
     }
   });
 
 // CEO Review command
 program
-  .command('ceo-review')
+  .command('plan-ceo-review <feature>')
   .description('Product strategy review using BAT framework')
-  .requiredOption('-f, --feature <name>', 'Feature name')
-  .option('-g, --goal <text>', 'Business goal')
-  .option('-a, --audience <text>', 'Target audience')
-  .option('-c, --competition <text>', 'Competitors')
-  .option('-t, --trust <text>', 'Trust assets')
-  .option('--brand <score>', 'Brand score (0-5)', parseFloat)
-  .option('--attention <score>', 'Attention score (0-5)', parseFloat)
-  .option('--trust-score <score>', 'Trust score (0-5)', parseFloat)
-  .action(async (options) => {
-    const { PlanCEOReviewSkill } = require('./dist/plan-ceo-review/index.js');
-    const skill = new PlanCEOReviewSkill();
-
-    const result = skill.review({
-      feature: options.feature,
-      goal: options.goal,
-      audience: options.audience,
-      competition: options.competition,
-      trust: options.trust,
-      brand: options.brand,
-      attention: options.attention,
-      trustScore: options.trustScore
-    });
-
-    console.log(skill.formatOutput(result));
+  .option('-b, --brand <score>', 'Brand score (0-5)', '0')
+  .option('-a, --attention <score>', 'Attention score (0-5)', '0')
+  .option('-t, --trust <score>', 'Trust score (0-5)', '0')
+  .option('--json', 'Output as JSON')
+  .option('--auto', 'Auto-calculate scores')
+  .action(async (feature, options) => {
+    const { reviewCommand } = await import('./plan-ceo-review/dist/index.js');
+    
+    try {
+      await reviewCommand(feature, {
+        brand: parseFloat(options.brand) || 0,
+        attention: parseFloat(options.attention) || 0,
+        trust: parseFloat(options.trust) || 0,
+        json: options.json,
+        auto: options.auto
+      });
+    } catch (error) {
+      console.error('Error:', error.message);
+      process.exit(1);
+    }
   });
 
 program.parse();
