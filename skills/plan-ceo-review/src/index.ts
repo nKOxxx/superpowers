@@ -1,337 +1,193 @@
-/**
- * Plan CEO Review skill - BAT framework for product decisions
- * 
- * BAT Framework: Brand, Attention, Trust
- * 10-Star Methodology: Minimum 2/3 criteria must score 3+ to build
- */
-import { Logger } from '@nko/superpowers-shared';
+import { 
+  CeoReviewOptions, 
+  CeoReviewResult, 
+  BatScores, 
+  Score, 
+  Recommendation,
+  BAT_CRITERIA,
+  THRESHOLDS,
+  RECOMMENDATION_LABELS
+} from './types.js';
 
-const logger = new Logger({ prefix: 'plan-ceo-review' });
+export * from './types.js';
 
-export type BATScore = 0 | 1 | 2 | 3 | 4 | 5;
-export type Recommendation = 'build' | 'consider' | 'dont-build';
-
-export interface PlanCEOReviewOptions {
-  brand?: string;
-  attention?: string;
-  trust?: string;
-  json?: boolean;
+function validateScore(score: number): Score {
+  if (score < 0) return 0;
+  if (score > 5) return 5;
+  return Math.round(score) as Score;
 }
 
-export interface BATAnalysis {
-  feature: string;
-  scores: {
-    brand: BATScore;
-    attention: BATScore;
-    trust: BATScore;
-  };
-  total: number;
-  methodology: {
-    criteriaMet: number;
-    passesThreshold: boolean;
-  };
-  recommendation: Recommendation;
-  reasoning: string[];
-  nextSteps: string[];
+function getRecommendation(totalScore: number): Recommendation {
+  if (totalScore >= THRESHOLDS.build) return 'build';
+  if (totalScore >= THRESHOLDS.consider) return 'consider';
+  return 'dont-build';
 }
 
-function parseArgs(): { feature: string; options: PlanCEOReviewOptions } {
-  const args = process.argv.slice(2);
-  const feature = args[0] || '';
-  const options: PlanCEOReviewOptions = {};
-
-  for (let i = 1; i < args.length; i++) {
-    const arg = args[i];
-    switch (arg) {
-      case '--brand':
-      case '-b':
-        options.brand = args[++i];
-        break;
-      case '--attention':
-      case '-a':
-        options.attention = args[++i];
-        break;
-      case '--trust':
-      case '-t':
-        options.trust = args[++i];
-        break;
-      case '--json':
-        options.json = true;
-        break;
-    }
-  }
-
-  return { feature, options };
-}
-
-const BAT_CRITERIA = {
-  brand: {
-    name: 'Brand',
-    description: 'Does this feature strengthen our brand identity and positioning?',
-    scores: {
-      0: 'Actively harms brand',
-      1: 'Neutral or unclear brand impact',
-      2: 'Slight brand alignment',
-      3: 'Moderate brand enhancement',
-      4: 'Strong brand reinforcement',
-      5: 'Iconic brand-defining feature',
-    },
-  },
-  attention: {
-    name: 'Attention',
-    description: 'Will this capture and retain user attention effectively?',
-    scores: {
-      0: 'No user interest expected',
-      1: 'Minimal attention capture',
-      2: 'Some interest from niche users',
-      3: 'Moderate user engagement',
-      4: 'High attention and engagement',
-      5: 'Viral/growth-driving potential',
-    },
-  },
-  trust: {
-    name: 'Trust',
-    description: 'Does this build or maintain user trust in our product?',
-    scores: {
-      0: 'Erodes user trust',
-      1: 'Neutral trust impact',
-      2: 'Minor trust improvement',
-      3: 'Moderate trust building',
-      4: 'Strong trust enhancement',
-      5: 'Trust-building cornerstone',
-    },
-  },
-};
-
-function parseScore(value: string | undefined, defaultValue: BATScore = 0): BATScore {
-  if (!value) return defaultValue;
-  const num = parseInt(value, 10);
-  if (isNaN(num) || num < 0 || num > 5) {
-    return defaultValue;
-  }
-  return num as BATScore;
-}
-
-function generateRecommendation(analysis: BATAnalysis): { recommendation: Recommendation; reasoning: string[] } {
-  const { scores, total, methodology } = analysis;
-  const reasoning: string[] = [];
-  let recommendation: Recommendation;
-
-  const highScores = [scores.brand, scores.attention, scores.trust].filter(s => s >= 3).length;
-
-  if (methodology.passesThreshold) {
-    if (total >= 12) {
-      recommendation = 'build';
-      reasoning.push('Strong BAT scores across multiple dimensions (10-star threshold met)');
-    } else if (total >= 8) {
-      recommendation = 'build';
-      reasoning.push('Good BAT scores with clear value proposition');
-    } else {
-      recommendation = 'consider';
-      reasoning.push('Meets minimum threshold but scores are modest');
-    }
-  } else {
-    if (total <= 3) {
-      recommendation = 'dont-build';
-      reasoning.push('Low scores across all BAT dimensions');
-    } else {
-      recommendation = 'consider';
-      reasoning.push('Below 10-star threshold but some potential value identified');
-    }
-  }
-
-  const lowestScore = Math.min(scores.brand, scores.attention, scores.trust);
-  const lowestDimension = Object.entries(scores).find(([, v]) => v === lowestScore)?.[0];
+function generateReasoning(feature: string, scores: BatScores, recommendation: Recommendation): string {
+  const parts: string[] = [];
   
-  if (lowestScore <= 1 && lowestDimension) {
-    reasoning.push(`Warning: Low ${lowestDimension} score (${lowestScore}) may be a risk factor`);
+  // Brand analysis
+  if (scores.brand >= 4) {
+    parts.push('Strong brand alignment - this feature reinforces our identity.');
+  } else if (scores.brand <= 2) {
+    parts.push('Weak brand fit - may confuse our market positioning.');
   }
-
-  return { recommendation, reasoning };
+  
+  // Attention analysis
+  if (scores.attention >= 4) {
+    parts.push('High attention potential - users will notice and engage.');
+  } else if (scores.attention <= 2) {
+    parts.push('Low attention value - may not capture user interest.');
+  }
+  
+  // Trust analysis
+  if (scores.trust >= 4) {
+    parts.push('Builds trust - delivers reliable, quality experience.');
+  } else if (scores.trust <= 2) {
+    parts.push('Trust concerns - may raise reliability or feasibility questions.');
+  }
+  
+  if (parts.length === 0) {
+    parts.push('Mixed signals across all dimensions.');
+  }
+  
+  return parts.join(' ');
 }
 
-function generateNextSteps(analysis: BATAnalysis): string[] {
-  const steps: string[] = [];
-  const { scores, recommendation } = analysis;
-
+function generateNextSteps(recommendation: Recommendation, feature: string): string[] {
   switch (recommendation) {
     case 'build':
-      steps.push('1. Create detailed product spec with success metrics');
-      steps.push('2. Define MVP scope and timeline');
-      steps.push('3. Allocate resources and assign team');
-      steps.push('4. Set up feedback loops for iteration');
-      break;
-
+      return [
+        'Prioritize in next sprint/quarter',
+        'Assign dedicated team/resources',
+        'Define MVP scope and success metrics',
+        'Create detailed product requirements',
+        'Schedule design sprint if needed'
+      ];
     case 'consider':
-      steps.push('1. Conduct user research to validate assumptions');
-      steps.push('2. Prototype and test with target users');
-      steps.push('3. Re-evaluate BAT scores after research');
-      if (scores.brand < 3) steps.push('4. Explore brand alignment opportunities');
-      if (scores.attention < 3) steps.push('4. Investigate attention-capturing mechanisms');
-      if (scores.trust < 3) steps.push('4. Assess trust-building features');
-      break;
-
+      return [
+        'Conduct user research to validate assumptions',
+        'Build a prototype or proof of concept',
+        'Analyze competitive landscape more deeply',
+        'Gather more data on technical feasibility',
+        'Revisit scoring after additional insights'
+      ];
     case 'dont-build':
-      steps.push('1. Document rationale for future reference');
-      steps.push('2. Identify alternative approaches to solve the problem');
-      steps.push('3. Archive idea for potential future re-evaluation');
-      break;
+      return [
+        'Document decision and reasoning',
+        'Identify what would improve the scores',
+        'Consider if smaller scoped version works',
+        'Monitor market/competitor for changes',
+        'Revisit in 3-6 months if context changes'
+      ];
   }
-
-  return steps;
 }
 
-function analyzeFeature(feature: string, options: PlanCEOReviewOptions): BATAnalysis {
-  const scores = {
-    brand: parseScore(options.brand),
-    attention: parseScore(options.attention),
-    trust: parseScore(options.trust),
-  };
-
-  const total = scores.brand + scores.attention + scores.trust;
-  const criteriaMet = [scores.brand, scores.attention, scores.trust].filter(s => s >= 3).length;
-  const passesThreshold = criteriaMet >= 2;
-
-  const analysis: BATAnalysis = {
-    feature,
-    scores,
-    total,
-    methodology: {
-      criteriaMet,
-      passesThreshold,
-    },
-    recommendation: 'dont-build',
-    reasoning: [],
-    nextSteps: [],
-  };
-
-  const { recommendation, reasoning } = generateRecommendation(analysis);
-  analysis.recommendation = recommendation;
-  analysis.reasoning = reasoning;
-  analysis.nextSteps = generateNextSteps(analysis);
-
-  return analysis;
-}
-
-function renderStars(score: BATScore): string {
-  return '★'.repeat(score) + '☆'.repeat(5 - score);
-}
-
-function renderBATBar(score: BATScore, maxWidth: number = 30): string {
-  const filled = Math.round((score / 5) * maxWidth);
-  const empty = maxWidth - filled;
-  const bar = '█'.repeat(filled) + '░'.repeat(empty);
-  return `[${bar}] ${score}/5`;
-}
-
-function formatOutput(analysis: BATAnalysis, json: boolean): string {
-  if (json) {
-    return JSON.stringify(analysis, null, 2);
-  }
-
-  const { feature, scores, total, methodology, recommendation, reasoning, nextSteps } = analysis;
-
-  let output = '\n';
-  output += '╔════════════════════════════════════════════════════════════════╗\n';
-  output += '║              BAT FRAMEWORK - PRODUCT DECISION                  ║\n';
-  output += '╚════════════════════════════════════════════════════════════════╝\n\n';
-
-  output += `Feature: ${feature}\n\n`;
-
-  output += '┌────────────────────────────────────────────────────────────────┐\n';
-  output += '│  BAT SCORING (0-5 each)                                        │\n';
-  output += '├────────────────────────────────────────────────────────────────┤\n';
-
-  Object.entries(scores).forEach(([dimension, score]) => {
-    const criteria = BAT_CRITERIA[dimension as keyof typeof BAT_CRITERIA];
-    output += `│  ${criteria.name.padEnd(10)} ${renderStars(score as BATScore)} ${renderBATBar(score as BATScore, 25)}  │\n`;
-  });
-
-  output += '├────────────────────────────────────────────────────────────────┤\n';
-  output += `│  TOTAL SCORE: ${total}/15 ${' '.repeat(41)}│\n`;
-  output += '└────────────────────────────────────────────────────────────────┘\n\n';
-
-  output += '┌────────────────────────────────────────────────────────────────┐\n';
-  output += '│  10-STAR METHODOLOGY                                           │\n';
-  output += '├────────────────────────────────────────────────────────────────┤\n';
-  output += `│  Criteria scoring 3+: ${methodology.criteriaMet}/3                                    │\n`;
-  output += `│  Threshold met (2/3 min): ${methodology.passesThreshold ? '✓ YES' : '✗ NO'}                               │\n`;
-  output += '└────────────────────────────────────────────────────────────────┘\n\n';
-
-  const recLabels: Record<Recommendation, string> = {
-    'build': '🟢 BUILD',
-    'consider': '🟡 CONSIDER',
-    'dont-build': "🔴 DON'T BUILD",
-  };
-
-  output += '┌────────────────────────────────────────────────────────────────┐\n';
-  output += `│  RECOMMENDATION: ${recLabels[recommendation].padEnd(46)}│\n`;
-  output += '├────────────────────────────────────────────────────────────────┤\n';
-  reasoning.forEach(r => {
-    output += `│  • ${r.padEnd(62)}│\n`;
-  });
-  output += '└────────────────────────────────────────────────────────────────┘\n\n';
-
-  output += '┌────────────────────────────────────────────────────────────────┐\n';
-  output += '│  NEXT STEPS                                                    │\n';
-  output += '├────────────────────────────────────────────────────────────────┤\n';
-  nextSteps.forEach(step => {
-    output += `│  ${step.padEnd(62)}│\n`;
-  });
-  output += '└────────────────────────────────────────────────────────────────┘\n\n';
-
-  output += '┌────────────────────────────────────────────────────────────────┐\n';
-  output += '│  SCORING CRITERIA REFERENCE                                    │\n';
-  output += '├────────────────────────────────────────────────────────────────┤\n';
-  Object.entries(BAT_CRITERIA).forEach(([key, criteria]) => {
-    output += `│  ${criteria.name.toUpperCase().padEnd(62)}│\n`;
-    output += `│  ${criteria.description.slice(0, 62).padEnd(62)}│\n`;
-    output += `│  Your score: ${scores[key as keyof typeof scores]}/5 - ${criteria.scores[scores[key as keyof typeof scores] as BATScore].slice(0, 43).padEnd(43)}│\n`;
-    output += '├────────────────────────────────────────────────────────────────┤\n';
-  });
-  output = output.slice(0, -68) + '└────────────────────────────────────────────────────────────────┘\n';
-
-  return output;
-}
-
-export async function main(): Promise<void> {
-  const { feature, options } = parseArgs();
+function autoCalculateScores(feature: string, context?: string): BatScores {
+  // This is a simple heuristic-based auto-scoring
+  // In a real implementation, this could use an LLM for more sophisticated analysis
+  const feature_lower = feature.toLowerCase();
+  const context_lower = (context || '').toLowerCase();
   
-  if (!feature) {
-    console.error('Error: Feature description is required');
-    console.error('Usage: superpowers plan-ceo-review "Feature: Description"');
-    process.exit(1);
+  const scores: BatScores = {
+    brand: 3 as Score,
+    attention: 3 as Score,
+    trust: 3 as Score
+  };
+  
+  // Brand indicators
+  const brandKeywords = ['brand', 'identity', 'premium', 'exclusive', 'signature'];
+  const brandBoost = brandKeywords.some(k => feature_lower.includes(k) || context_lower.includes(k));
+  if (brandBoost) scores.brand = Math.min(5, scores.brand + 1) as Score;
+  
+  // Attention indicators
+  const attentionKeywords = ['viral', 'share', 'notify', 'ai', 'smart', 'automatic'];
+  const attentionBoost = attentionKeywords.some(k => feature_lower.includes(k) || context_lower.includes(k));
+  if (attentionBoost) scores.attention = Math.min(5, scores.attention + 1) as Score;
+  
+  // Trust indicators
+  const trustKeywords = ['secure', 'verified', 'backup', 'sync', 'export'];
+  const trustBoost = trustKeywords.some(k => feature_lower.includes(k) || context_lower.includes(k));
+  if (trustBoost) scores.trust = Math.min(5, scores.trust + 1) as Score;
+  
+  // Negative indicators
+  const negativeKeywords = ['experimental', 'beta', 'maybe', 'unclear'];
+  const hasNegative = negativeKeywords.some(k => feature_lower.includes(k) || context_lower.includes(k));
+  if (hasNegative) {
+    scores.trust = Math.max(0, scores.trust - 1) as Score;
   }
-
-  logger.info(`Analyzing feature: ${feature}`);
-
-  try {
-    const analysis = analyzeFeature(feature, options);
-    const output = formatOutput(analysis, options.json || false);
-
-    console.log(output);
-
-    switch (analysis.recommendation) {
-      case 'build':
-        console.log('Recommendation: BUILD');
-        process.exit(0);
-        break;
-      case 'consider':
-        console.log('\n⚠️  Recommendation: CONSIDER - Further research recommended');
-        process.exit(0);
-        break;
-      case 'dont-build':
-        console.log('\n🛑 Recommendation: DO NOT BUILD');
-        process.exit(1);
-        break;
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(`Analysis failed: ${message}`);
-    process.exit(1);
-  }
+  
+  return scores;
 }
 
-if (require.main === module) {
-  main();
+export function review(options: CeoReviewOptions): CeoReviewResult {
+  let scores: BatScores;
+  
+  if (options.autoScore) {
+    scores = autoCalculateScores(options.feature, options.context);
+  } else if (options.scores) {
+    scores = {
+      brand: validateScore(options.scores.brand),
+      attention: validateScore(options.scores.attention),
+      trust: validateScore(options.scores.trust)
+    };
+  } else {
+    throw new Error('Either scores or autoScore must be provided');
+  }
+  
+  const totalScore = scores.brand + scores.attention + scores.trust;
+  const maxScore = 15;
+  const percentage = Math.round((totalScore / maxScore) * 100);
+  const recommendation = getRecommendation(totalScore);
+  
+  return {
+    feature: options.feature,
+    scores,
+    totalScore,
+    maxScore,
+    percentage,
+    recommendation,
+    reasoning: generateReasoning(options.feature, scores, recommendation),
+    nextSteps: generateNextSteps(recommendation, options.feature),
+    thresholds: THRESHOLDS
+  };
+}
+
+export function formatReview(result: CeoReviewResult): string {
+  const lines: string[] = [];
+  
+  lines.push('╔══════════════════════════════════════════════════════════╗');
+  lines.push('║           📋 CEO REVIEW - BAT FRAMEWORK                  ║');
+  lines.push('╠══════════════════════════════════════════════════════════╣');
+  lines.push(`║ Feature: ${result.feature.substring(0, 48).padEnd(48)} ║`);
+  lines.push('╠══════════════════════════════════════════════════════════╣');
+  lines.push('║  🎯 SCORING (0-5 each)                                   ║');
+  lines.push(`║     Brand:     ${'★'.repeat(result.scores.brand).padEnd(5)}${'☆'.repeat(5 - result.scores.brand)}  (${result.scores.brand}/5)        ║`);
+  lines.push(`║     Attention: ${'★'.repeat(result.scores.attention).padEnd(5)}${'☆'.repeat(5 - result.scores.attention)}  (${result.scores.attention}/5)        ║`);
+  lines.push(`║     Trust:     ${'★'.repeat(result.scores.trust).padEnd(5)}${'☆'.repeat(5 - result.scores.trust)}  (${result.scores.trust}/5)        ║`);
+  lines.push('╠══════════════════════════════════════════════════════════╣');
+  lines.push(`║  📊 TOTAL: ${result.totalScore}/${result.maxScore} stars (${result.percentage}%)                      ║`);
+  lines.push('╠══════════════════════════════════════════════════════════╣');
+  lines.push('║  🚦 RECOMMENDATION                                       ║');
+  
+  const recLabel = RECOMMENDATION_LABELS[result.recommendation];
+  const recColor = result.recommendation === 'build' ? '✅' : 
+                   result.recommendation === 'consider' ? '⚠️ ' : '❌';
+  lines.push(`║     ${recColor} ${recLabel.padEnd(50)} ║`);
+  lines.push('╠══════════════════════════════════════════════════════════╣');
+  lines.push('║  💡 ANALYSIS                                             ║');
+  
+  const reasoningLines = result.reasoning.match(/.{1,54}/g) || [result.reasoning];
+  reasoningLines.forEach(line => {
+    lines.push(`║     ${line.padEnd(52)} ║`);
+  });
+  
+  lines.push('╠══════════════════════════════════════════════════════════╣');
+  lines.push('║  📋 NEXT STEPS                                           ║');
+  result.nextSteps.forEach((step, i) => {
+    lines.push(`║     ${i + 1}. ${step.substring(0, 50).padEnd(50)} ║`);
+  });
+  lines.push('╚══════════════════════════════════════════════════════════╝');
+  
+  return lines.join('\n');
 }
