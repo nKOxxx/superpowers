@@ -2,40 +2,33 @@
   "name": "@nko/superpowers",
   "version": "1.0.0",
   "description": "OpenClaw Superpowers - AI-powered workflows for development, testing, and product decisions",
-  "main": "dist/index.js",
-  "bin": {
-    "superpowers": "./cli.js"
-  },
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "package": "npm run build && npm run package:skills",
-    "package:skills": "bash package-skills.sh",
-    "clean": "rm -rf dist dist-skills",
+    "package:skills": "cd browse && npm run package && cd ../qa && npm run package && cd ../ship && npm run package && cd ../plan-ceo-review && npm run package",
     "test": "vitest"
   },
   "keywords": [
     "openclaw",
     "skills",
-    "browser",
+    "ai",
+    "automation",
     "testing",
-    "release",
-    "product-strategy"
+    "devops"
   ],
-  "author": "Ares",
+  "author": "nKOxxx",
   "license": "MIT",
-  "dependencies": {
-    "commander": "^11.1.0",
-    "chalk": "^4.1.2",
-    "playwright": "^1.40.0",
-    "semver": "^7.5.4"
-  },
   "devDependencies": {
     "@types/node": "^20.10.0",
-    "@types/semver": "^7.5.6",
+    "@types/semver": "^7.7.1",
     "typescript": "^5.3.3",
     "vitest": "^1.0.0"
   },
-  "engines": {
-    "node": ">=18.0.0"
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "playwright": "^1.40.0",
+    "semver": "^7.5.4"
   }
 }

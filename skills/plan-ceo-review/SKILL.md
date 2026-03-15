@@ -59,9 +59,34 @@ superpowers ceo-review \
 - `--audience=<text>` - Target audience
 - `--competition=<text>` - Competitors
 - `--trust=<text>` - Trust assets you have
-- `--brand=<score>` - Manual brand score (0-5)
-- `--attention=<score>` - Manual attention score (0-5)
-- `--trust-score=<score>` - Manual trust score (0-5)
+
+## Output Example
+
+```
+══════════════════════════════════════════════════
+AI Code Review
+══════════════════════════════════════════════════
+
+Brand:     ⭐⭐⭐⭐⭐ (5/5)
+Attention: ⭐⭐⭐⭐○ (4/5)
+Trust:     ⭐⭐⭐○○ (3/5)
+
+Total: 12/15 ⭐
+
+Recommendation: BUILD ✅
+
+Rationale:
+  • Strong brand differentiation potential
+  • High user engagement potential
+  • Direct revenue impact should be modeled
+
+Next Steps:
+  1. Define success metrics (DAU, engagement time)
+  2. Coordinate with marketing for launch narrative
+  3. Set 30-day post-launch review date
+
+══════════════════════════════════════════════════
+```
 
 ## Scoring Guidelines
 

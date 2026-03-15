@@ -23,4 +23,3 @@ export declare class ShipSkill {
     release(options: ShipOptions): Promise<ShipResult>;
     private getRepoSlug;
 }
-//# sourceMappingURL=index.d.ts.map

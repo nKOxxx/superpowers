@@ -76,10 +76,28 @@ Best for: Release validation, nightly builds
 - Git repository
 - npm test command configured
 
-## Test File Mapping
+## Output Example
 
-The skill automatically maps source files to test files:
+```
+══════════════════════════════════════════════════
+QA Mode: TARGETED
+══════════════════════════════════════════════════
 
-- `src/**/*.ts` → `tests/**/*.test.ts`
-- `src/components/*` → tests all components
-- `src/api/*` → tests API endpoints
+Files Changed: 3
+  - src/auth/login.ts
+  - src/api/users.ts
+  - src/components/Button.tsx
+
+Tests Selected: 2
+  - tests/auth/login.test.ts
+  - tests/components/Button.test.tsx
+
+Results:
+  ✓ tests/auth/login.test.ts (245ms)
+  ✓ tests/components/Button.test.tsx (112ms)
+
+──────────────────────────────────────────────────
+Passed: 2/2 (100%)
+Duration: 1.2s
+Status: PASSED
+```

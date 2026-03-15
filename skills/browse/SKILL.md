@@ -58,7 +58,6 @@ superpowers browse https://example.com --actions="click:.btn,wait:1000,screensho
 - `--wait-for=<selector>` - Wait for element before screenshot
 - `--actions=<actions>` - Comma-separated actions
 - `--timeout=<ms>` - Navigation timeout. Default: 30000
-- `--base64` - Output base64 for Telegram integration
 
 ## Viewport Presets
 
@@ -78,6 +77,11 @@ Actions are comma-separated with colon-separated parameters:
 - `screenshot` - Take screenshot at this point
 
 Example: `click:.menu,wait:500,hover:.dropdown-item,screenshot`
+
+## Output
+
+Screenshots saved to output directory with filenames:
+`<hostname>_<viewport>_<timestamp>.png`
 
 ## Requirements
 

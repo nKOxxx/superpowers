@@ -22,4 +22,3 @@ export declare class QASkill {
     private buildCommand;
     runTests(options: QAOptions): Promise<QAResult>;
 }
-//# sourceMappingURL=index.d.ts.map

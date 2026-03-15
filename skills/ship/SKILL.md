@@ -19,6 +19,7 @@ One-command release: version bump, changelog generation, git tag, push, and GitH
 - Conventional commit changelog generation
 - Git tag creation and push
 - GitHub release creation
+- Telegram notifications
 - Dry-run preview mode
 
 ## Usage

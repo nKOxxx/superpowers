@@ -6,4 +6,3 @@ interface QAOptions {
 }
 export declare function qaCommand(options: QAOptions): Promise<void>;
 export {};
-//# sourceMappingURL=qa.d.ts.map

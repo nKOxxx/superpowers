@@ -26,4 +26,3 @@ export declare class BrowseSkill {
     }>;
     private executeActions;
 }
-//# sourceMappingURL=index.d.ts.map
