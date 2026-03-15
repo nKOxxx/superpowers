@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 
-const { program } = require('commander');
-const chalk = require('chalk');
-
-const browse = require('./dist/browse');
-const qa = require('./dist/qa');
-const ship = require('./dist/ship');
-const planCeoReview = require('./dist/plan-ceo-review');
+import { program } from 'commander';
+import chalk from 'chalk';
+import { run as browseRun } from './dist/browse/index.js';
+import { run as qaRun } from './dist/qa/index.js';
+import { run as shipRun } from './dist/ship/index.js';
+import { run as ceoReviewRun } from './dist/plan-ceo-review/index.js';
 
 program
   .name('superpowers')
@@ -27,7 +26,7 @@ program
   .option('-t, --timeout <ms>', 'Navigation timeout', parseInt, 30000)
   .action(async (url, options) => {
     try {
-      await browse.run(url, options);
+      await browseRun(url, options);
     } catch (err) {
       console.error(chalk.red('Error:'), err.message);
       process.exit(1);
@@ -44,7 +43,7 @@ program
   .option('-p, --parallel', 'Run tests in parallel', false)
   .action(async (options) => {
     try {
-      await qa.run(options);
+      await qaRun(options);
     } catch (err) {
       console.error(chalk.red('Error:'), err.message);
       process.exit(1);
@@ -55,7 +54,7 @@ program
 program
   .command('ship')
   .description('One-command release pipeline')
-  .requiredOption('-v, --version <type>', 'Version bump: patch, minor, major, or explicit')
+  .requiredOption('-V, --version <type>', 'Version bump: patch, minor, major, or explicit')
   .option('-r, --repo <owner/repo>', 'Repository for GitHub release')
   .option('-n, --dry-run', 'Preview changes without executing', false)
   .option('--skip-tests', 'Skip test run before release', false)
@@ -63,7 +62,7 @@ program
   .option('--prerelease', 'Mark as prerelease', false)
   .action(async (options) => {
     try {
-      await ship.run(options);
+      await shipRun(options);
     } catch (err) {
       console.error(chalk.red('Error:'), err.message);
       process.exit(1);
@@ -82,7 +81,7 @@ program
   .option('--trust <score>', 'Trust score (0-5)', parseFloat)
   .action(async (options) => {
     try {
-      await planCeoReview.run(options);
+      await ceoReviewRun(options);
     } catch (err) {
       console.error(chalk.red('Error:'), err.message);
       process.exit(1);
