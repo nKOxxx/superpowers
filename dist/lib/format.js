@@ -1,11 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatDuration = formatDuration;
-exports.formatBytes = formatBytes;
 /**
  * Format milliseconds into human-readable duration
  */
-function formatDuration(ms) {
+export function formatDuration(ms) {
     if (ms < 1000) {
         return `${ms}ms`;
     }
@@ -14,7 +10,7 @@ function formatDuration(ms) {
 /**
  * Format bytes into human-readable size
  */
-function formatBytes(bytes) {
+export function formatBytes(bytes) {
     if (bytes < 1024) {
         return `${bytes}B`;
     }
@@ -23,4 +19,3 @@ function formatBytes(bytes) {
     }
     return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
-//# sourceMappingURL=format.js.map

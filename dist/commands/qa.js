@@ -1,14 +1,8 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.qaCommand = qaCommand;
-const picocolors_1 = __importDefault(require("picocolors"));
-const config_js_1 = require("../lib/config.js");
-const git_js_1 = require("../lib/git.js");
-const fs_1 = require("fs");
-function qaCommand(program) {
+import pc from 'picocolors';
+import { loadConfig, mergeWithDefaults } from '../lib/config.js';
+import { isGitRepo, getChangedFiles, runTests } from '../lib/git.js';
+import { existsSync } from 'fs';
+export function qaCommand(program) {
     program
         .command('qa')
         .description('Systematic testing as QA Lead')
@@ -21,21 +15,21 @@ function qaCommand(program) {
             await runQA(options);
         }
         catch (error) {
-            console.error(picocolors_1.default.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
+            console.error(pc.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
             process.exit(1);
         }
     });
 }
 async function runQA(options) {
-    const config = (0, config_js_1.mergeWithDefaults)((0, config_js_1.loadConfig)());
+    const config = mergeWithDefaults(loadConfig());
     const mode = options.mode || config.qa.defaultMode || 'targeted';
-    console.log(picocolors_1.default.cyan('══════════════════════════════════════════════════'));
-    console.log(picocolors_1.default.cyan(`QA Mode: ${mode.toUpperCase()}`));
-    console.log(picocolors_1.default.cyan('══════════════════════════════════════════════════'));
+    console.log(pc.cyan('══════════════════════════════════════════════════'));
+    console.log(pc.cyan(`QA Mode: ${mode.toUpperCase()}`));
+    console.log(pc.cyan('══════════════════════════════════════════════════'));
     console.log();
     // Check for git repo in targeted mode
-    if (mode === 'targeted' && !(0, git_js_1.isGitRepo)()) {
-        console.error(picocolors_1.default.red('Error: Targeted mode requires a git repository'));
+    if (mode === 'targeted' && !isGitRepo()) {
+        console.error(pc.red('Error: Targeted mode requires a git repository'));
         process.exit(1);
     }
     // Determine test command
@@ -57,42 +51,42 @@ async function runQA(options) {
     }
 }
 async function runTargetedTests(options, config, testCommand) {
-    const changedFiles = (0, git_js_1.getChangedFiles)(options.diff || 'HEAD~1');
+    const changedFiles = getChangedFiles(options.diff || 'HEAD~1');
     if (changedFiles.length === 0) {
-        console.log(picocolors_1.default.yellow('No files changed. Running smoke tests instead.'));
+        console.log(pc.yellow('No files changed. Running smoke tests instead.'));
         await runSmokeTests(testCommand);
         return;
     }
-    console.log(picocolors_1.default.blue(`Files Changed: ${changedFiles.length}`));
+    console.log(pc.blue(`Files Changed: ${changedFiles.length}`));
     changedFiles.forEach(f => console.log(`  - ${f}`));
     console.log();
     // Map changed files to test files
     const testFiles = mapFilesToTests(changedFiles);
     if (testFiles.length === 0) {
-        console.log(picocolors_1.default.yellow('No test files found for changed files. Running smoke tests.'));
+        console.log(pc.yellow('No test files found for changed files. Running smoke tests.'));
         await runSmokeTests(testCommand);
         return;
     }
-    console.log(picocolors_1.default.blue(`Tests Selected: ${testFiles.length}`));
+    console.log(pc.blue(`Tests Selected: ${testFiles.length}`));
     testFiles.forEach(f => console.log(`  - ${f}`));
     console.log();
     // Run tests
     const results = [];
     for (const testFile of testFiles) {
         process.stdout.write(`  Testing ${testFile}... `);
-        const { success, output } = await (0, git_js_1.runTests)(`${testCommand} ${testFile}`);
+        const { success, output } = await runTests(`${testCommand} ${testFile}`);
         results.push({ file: testFile, passed: success, output });
         if (success) {
-            console.log(picocolors_1.default.green('✓'));
+            console.log(pc.green('✓'));
         }
         else {
-            console.log(picocolors_1.default.red('✗'));
+            console.log(pc.red('✗'));
         }
     }
     printResults(results, config.qa.coverageThreshold);
 }
 async function runSmokeTests(testCommand) {
-    console.log(picocolors_1.default.blue('Running smoke tests...'));
+    console.log(pc.blue('Running smoke tests...'));
     console.log();
     // Try to run smoke-specific tests first
     let command = testCommand;
@@ -103,14 +97,14 @@ async function runSmokeTests(testCommand) {
         '--testNamePattern="smoke"',
     ];
     for (const pattern of smokePatterns) {
-        const { success, output } = await (0, git_js_1.runTests)(`${testCommand} ${pattern}`);
+        const { success, output } = await runTests(`${testCommand} ${pattern}`);
         if (success || output.includes('smoke') || output.includes('pass')) {
             command = `${testCommand} ${pattern}`;
             break;
         }
     }
-    const { success, output } = await (0, git_js_1.runTests)(command);
-    console.log(success ? picocolors_1.default.green('✓ Smoke tests passed') : picocolors_1.default.red('✗ Smoke tests failed'));
+    const { success, output } = await runTests(command);
+    console.log(success ? pc.green('✓ Smoke tests passed') : pc.red('✗ Smoke tests failed'));
     if (!success) {
         console.log();
         console.log(output.slice(-500)); // Show last 500 chars
@@ -120,16 +114,16 @@ async function runSmokeTests(testCommand) {
     }
 }
 async function runFullTests(testCommand, options) {
-    console.log(picocolors_1.default.blue('Running full test suite...'));
+    console.log(pc.blue('Running full test suite...'));
     console.log();
     const command = options.parallel ? `${testCommand} --parallel` : testCommand;
-    const { success, output } = await (0, git_js_1.runTests)(command);
-    console.log(success ? picocolors_1.default.green('✓ All tests passed') : picocolors_1.default.red('✗ Some tests failed'));
+    const { success, output } = await runTests(command);
+    console.log(success ? pc.green('✓ All tests passed') : pc.red('✗ Some tests failed'));
     console.log();
     // Parse and display summary
     const summary = parseTestOutput(output);
-    console.log(`  Passed: ${picocolors_1.default.green(summary.passed.toString())}`);
-    console.log(`  Failed: ${summary.failed > 0 ? picocolors_1.default.red(summary.failed.toString()) : summary.failed}`);
+    console.log(`  Passed: ${pc.green(summary.passed.toString())}`);
+    console.log(`  Failed: ${summary.failed > 0 ? pc.red(summary.failed.toString()) : summary.failed}`);
     console.log(`  Duration: ${summary.duration}`);
     if (!success) {
         process.exit(1);
@@ -156,7 +150,7 @@ function mapFilesToTests(changedFiles) {
             if (match) {
                 for (const replacement of replacements) {
                     const testPath = file.replace(pattern, replacement);
-                    if ((0, fs_1.existsSync)(testPath)) {
+                    if (existsSync(testPath)) {
                         testFiles.add(testPath);
                     }
                 }
@@ -196,20 +190,19 @@ function printResults(results, coverageThreshold) {
     const passed = results.filter(r => r.passed).length;
     const failed = results.filter(r => !r.passed).length;
     console.log();
-    console.log(picocolors_1.default.cyan('──────────────────────────────────────────────────'));
-    console.log(`Passed: ${picocolors_1.default.green(passed.toString())}/${results.length} (${Math.round(passed / results.length * 100)}%)`);
+    console.log(pc.cyan('──────────────────────────────────────────────────'));
+    console.log(`Passed: ${pc.green(passed.toString())}/${results.length} (${Math.round(passed / results.length * 100)}%)`);
     if (failed > 0) {
-        console.log(`Failed: ${picocolors_1.default.red(failed.toString())}`);
+        console.log(`Failed: ${pc.red(failed.toString())}`);
     }
-    console.log(picocolors_1.default.cyan('──────────────────────────────────────────────────'));
-    console.log(`Status: ${failed === 0 ? picocolors_1.default.green('PASSED') : picocolors_1.default.red('FAILED')}`);
+    console.log(pc.cyan('──────────────────────────────────────────────────'));
+    console.log(`Status: ${failed === 0 ? pc.green('PASSED') : pc.red('FAILED')}`);
     if (failed > 0) {
         console.log();
-        console.log(picocolors_1.default.red('Failed tests:'));
+        console.log(pc.red('Failed tests:'));
         results.filter(r => !r.passed).forEach(r => {
             console.log(`  ✗ ${r.file}`);
         });
         process.exit(1);
     }
 }
-//# sourceMappingURL=qa.js.map

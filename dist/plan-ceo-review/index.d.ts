@@ -7,4 +7,3 @@ interface CEOReviewOptions {
 }
 export declare function ceoReviewCommand(options: CEOReviewOptions): Promise<void>;
 export {};
-//# sourceMappingURL=index.d.ts.map

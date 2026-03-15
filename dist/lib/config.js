@@ -1,9 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.loadConfig = loadConfig;
-exports.mergeWithDefaults = mergeWithDefaults;
-const fs_1 = require("fs");
-const path_1 = require("path");
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 const CONFIG_FILES = [
     'superpowers.config.json',
     '.superpowers.json',
@@ -12,10 +8,10 @@ const CONFIG_FILES = [
 /**
  * Load configuration from file
  */
-function loadConfig(cwd = process.cwd()) {
+export function loadConfig(cwd = process.cwd()) {
     for (const configFile of CONFIG_FILES) {
-        const configPath = (0, path_1.join)(cwd, configFile);
-        if (!(0, fs_1.existsSync)(configPath)) {
+        const configPath = join(cwd, configFile);
+        if (!existsSync(configPath)) {
             continue;
         }
         try {
@@ -25,7 +21,7 @@ function loadConfig(cwd = process.cwd()) {
             }
             else {
                 // JSON config
-                const content = (0, fs_1.readFileSync)(configPath, 'utf-8');
+                const content = readFileSync(configPath, 'utf-8');
                 return JSON.parse(content);
             }
         }
@@ -57,7 +53,7 @@ function loadConfig(cwd = process.cwd()) {
 /**
  * Merge user config with defaults
  */
-function mergeWithDefaults(config) {
+export function mergeWithDefaults(config) {
     return {
         browser: {
             defaultViewport: 'desktop',
@@ -88,4 +84,3 @@ function mergeWithDefaults(config) {
         },
     };
 }
-//# sourceMappingURL=config.js.map

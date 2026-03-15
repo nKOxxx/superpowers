@@ -52,4 +52,3 @@ export declare function parseRepoFromRemote(url: string): {
     owner: string;
     repo: string;
 } | null;
-//# sourceMappingURL=git.d.ts.map

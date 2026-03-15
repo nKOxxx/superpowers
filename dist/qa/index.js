@@ -1,27 +1,21 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.qaCommand = qaCommand;
-const child_process_1 = require("child_process");
-const promises_1 = __importDefault(require("fs/promises"));
-const path_1 = __importDefault(require("path"));
-const picocolors_1 = __importDefault(require("picocolors"));
-const ora_1 = __importDefault(require("ora"));
-async function qaCommand(options) {
-    console.log(picocolors_1.default.blue('══════════════════════════════════════════════════'));
-    console.log(picocolors_1.default.blue(`QA Mode: ${options.mode.toUpperCase()}`));
-    console.log(picocolors_1.default.blue('══════════════════════════════════════════════════\n'));
-    const spinner = (0, ora_1.default)('Analyzing repository...').start();
+import { execSync, spawn } from 'child_process';
+import fs from 'fs/promises';
+import path from 'path';
+import pc from 'picocolors';
+import ora from 'ora';
+export async function qaCommand(options) {
+    console.log(pc.blue('══════════════════════════════════════════════════'));
+    console.log(pc.blue(`QA Mode: ${options.mode.toUpperCase()}`));
+    console.log(pc.blue('══════════════════════════════════════════════════\n'));
+    const spinner = ora('Analyzing repository...').start();
     try {
         // Check if we're in a git repo
         let changedFiles = [];
         try {
-            (0, child_process_1.execSync)('git rev-parse --git-dir', { stdio: 'pipe' });
+            execSync('git rev-parse --git-dir', { stdio: 'pipe' });
             if (options.mode === 'targeted') {
                 spinner.text = 'Analyzing git diff...';
-                const diffOutput = (0, child_process_1.execSync)(`git diff ${options.diff} --name-only`, {
+                const diffOutput = execSync(`git diff ${options.diff} --name-only`, {
                     encoding: 'utf-8',
                     stdio: 'pipe'
                 });
@@ -46,23 +40,23 @@ async function qaCommand(options) {
         }
     }
     catch (error) {
-        spinner.fail(picocolors_1.default.red(`QA failed: ${error instanceof Error ? error.message : String(error)}`));
+        spinner.fail(pc.red(`QA failed: ${error instanceof Error ? error.message : String(error)}`));
         throw error;
     }
 }
 async function detectTestFramework() {
     try {
-        await promises_1.default.access('node_modules/vitest');
+        await fs.access('node_modules/vitest');
         return 'vitest';
     }
     catch {
         try {
-            await promises_1.default.access('node_modules/jest');
+            await fs.access('node_modules/jest');
             return 'jest';
         }
         catch {
             try {
-                await promises_1.default.access('node_modules/mocha');
+                await fs.access('node_modules/mocha');
                 return 'mocha';
             }
             catch {
@@ -73,28 +67,28 @@ async function detectTestFramework() {
 }
 async function runTargetedTests(changedFiles, framework, options) {
     if (changedFiles.length === 0) {
-        console.log(picocolors_1.default.yellow('No changed files detected. Running smoke tests instead...'));
+        console.log(pc.yellow('No changed files detected. Running smoke tests instead...'));
         await runSmokeTests(framework, options);
         return;
     }
-    console.log(picocolors_1.default.cyan(`Files Changed: ${changedFiles.length}`));
+    console.log(pc.cyan(`Files Changed: ${changedFiles.length}`));
     for (const file of changedFiles.slice(0, 10)) {
-        console.log(picocolors_1.default.gray(`  - ${file}`));
+        console.log(pc.gray(`  - ${file}`));
     }
     if (changedFiles.length > 10) {
-        console.log(picocolors_1.default.gray(`  ... and ${changedFiles.length - 10} more`));
+        console.log(pc.gray(`  ... and ${changedFiles.length - 10} more`));
     }
     console.log();
     // Map changed files to test files
     const testFiles = mapFilesToTests(changedFiles);
     if (testFiles.length === 0) {
-        console.log(picocolors_1.default.yellow('No test files mapped. Running smoke tests instead...'));
+        console.log(pc.yellow('No test files mapped. Running smoke tests instead...'));
         await runSmokeTests(framework, options);
         return;
     }
-    console.log(picocolors_1.default.cyan(`Tests Selected: ${testFiles.length}`));
+    console.log(pc.cyan(`Tests Selected: ${testFiles.length}`));
     for (const file of testFiles) {
-        console.log(picocolors_1.default.gray(`  - ${file}`));
+        console.log(pc.gray(`  - ${file}`));
     }
     console.log();
     // Run the tests
@@ -105,7 +99,7 @@ function mapFilesToTests(changedFiles) {
     for (const file of changedFiles) {
         // Map src files to test files
         if (file.startsWith('src/')) {
-            const ext = path_1.default.extname(file);
+            const ext = path.extname(file);
             const base = file.replace(/^src\//, '').replace(ext, '');
             // Try common test file patterns
             const patterns = [
@@ -128,16 +122,16 @@ function mapFilesToTests(changedFiles) {
     return Array.from(testFiles);
 }
 async function runSmokeTests(framework, options) {
-    console.log(picocolors_1.default.cyan('Running smoke tests...\n'));
+    console.log(pc.cyan('Running smoke tests...\n'));
     // For smoke tests, just run a basic build check if no specific smoke tests
     try {
-        const spinner = (0, ora_1.default)('Running build check...').start();
-        (0, child_process_1.execSync)('npm run build --if-present', { stdio: 'pipe' });
+        const spinner = ora('Running build check...').start();
+        execSync('npm run build --if-present', { stdio: 'pipe' });
         spinner.succeed('Build check passed');
-        console.log(picocolors_1.default.blue('──────────────────────────────────────────────────'));
-        console.log(picocolors_1.default.green('Passed: Build successful'));
-        console.log(`Status: ${picocolors_1.default.green('PASSED')}`);
-        console.log(picocolors_1.default.blue('──────────────────────────────────────────────────'));
+        console.log(pc.blue('──────────────────────────────────────────────────'));
+        console.log(pc.green('Passed: Build successful'));
+        console.log(`Status: ${pc.green('PASSED')}`);
+        console.log(pc.blue('──────────────────────────────────────────────────'));
     }
     catch {
         // Fall back to running tests
@@ -145,7 +139,7 @@ async function runSmokeTests(framework, options) {
     }
 }
 async function runFullTests(framework, options) {
-    console.log(picocolors_1.default.cyan('Running full test suite...\n'));
+    console.log(pc.cyan('Running full test suite...\n'));
     await runTestCommand(framework, [], options);
 }
 async function runTestCommand(framework, testFiles, options, extraArgs = []) {
@@ -188,8 +182,8 @@ async function runTestCommand(framework, testFiles, options, extraArgs = []) {
         }
     }
     return new Promise((resolve, reject) => {
-        const spinner = (0, ora_1.default)('Running tests...').start();
-        const child = (0, child_process_1.spawn)(command, args, {
+        const spinner = ora('Running tests...').start();
+        const child = spawn(command, args, {
             stdio: 'pipe',
             shell: process.platform === 'win32'
         });
@@ -215,7 +209,7 @@ async function runTestCommand(framework, testFiles, options, extraArgs = []) {
             }
         });
         child.on('error', (error) => {
-            spinner.fail(picocolors_1.default.red(`Failed to run tests: ${error.message}`));
+            spinner.fail(pc.red(`Failed to run tests: ${error.message}`));
             reject(error);
         });
     });
@@ -244,15 +238,14 @@ function parseTestResults(output) {
     return results;
 }
 function printResults(results) {
-    console.log(picocolors_1.default.blue('──────────────────────────────────────────────────'));
+    console.log(pc.blue('──────────────────────────────────────────────────'));
     const passed = results.filter(r => r.passed).length;
     const failed = results.filter(r => !r.passed).length;
-    console.log(picocolors_1.default.green(`Passed: ${passed}/${results.length}`));
+    console.log(pc.green(`Passed: ${passed}/${results.length}`));
     if (failed > 0) {
-        console.log(picocolors_1.default.red(`Failed: ${failed}/${results.length}`));
+        console.log(pc.red(`Failed: ${failed}/${results.length}`));
     }
-    const status = failed === 0 ? picocolors_1.default.green('PASSED') : picocolors_1.default.red('FAILED');
+    const status = failed === 0 ? pc.green('PASSED') : pc.red('FAILED');
     console.log(`Status: ${status}`);
-    console.log(picocolors_1.default.blue('──────────────────────────────────────────────────'));
+    console.log(pc.blue('──────────────────────────────────────────────────'));
 }
-//# sourceMappingURL=index.js.map

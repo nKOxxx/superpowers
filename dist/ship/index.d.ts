@@ -8,4 +8,3 @@ interface ShipOptions {
 }
 export declare function shipCommand(options: ShipOptions): Promise<void>;
 export {};
-//# sourceMappingURL=index.d.ts.map

@@ -1,32 +1,18 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.isGitRepo = isGitRepo;
-exports.getCurrentBranch = getCurrentBranch;
-exports.isWorkingDirectoryClean = isWorkingDirectoryClean;
-exports.getLatestTag = getLatestTag;
-exports.getChangedFiles = getChangedFiles;
-exports.getCommitsSince = getCommitsSince;
-exports.createTag = createTag;
-exports.pushToRemote = pushToRemote;
-exports.createCommit = createCommit;
-exports.runTests = runTests;
-exports.getRemoteUrl = getRemoteUrl;
-exports.parseRepoFromRemote = parseRepoFromRemote;
-const child_process_1 = require("child_process");
-const fs_1 = require("fs");
-const path_1 = require("path");
+import { execSync, spawn } from 'child_process';
+import { existsSync } from 'fs';
+import { join } from 'path';
 /**
  * Check if we're in a git repository
  */
-function isGitRepo(cwd = process.cwd()) {
-    return (0, fs_1.existsSync)((0, path_1.join)(cwd, '.git'));
+export function isGitRepo(cwd = process.cwd()) {
+    return existsSync(join(cwd, '.git'));
 }
 /**
  * Get current git branch
  */
-function getCurrentBranch(cwd = process.cwd()) {
+export function getCurrentBranch(cwd = process.cwd()) {
     try {
-        return (0, child_process_1.execSync)('git branch --show-current', { cwd, encoding: 'utf-8' }).trim();
+        return execSync('git branch --show-current', { cwd, encoding: 'utf-8' }).trim();
     }
     catch {
         return 'main';
@@ -35,9 +21,9 @@ function getCurrentBranch(cwd = process.cwd()) {
 /**
  * Check if working directory is clean
  */
-function isWorkingDirectoryClean(cwd = process.cwd()) {
+export function isWorkingDirectoryClean(cwd = process.cwd()) {
     try {
-        const status = (0, child_process_1.execSync)('git status --porcelain', { cwd, encoding: 'utf-8' }).trim();
+        const status = execSync('git status --porcelain', { cwd, encoding: 'utf-8' }).trim();
         return status === '';
     }
     catch {
@@ -47,9 +33,9 @@ function isWorkingDirectoryClean(cwd = process.cwd()) {
 /**
  * Get the latest git tag
  */
-function getLatestTag(cwd = process.cwd()) {
+export function getLatestTag(cwd = process.cwd()) {
     try {
-        return (0, child_process_1.execSync)('git describe --tags --abbrev=0', { cwd, encoding: 'utf-8' }).trim();
+        return execSync('git describe --tags --abbrev=0', { cwd, encoding: 'utf-8' }).trim();
     }
     catch {
         return null;
@@ -58,9 +44,9 @@ function getLatestTag(cwd = process.cwd()) {
 /**
  * Get list of files changed since a commit/tag
  */
-function getChangedFiles(since = 'HEAD~1', cwd = process.cwd()) {
+export function getChangedFiles(since = 'HEAD~1', cwd = process.cwd()) {
     try {
-        const output = (0, child_process_1.execSync)(`git diff --name-only ${since}`, { cwd, encoding: 'utf-8' });
+        const output = execSync(`git diff --name-only ${since}`, { cwd, encoding: 'utf-8' });
         return output.trim().split('\n').filter(f => f.length > 0);
     }
     catch {
@@ -70,10 +56,10 @@ function getChangedFiles(since = 'HEAD~1', cwd = process.cwd()) {
 /**
  * Get conventional commits since a tag
  */
-function getCommitsSince(tag, cwd = process.cwd()) {
+export function getCommitsSince(tag, cwd = process.cwd()) {
     try {
         const range = tag ? `${tag}..HEAD` : 'HEAD';
-        const output = (0, child_process_1.execSync)(`git log ${range} --pretty=format:"%s"`, { cwd, encoding: 'utf-8' });
+        const output = execSync(`git log ${range} --pretty=format:"%s"`, { cwd, encoding: 'utf-8' });
         return output.trim().split('\n').filter(c => c.length > 0);
     }
     catch {
@@ -83,27 +69,27 @@ function getCommitsSince(tag, cwd = process.cwd()) {
 /**
  * Create a git tag
  */
-function createTag(version, message, cwd = process.cwd()) {
-    (0, child_process_1.execSync)(`git tag -a v${version} -m "${message}"`, { cwd, stdio: 'inherit' });
+export function createTag(version, message, cwd = process.cwd()) {
+    execSync(`git tag -a v${version} -m "${message}"`, { cwd, stdio: 'inherit' });
 }
 /**
  * Push commits and tags
  */
-function pushToRemote(cwd = process.cwd()) {
-    (0, child_process_1.execSync)('git push && git push --tags', { cwd, stdio: 'inherit' });
+export function pushToRemote(cwd = process.cwd()) {
+    execSync('git push && git push --tags', { cwd, stdio: 'inherit' });
 }
 /**
  * Create a commit
  */
-function createCommit(message, files = ['.'], cwd = process.cwd()) {
-    (0, child_process_1.execSync)(`git add ${files.join(' ')} && git commit -m "${message}"`, { cwd, stdio: 'inherit' });
+export function createCommit(message, files = ['.'], cwd = process.cwd()) {
+    execSync(`git add ${files.join(' ')} && git commit -m "${message}"`, { cwd, stdio: 'inherit' });
 }
 /**
  * Run tests via npm/yarn/pnpm
  */
-async function runTests(command, cwd = process.cwd()) {
+export async function runTests(command, cwd = process.cwd()) {
     return new Promise((resolve) => {
-        const child = (0, child_process_1.spawn)('sh', ['-c', command], {
+        const child = spawn('sh', ['-c', command], {
             cwd,
             stdio: 'pipe',
         });
@@ -122,9 +108,9 @@ async function runTests(command, cwd = process.cwd()) {
 /**
  * Get repository remote URL
  */
-function getRemoteUrl(cwd = process.cwd()) {
+export function getRemoteUrl(cwd = process.cwd()) {
     try {
-        return (0, child_process_1.execSync)('git remote get-url origin', { cwd, encoding: 'utf-8' }).trim();
+        return execSync('git remote get-url origin', { cwd, encoding: 'utf-8' }).trim();
     }
     catch {
         return null;
@@ -133,7 +119,7 @@ function getRemoteUrl(cwd = process.cwd()) {
 /**
  * Parse owner/repo from git remote URL
  */
-function parseRepoFromRemote(url) {
+export function parseRepoFromRemote(url) {
     // Handle HTTPS: https://github.com/owner/repo.git
     // Handle SSH: git@github.com:owner/repo.git
     const match = url.match(/github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/);
@@ -142,4 +128,3 @@ function parseRepoFromRemote(url) {
     }
     return null;
 }
-//# sourceMappingURL=git.js.map

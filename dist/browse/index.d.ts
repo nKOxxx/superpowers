@@ -11,4 +11,3 @@ interface BrowseOptions {
 }
 export declare function browseCommand(url: string, options: BrowseOptions): Promise<void>;
 export {};
-//# sourceMappingURL=index.d.ts.map

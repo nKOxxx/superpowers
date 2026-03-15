@@ -9,4 +9,3 @@ export declare function sendTelegramMessage(message: string, botToken?: string, 
  * Format release message for Telegram
  */
 export declare function formatReleaseMessage(repo: string, version: string, changelog: string): string;
-//# sourceMappingURL=telegram.d.ts.map

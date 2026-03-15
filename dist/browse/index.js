@@ -1,14 +1,8 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.browseCommand = browseCommand;
-const playwright_1 = require("playwright");
-const picocolors_1 = __importDefault(require("picocolors"));
-const ora_1 = __importDefault(require("ora"));
-const promises_1 = __importDefault(require("fs/promises"));
-const path_1 = __importDefault(require("path"));
+import { chromium } from 'playwright';
+import pc from 'picocolors';
+import ora from 'ora';
+import fs from 'fs/promises';
+import path from 'path';
 const VIEWPORT_PRESETS = {
     mobile: { width: 375, height: 667 },
     tablet: { width: 768, height: 1024 },
@@ -47,20 +41,20 @@ function parseActions(actionsStr) {
 }
 async function loadConfig() {
     try {
-        const configPath = path_1.default.resolve(process.cwd(), 'superpowers.config.json');
-        const content = await promises_1.default.readFile(configPath, 'utf-8');
+        const configPath = path.resolve(process.cwd(), 'superpowers.config.json');
+        const content = await fs.readFile(configPath, 'utf-8');
         return JSON.parse(content);
     }
     catch {
         return {};
     }
 }
-async function browseCommand(url, options) {
-    const spinner = (0, ora_1.default)('Launching browser...').start();
+export async function browseCommand(url, options) {
+    const spinner = ora('Launching browser...').start();
     let browser;
     try {
         // Ensure output directory exists
-        await promises_1.default.mkdir(options.output, { recursive: true });
+        await fs.mkdir(options.output, { recursive: true });
         // Load config for flows if specified
         const config = await loadConfig();
         const browserConfig = (config.browser || {});
@@ -76,7 +70,7 @@ async function browseCommand(url, options) {
             viewport = VIEWPORT_PRESETS[options.viewport] || VIEWPORT_PRESETS.desktop;
         }
         // Launch browser
-        browser = await playwright_1.chromium.launch({
+        browser = await chromium.launch({
             headless: process.env.BROWSE_HEADLESS !== 'false'
         });
         const context = await browser.newContext({
@@ -121,10 +115,10 @@ async function browseCommand(url, options) {
             // Capture screenshot
             await captureScreenshot(page, options, null, null, viewport);
         }
-        spinner.succeed(picocolors_1.default.green('Browser automation complete'));
+        spinner.succeed(pc.green('Browser automation complete'));
     }
     catch (error) {
-        spinner.fail(picocolors_1.default.red(`Browser automation failed: ${error instanceof Error ? error.message : String(error)}`));
+        spinner.fail(pc.red(`Browser automation failed: ${error instanceof Error ? error.message : String(error)}`));
         throw error;
     }
     finally {
@@ -180,12 +174,11 @@ async function captureScreenshot(page, options, flowName, stepName, viewport) {
     else {
         filename = `${hostname}_${viewportName}_${timestamp}.png`;
     }
-    const filepath = path_1.default.join(options.output, filename);
+    const filepath = path.join(options.output, filename);
     await page.screenshot({
         path: filepath,
         fullPage: options.fullPage
     });
-    console.log(picocolors_1.default.green(`✓ Screenshot saved: ${filepath}`));
+    console.log(pc.green(`✓ Screenshot saved: ${filepath}`));
     return filepath;
 }
-//# sourceMappingURL=index.js.map

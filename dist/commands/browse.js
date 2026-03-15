@@ -1,22 +1,16 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.browseCommand = browseCommand;
-const playwright_1 = require("playwright");
-const promises_1 = require("fs/promises");
-const fs_1 = require("fs");
-const path_1 = require("path");
-const picocolors_1 = __importDefault(require("picocolors"));
-const config_js_1 = require("../lib/config.js");
+import { chromium } from 'playwright';
+import { mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
+import { join, resolve } from 'path';
+import pc from 'picocolors';
+import { loadConfig, mergeWithDefaults } from '../lib/config.js';
 const VIEWPORT_PRESETS = {
     mobile: { width: 375, height: 667 },
     tablet: { width: 768, height: 1024 },
     desktop: { width: 1280, height: 720 },
     wide: { width: 1920, height: 1080 },
 };
-function browseCommand(program) {
+export function browseCommand(program) {
     program
         .command('browse <url>')
         .description('Browser automation and screenshot capture')
@@ -34,17 +28,17 @@ function browseCommand(program) {
             await runBrowse(url, options);
         }
         catch (error) {
-            console.error(picocolors_1.default.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
+            console.error(pc.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
             process.exit(1);
         }
     });
 }
 async function runBrowse(url, options) {
-    const config = (0, config_js_1.mergeWithDefaults)((0, config_js_1.loadConfig)());
-    const screenshotDir = (0, path_1.resolve)(options.output || config.browser.screenshotDir || './screenshots');
+    const config = mergeWithDefaults(loadConfig());
+    const screenshotDir = resolve(options.output || config.browser.screenshotDir || './screenshots');
     // Ensure output directory exists
-    if (!(0, fs_1.existsSync)(screenshotDir)) {
-        await (0, promises_1.mkdir)(screenshotDir, { recursive: true });
+    if (!existsSync(screenshotDir)) {
+        await mkdir(screenshotDir, { recursive: true });
     }
     // Determine viewport
     let viewport;
@@ -59,10 +53,10 @@ async function runBrowse(url, options) {
         viewport = VIEWPORT_PRESETS[viewportKey] || VIEWPORT_PRESETS.desktop;
     }
     const headless = process.env.BROWSE_HEADLESS !== 'false';
-    const browser = await playwright_1.chromium.launch({ headless });
-    console.log(picocolors_1.default.cyan('══════════════════════════════════════════════════'));
-    console.log(picocolors_1.default.cyan('Browser Automation'));
-    console.log(picocolors_1.default.cyan('══════════════════════════════════════════════════'));
+    const browser = await chromium.launch({ headless });
+    console.log(pc.cyan('══════════════════════════════════════════════════'));
+    console.log(pc.cyan('Browser Automation'));
+    console.log(pc.cyan('══════════════════════════════════════════════════'));
     console.log();
     try {
         if (options.flows) {
@@ -71,7 +65,7 @@ async function runBrowse(url, options) {
             for (const flowName of flowNames) {
                 const flow = config.browser.flows?.[flowName];
                 if (!flow) {
-                    console.warn(picocolors_1.default.yellow(`Warning: Flow '${flowName}' not found in config`));
+                    console.warn(pc.yellow(`Warning: Flow '${flowName}' not found in config`));
                     continue;
                 }
                 await runFlow(browser, url, flow, viewport, screenshotDir, options);
@@ -87,7 +81,7 @@ async function runBrowse(url, options) {
             await captureScreenshot(browser, url, viewport, screenshotDir, options);
         }
         console.log();
-        console.log(picocolors_1.default.green('✓ Browser automation completed'));
+        console.log(pc.green('✓ Browser automation completed'));
     }
     finally {
         await browser.close();
@@ -105,12 +99,12 @@ async function captureScreenshot(browser, url, viewport, outputDir, options) {
     const viewportName = `${viewport.width}x${viewport.height}`;
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `${hostname}_${viewportName}_${timestamp}.png`;
-    const filepath = (0, path_1.join)(outputDir, filename);
+    const filepath = join(outputDir, filename);
     await page.screenshot({
         path: filepath,
         fullPage: options.fullPage || false,
     });
-    console.log(picocolors_1.default.green(`✓ Screenshot saved: ${filepath}`));
+    console.log(pc.green(`✓ Screenshot saved: ${filepath}`));
     await context.close();
 }
 async function runFlow(browser, baseUrl, flow, viewport, outputDir, options) {
@@ -118,7 +112,7 @@ async function runFlow(browser, baseUrl, flow, viewport, outputDir, options) {
     const page = await context.newPage();
     const timeout = parseInt(options.timeout || '30000');
     for (const step of flow) {
-        console.log(picocolors_1.default.blue(`  → ${step.name}`));
+        console.log(pc.blue(`  → ${step.name}`));
         const url = step.url.startsWith('http') ? step.url : new URL(step.url, baseUrl).toString();
         await page.goto(url, { timeout, waitUntil: 'networkidle' });
         if (step.actions) {
@@ -131,9 +125,9 @@ async function runFlow(browser, baseUrl, flow, viewport, outputDir, options) {
         const viewportName = `${viewport.width}x${viewport.height}`;
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `${hostname}_${stepName}_${viewportName}_${timestamp}.png`;
-        const filepath = (0, path_1.join)(outputDir, filename);
+        const filepath = join(outputDir, filename);
         await page.screenshot({ path: filepath, fullPage: options.fullPage || false });
-        console.log(picocolors_1.default.green(`    ✓ ${filepath}`));
+        console.log(pc.green(`    ✓ ${filepath}`));
     }
     await context.close();
 }
@@ -149,10 +143,10 @@ async function runActions(browser, url, actions, viewport, outputDir, options) {
             const viewportName = `${viewport.width}x${viewport.height}`;
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const filename = `${hostname}_action_${screenshots.length}_${viewportName}_${timestamp}.png`;
-            const filepath = (0, path_1.join)(outputDir, filename);
+            const filepath = join(outputDir, filename);
             await page.screenshot({ path: filepath, fullPage: options.fullPage || false });
             screenshots.push(filepath);
-            console.log(picocolors_1.default.green(`  ✓ Screenshot: ${filepath}`));
+            console.log(pc.green(`  ✓ Screenshot: ${filepath}`));
         }
         else {
             await executeAction(page, action, timeout);
@@ -207,4 +201,3 @@ function parseActions(actionsStr) {
         }
     });
 }
-//# sourceMappingURL=browse.js.map

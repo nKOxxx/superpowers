@@ -9,4 +9,3 @@ export { formatDuration, formatBytes } from './lib/format.js';
 export { sendTelegramMessage, formatReleaseMessage } from './lib/telegram.js';
 export { createRelease, getToken, hasGHCLI, parseRepoString } from './lib/github.js';
 export { isGitRepo, getCurrentBranch, isWorkingDirectoryClean, getLatestTag, getChangedFiles, getCommitsSince, createTag, pushToRemote, createCommit, runTests, getRemoteUrl, parseRepoFromRemote, } from './lib/git.js';
-//# sourceMappingURL=index.d.ts.map
