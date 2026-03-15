@@ -139,7 +139,8 @@ async function executeAction(page: Page, action: BrowseAction): Promise<void> {
     
     case 'scroll':
       await page.evaluate((scrollTo: { x?: number; y?: number }) => {
-        (globalThis as unknown as Window).scrollTo(scrollTo.x || 0, scrollTo.y || 0);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (globalThis as any).scrollTo(scrollTo.x || 0, scrollTo.y || 0);
       }, { x: action.x, y: action.y });
       logger.debug(`Scrolled to: ${action.x || 0}, ${action.y || 0}`);
       break;

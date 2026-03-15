@@ -4,7 +4,7 @@
  * BAT Framework: Brand, Attention, Trust
  * 10-Star Methodology: Minimum 2/3 criteria must score 3+ to build
  */
-import { Logger, parseEnvOptions, exitWithError, exitWithSuccess, getEnvVar } from '@nko/superpowers-shared';
+import { Logger } from '@nko/superpowers-shared';
 
 const logger = new Logger({ prefix: 'plan-ceo-review' });
 
@@ -35,7 +35,35 @@ export interface BATAnalysis {
   nextSteps: string[];
 }
 
-// BAT scoring criteria descriptions
+function parseArgs(): { feature: string; options: PlanCEOReviewOptions } {
+  const args = process.argv.slice(2);
+  const feature = args[0] || '';
+  const options: PlanCEOReviewOptions = {};
+
+  for (let i = 1; i < args.length; i++) {
+    const arg = args[i];
+    switch (arg) {
+      case '--brand':
+      case '-b':
+        options.brand = args[++i];
+        break;
+      case '--attention':
+      case '-a':
+        options.attention = args[++i];
+        break;
+      case '--trust':
+      case '-t':
+        options.trust = args[++i];
+        break;
+      case '--json':
+        options.json = true;
+        break;
+    }
+  }
+
+  return { feature, options };
+}
+
 const BAT_CRITERIA = {
   brand: {
     name: 'Brand',
@@ -89,11 +117,9 @@ function generateRecommendation(analysis: BATAnalysis): { recommendation: Recomm
   const reasoning: string[] = [];
   let recommendation: Recommendation;
 
-  // Count how many criteria meet the 3+ threshold
   const highScores = [scores.brand, scores.attention, scores.trust].filter(s => s >= 3).length;
 
   if (methodology.passesThreshold) {
-    // At least 2 criteria score 3+
     if (total >= 12) {
       recommendation = 'build';
       reasoning.push('Strong BAT scores across multiple dimensions (10-star threshold met)');
@@ -105,7 +131,6 @@ function generateRecommendation(analysis: BATAnalysis): { recommendation: Recomm
       reasoning.push('Meets minimum threshold but scores are modest');
     }
   } else {
-    // Less than 2 criteria score 3+
     if (total <= 3) {
       recommendation = 'dont-build';
       reasoning.push('Low scores across all BAT dimensions');
@@ -115,7 +140,6 @@ function generateRecommendation(analysis: BATAnalysis): { recommendation: Recomm
     }
   }
 
-  // Add specific dimension analysis
   const lowestScore = Math.min(scores.brand, scores.attention, scores.trust);
   const lowestDimension = Object.entries(scores).find(([, v]) => v === lowestScore)?.[0];
   
@@ -166,7 +190,7 @@ function analyzeFeature(feature: string, options: PlanCEOReviewOptions): BATAnal
 
   const total = scores.brand + scores.attention + scores.trust;
   const criteriaMet = [scores.brand, scores.attention, scores.trust].filter(s => s >= 3).length;
-  const passesThreshold = criteriaMet >= 2; // 10-star methodology: at least 2/3 criteria must be 3+
+  const passesThreshold = criteriaMet >= 2;
 
   const analysis: BATAnalysis = {
     feature,
@@ -176,7 +200,7 @@ function analyzeFeature(feature: string, options: PlanCEOReviewOptions): BATAnal
       criteriaMet,
       passesThreshold,
     },
-    recommendation: 'dont-build', // Will be updated
+    recommendation: 'dont-build',
     reasoning: [],
     nextSteps: [],
   };
@@ -227,7 +251,6 @@ function formatOutput(analysis: BATAnalysis, json: boolean): string {
   output += `│  TOTAL SCORE: ${total}/15 ${' '.repeat(41)}│\n`;
   output += '└────────────────────────────────────────────────────────────────┘\n\n';
 
-  // 10-star methodology
   output += '┌────────────────────────────────────────────────────────────────┐\n';
   output += '│  10-STAR METHODOLOGY                                           │\n';
   output += '├────────────────────────────────────────────────────────────────┤\n';
@@ -235,23 +258,20 @@ function formatOutput(analysis: BATAnalysis, json: boolean): string {
   output += `│  Threshold met (2/3 min): ${methodology.passesThreshold ? '✓ YES' : '✗ NO'}                               │\n`;
   output += '└────────────────────────────────────────────────────────────────┘\n\n';
 
-  // Recommendation
-  const recColors: Record<Recommendation, { icon: string; label: string; color: string }> = {
-    'build': { icon: '🟢', label: 'BUILD', color: '\x1b[32m' },
-    'consider': { icon: '🟡', label: 'CONSIDER', color: '\x1b[33m' },
-    'dont-build': { icon: '🔴', label: "DON'T BUILD", color: '\x1b[31m' },
+  const recLabels: Record<Recommendation, string> = {
+    'build': '🟢 BUILD',
+    'consider': '🟡 CONSIDER',
+    'dont-build': "🔴 DON'T BUILD",
   };
 
-  const rec = recColors[recommendation];
   output += '┌────────────────────────────────────────────────────────────────┐\n';
-  output += `│  RECOMMENDATION: ${rec.icon} ${rec.label.padEnd(43)}│\n`;
+  output += `│  RECOMMENDATION: ${recLabels[recommendation].padEnd(46)}│\n`;
   output += '├────────────────────────────────────────────────────────────────┤\n';
   reasoning.forEach(r => {
     output += `│  • ${r.padEnd(62)}│\n`;
   });
   output += '└────────────────────────────────────────────────────────────────┘\n\n';
 
-  // Next steps
   output += '┌────────────────────────────────────────────────────────────────┐\n';
   output += '│  NEXT STEPS                                                    │\n';
   output += '├────────────────────────────────────────────────────────────────┤\n';
@@ -260,7 +280,6 @@ function formatOutput(analysis: BATAnalysis, json: boolean): string {
   });
   output += '└────────────────────────────────────────────────────────────────┘\n\n';
 
-  // Criteria details
   output += '┌────────────────────────────────────────────────────────────────┐\n';
   output += '│  SCORING CRITERIA REFERENCE                                    │\n';
   output += '├────────────────────────────────────────────────────────────────┤\n';
@@ -276,14 +295,14 @@ function formatOutput(analysis: BATAnalysis, json: boolean): string {
 }
 
 export async function main(): Promise<void> {
-  const feature = getEnvVar('SUPERPOWER_FEATURE');
+  const { feature, options } = parseArgs();
   
   if (!feature) {
-    exitWithError('Error: Feature description is required\nUsage: superpowers plan-ceo-review "Feature: Description"');
+    console.error('Error: Feature description is required');
+    console.error('Usage: superpowers plan-ceo-review "Feature: Description"');
+    process.exit(1);
   }
 
-  const options = parseEnvOptions() as PlanCEOReviewOptions;
-  
   logger.info(`Analyzing feature: ${feature}`);
 
   try {
@@ -292,22 +311,27 @@ export async function main(): Promise<void> {
 
     console.log(output);
 
-    // Exit with appropriate code based on recommendation
     switch (analysis.recommendation) {
       case 'build':
-        exitWithSuccess('Recommendation: BUILD');
+        console.log('Recommendation: BUILD');
+        process.exit(0);
         break;
       case 'consider':
-        process.exitCode = 0;
         console.log('\n⚠️  Recommendation: CONSIDER - Further research recommended');
+        process.exit(0);
         break;
       case 'dont-build':
-        process.exitCode = 1;
         console.log('\n🛑 Recommendation: DO NOT BUILD');
+        process.exit(1);
         break;
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    exitWithError(`Analysis failed: ${message}`);
+    console.error(`Analysis failed: ${message}`);
+    process.exit(1);
   }
+}
+
+if (require.main === module) {
+  main();
 }
