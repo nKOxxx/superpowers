@@ -1,17 +1,8 @@
 {
   "name": "qa",
   "version": "1.0.0",
-  "type": "skill",
+  "description": "Systematic testing as QA Lead - analyzes code changes and runs appropriate tests",
   "entry": "cli.js",
-  "bin": {
-    "qa": "cli.js"
-  },
-  "description": "Systematic testing as QA Lead with targeted, smoke, and full modes",
-  "dependencies": ["commander", "chalk"],
-  "capabilities": [
-    "auto-framework-detection",
-    "git-diff-analysis",
-    "test-mapping",
-    "coverage-reporting"
-  ]
+  "type": "cli",
+  "config": {}
 }

@@ -6,7 +6,8 @@ yarn-error.log*
 
 # Build output
 dist/
-dist-skills/
+dist-skills/*
+!dist-skills/*.skill.tar.gz
 
 # TypeScript
 *.tsbuildinfo

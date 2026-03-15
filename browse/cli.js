@@ -1,53 +1,23 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
-import chalk from 'chalk';
-import { browse } from './dist/index.js';
-
-const program = new Command();
+import { program } from 'commander';
+import { browseCommand } from './dist/index.js';
 
 program
   .name('browse')
-  .description('Browser automation with Playwright')
+  .description('Browser automation for visual testing and QA')
+  .version('1.0.0');
+
+program
   .argument('<url>', 'URL to browse')
-  .option('--viewport <preset>', 'Viewport preset: mobile, tablet, desktop')
-  .option('--width <number>', 'Custom viewport width', parseInt)
-  .option('--height <number>', 'Custom viewport height', parseInt)
-  .option('--full-page', 'Capture full scrollable page')
-  .option('--selector <css>', 'Screenshot specific element')
-  .option('--actions <actions>', 'Action sequence (click:sel,type:sel:text,wait:ms)')
-  .option('--output <path>', 'Output file path')
-  .action(async (url, options) => {
-    try {
-      console.log(chalk.blue('🌐 Browsing:'), url);
-      
-      const result = await browse({
-        url,
-        viewport: options.viewport,
-        width: options.width,
-        height: options.height,
-        fullPage: options.fullPage,
-        selector: options.selector,
-        actions: options.actions,
-        output: options.output
-      });
-      
-      console.log(chalk.green('✅ Screenshot saved:'), result.screenshotPath);
-      console.log(chalk.gray('Viewport:'), `${result.viewport.width}x${result.viewport.height}`);
-      
-      if (result.actionsPerformed.length > 0) {
-        console.log(chalk.gray('Actions performed:'), result.actionsPerformed.join(', '));
-      }
-      
-      // Output base64 for Telegram integration
-      console.log('\n---BASE64---');
-      console.log(result.base64Image);
-      console.log('---END---');
-      
-    } catch (error) {
-      console.error(chalk.red('❌ Error:'), error.message);
-      process.exit(1);
-    }
-  });
+  .option('-v, --viewport <preset>', 'Viewport preset (mobile, tablet, desktop)', 'desktop')
+  .option('-W, --width <number>', 'Custom viewport width')
+  .option('-H, --height <number>', 'Custom viewport height')
+  .option('-f, --full-page', 'Capture full page screenshot', false)
+  .option('-s, --selector <selector>', 'CSS selector to capture specific element')
+  .option('-o, --output <path>', 'Output file path (default: base64 to stdout)')
+  .option('-w, --wait <ms>', 'Wait time in ms after load', '1000')
+  .option('--actions <json>', 'JSON array of actions to perform before screenshot')
+  .action(browseCommand);
 
 program.parse();

@@ -1,119 +1,118 @@
 import { chromium } from 'playwright';
-import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const viewports = {
+import chalk from 'chalk';
+const viewportPresets = {
     mobile: { width: 375, height: 667 },
     tablet: { width: 768, height: 1024 },
-    desktop: { width: 1920, height: 1080 }
+    desktop: { width: 1920, height: 1080 },
 };
-export async function browse(options) {
-    const browser = await chromium.launch({ headless: true });
+export async function browseCommand(url, options) {
+    console.log(chalk.blue('🌐 Opening browser...'));
+    let browser = null;
     try {
+        browser = await chromium.launch({ headless: true });
+        // Determine viewport
+        let viewport = viewportPresets[options.viewport] || viewportPresets.desktop;
+        if (options.width && options.height) {
+            viewport = {
+                width: parseInt(options.width, 10),
+                height: parseInt(options.height, 10),
+            };
+        }
         const context = await browser.newContext({
-            viewport: getViewport(options)
+            viewport,
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         });
         const page = await context.newPage();
-        // Navigate to URL
-        await page.goto(options.url, { waitUntil: 'networkidle' });
-        const actionsPerformed = [];
+        console.log(chalk.blue(`📍 Navigating to ${url}...`));
+        await page.goto(url, { waitUntil: 'networkidle' });
+        // Wait specified time
+        const waitTime = parseInt(options.wait, 10);
+        if (waitTime > 0) {
+            await page.waitForTimeout(waitTime);
+        }
         // Execute actions if provided
         if (options.actions) {
-            const actions = parseActions(options.actions);
-            for (const action of actions) {
-                await executeAction(page, action);
-                actionsPerformed.push(`${action.type}:${action.selector || action.value}`);
-            }
+            const actions = JSON.parse(options.actions);
+            await executeActions(page, actions);
         }
-        // Generate output path
-        const outputPath = options.output || generateOutputPath(options.url);
         // Take screenshot
+        console.log(chalk.blue('📸 Capturing screenshot...'));
+        let screenshotBuffer;
         if (options.selector) {
             const element = await page.locator(options.selector).first();
-            await element.screenshot({ path: outputPath });
+            screenshotBuffer = await element.screenshot({ type: 'png' });
         }
         else {
-            await page.screenshot({
-                path: outputPath,
-                fullPage: options.fullPage || false
+            screenshotBuffer = await page.screenshot({
+                fullPage: options.fullPage,
+                type: 'png',
             });
         }
-        // Read and encode to base64
-        const imageBuffer = fs.readFileSync(outputPath);
-        const base64Image = imageBuffer.toString('base64');
-        return {
-            screenshotPath: outputPath,
-            base64Image,
-            url: options.url,
-            viewport: getViewport(options),
-            actionsPerformed
-        };
+        // Output handling
+        if (options.output) {
+            const { writeFileSync } = await import('fs');
+            writeFileSync(options.output, screenshotBuffer);
+            console.log(chalk.green(`✅ Screenshot saved to ${options.output}`));
+        }
+        else {
+            // Base64 output for Telegram integration
+            const base64 = screenshotBuffer.toString('base64');
+            console.log(chalk.green('✅ Screenshot captured'));
+            console.log('\n---BASE64_START---');
+            console.log(base64);
+            console.log('---BASE64_END---');
+        }
+        await context.close();
+    }
+    catch (error) {
+        console.error(chalk.red('❌ Error:'), error instanceof Error ? error.message : error);
+        process.exit(1);
     }
     finally {
-        await browser.close();
-    }
-}
-function getViewport(options) {
-    if (options.width && options.height) {
-        return { width: options.width, height: options.height };
-    }
-    if (options.viewport && viewports[options.viewport]) {
-        return viewports[options.viewport];
-    }
-    return viewports.desktop;
-}
-function parseActions(actionsString) {
-    return actionsString.split(',').map(actionStr => {
-        const parts = actionStr.trim().split(':');
-        const type = parts[0];
-        switch (type) {
-            case 'click':
-            case 'scroll':
-            case 'hover':
-                return { type, selector: parts[1] };
-            case 'type':
-                return { type, selector: parts[1], value: parts[2] };
-            case 'wait':
-                return { type, value: parts[1] };
-            default:
-                throw new Error(`Unknown action type: ${type}`);
+        if (browser) {
+            await browser.close();
         }
-    });
-}
-async function executeAction(page, action) {
-    switch (action.type) {
-        case 'click':
-            if (action.selector) {
-                await page.click(action.selector);
-            }
-            break;
-        case 'type':
-            if (action.selector && action.value) {
-                await page.fill(action.selector, action.value);
-            }
-            break;
-        case 'wait':
-            if (action.value) {
-                await page.waitForTimeout(parseInt(action.value, 10));
-            }
-            break;
-        case 'scroll':
-            if (action.selector) {
-                await page.locator(action.selector).scrollIntoViewIfNeeded();
-            }
-            break;
-        case 'hover':
-            if (action.selector) {
-                await page.hover(action.selector);
-            }
-            break;
     }
 }
-function generateOutputPath(url) {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const hostname = new URL(url).hostname.replace(/[^a-zA-Z0-9]/g, '_');
-    return path.join(process.cwd(), `screenshot-${hostname}-${timestamp}.png`);
+async function executeActions(page, actions) {
+    console.log(chalk.blue(`🎬 Executing ${actions.length} action(s)...`));
+    for (const action of actions) {
+        switch (action.type) {
+            case 'click':
+                if (action.selector) {
+                    console.log(chalk.gray(`  Clicking ${action.selector}`));
+                    await page.locator(action.selector).click();
+                }
+                break;
+            case 'type':
+                if (action.selector && action.text !== undefined) {
+                    console.log(chalk.gray(`  Typing into ${action.selector}`));
+                    await page.locator(action.selector).fill(action.text);
+                }
+                break;
+            case 'wait':
+                const duration = action.duration || 1000;
+                console.log(chalk.gray(`  Waiting ${duration}ms`));
+                await page.waitForTimeout(duration);
+                break;
+            case 'scroll':
+                if (action.x !== undefined && action.y !== undefined) {
+                    console.log(chalk.gray(`  Scrolling to (${action.x}, ${action.y})`));
+                    await page.evaluate(({ x, y }) => window.scrollTo(x, y), { x: action.x, y: action.y });
+                }
+                else {
+                    console.log(chalk.gray('  Scrolling to bottom'));
+                    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+                }
+                break;
+            case 'hover':
+                if (action.selector) {
+                    console.log(chalk.gray(`  Hovering over ${action.selector}`));
+                    await page.locator(action.selector).hover();
+                }
+                break;
+            default:
+                console.log(chalk.yellow(`  Unknown action type: ${action.type}`));
+        }
+    }
 }
-//# sourceMappingURL=index.js.map

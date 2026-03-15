@@ -1,23 +1,16 @@
 {
-  "name": "@nko/qa-skill",
+  "name": "qa",
   "version": "1.0.0",
-  "description": "QA testing skill for OpenClaw",
+  "description": "Systematic testing as QA Lead - analyzes code changes and runs appropriate tests",
+  "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "qa-skill": "./cli.js"
+    "qa": "./cli.js"
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
-    "test": "vitest"
+    "package": "npm run build && tar -czf ../dist-skills/qa.skill.tar.gz -C .. qa/dist qa/cli.js qa/skill.json"
   },
-  "dependencies": {
-    "commander": "^11.1.0",
-    "chalk": "^5.3.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "typescript": "^5.3.3"
-  },
-  "type": "module"
+  "keywords": ["openclaw", "testing", "qa", "vitest", "jest", "mocha"],
+  "dependencies": {}
 }

@@ -1,24 +1,16 @@
 {
-  "name": "@nko/browse-skill",
+  "name": "browse",
   "version": "1.0.0",
-  "description": "Browser automation skill for OpenClaw",
+  "description": "Browser automation for visual testing and QA with Playwright",
+  "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "browse-skill": "./cli.js"
+    "browse": "./cli.js"
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
-    "test": "vitest"
+    "package": "npm run build && tar -czf ../dist-skills/browse.skill.tar.gz -C .. browse/dist browse/cli.js browse/skill.json"
   },
-  "dependencies": {
-    "playwright": "^1.40.0",
-    "commander": "^11.1.0",
-    "chalk": "^5.3.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "typescript": "^5.3.3"
-  },
-  "type": "module"
+  "keywords": ["openclaw", "browser", "screenshot", "playwright", "automation"],
+  "dependencies": {}
 }
