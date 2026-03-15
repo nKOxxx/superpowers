@@ -50,11 +50,7 @@ async function captureScreenshot(options: ScreenshotOptions): Promise<string> {
     const base64Image = screenshotBuffer.toString('base64');
     spinner.succeed(chalk.green('Screenshot captured!'));
     return base64Image;
-  } catch (error) {
-    spinner.fail(chalk.red(`Failed: ${error instanceof Error ? error.message : 'Unknown error'}`));
-    throw error;
   } finally {
-    if (page) await page.close();
     if (context) await context.close();
     if (browser) await browser.close();
   }
@@ -62,10 +58,7 @@ async function captureScreenshot(options: ScreenshotOptions): Promise<string> {
 
 async function executeAction(page: Page, action: ActionStep): Promise<void> {
   switch (action.type) {
-    case 'click':
-      if (action.selector) await page.click(action.selector);
-      else if (action.x !== undefined && action.y !== undefined) await page.mouse.click(action.x, action.y);
-      break;
+    case 'click': if (action.selector) await page.click(action.selector); break;
     case 'type':
       if (action.selector && action.text !== undefined) await page.fill(action.selector, action.text);
       break;
@@ -88,29 +81,50 @@ function validateUrl(url: string): string {
   return url;
 }
 
-const program = new Command();
-program.name('browse').description('Browser automation with Playwright').version('1.0.0');
-
-program.argument('<url>', 'URL to capture').option('-v, --viewport <preset>', 'Viewport (mobile, tablet, desktop)', 'desktop')
-  .option('-f, --full-page', 'Full page screenshot').option('-s, --selector <selector>', 'Element selector')
-  .option('--flow <path>', 'Flow config JSON').action(async (url: string, options) => {
+export const browseCommand = new Command('browse')
+  .description('Browser automation with Playwright')
+  .argument('<url>', 'URL to capture')
+  .option('-v, --viewport <preset>', 'Viewport (mobile, tablet, desktop)', 'desktop')
+  .option('-f, --full-page', 'Full page screenshot')
+  .option('-s, --selector <selector>', 'Element selector')
+  .option('--flow <path>', 'Flow config JSON')
+  .action(async (url: string, options) => {
     try {
-      const base64Image = await captureScreenshot({ url: validateUrl(url), viewport: options.viewport, fullPage: options.fullPage, selector: options.selector, flow: options.flow });
+      const base64Image = await captureScreenshot({ 
+        url: validateUrl(url), 
+        viewport: options.viewport, 
+        fullPage: options.fullPage, 
+        selector: options.selector, 
+        flow: options.flow 
+      });
       console.log(`\n${chalk.cyan('=== BASE64 ===')}\n${base64Image}\n${chalk.cyan('=== END ===')}\n`);
-    } catch { process.exit(1); }
+    } catch { 
+      process.exit(1); 
+    }
   });
 
-program.command('flow').description('Execute flow test').argument('<config>', 'Config path').action(async (configPath: string) => {
-  try {
-    const flowConfig: FlowConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
-    const base64Image = await captureScreenshot({ url: validateUrl(flowConfig.url), viewport: flowConfig.viewport, flow: configPath });
-    console.log(`\n${chalk.cyan('=== BASE64 ===')}\n${base64Image}\n${chalk.cyan('=== END ===')}\n`);
-  } catch { process.exit(1); }
-});
+browseCommand.command('flow')
+  .description('Execute flow test')
+  .argument('<config>', 'Config path')
+  .action(async (configPath: string) => {
+    try {
+      const flowConfig: FlowConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
+      const base64Image = await captureScreenshot({ 
+        url: validateUrl(flowConfig.url), 
+        viewport: flowConfig.viewport, 
+        flow: configPath 
+      });
+      console.log(`\n${chalk.cyan('=== BASE64 ===')}\n${base64Image}\n${chalk.cyan('=== END ===')}\n`);
+    } catch { 
+      process.exit(1); 
+    }
+  });
 
-program.command('presets').description('Show viewport presets').action(() => {
-  console.log(chalk.cyan('Viewport Presets:'));
-  for (const [name, dim] of Object.entries(VIEWPORT_PRESETS)) console.log(`  ${chalk.yellow(name)} ${dim.width}x${dim.height}`);
-});
-
-program.parse();
+browseCommand.command('presets')
+  .description('Show viewport presets')
+  .action(() => {
+    console.log(chalk.cyan('Viewport Presets:'));
+    for (const [name, dim] of Object.entries(VIEWPORT_PRESETS)) {
+      console.log(`  ${chalk.yellow(name)} ${dim.width}x${dim.height}`);
+    }
+  });
