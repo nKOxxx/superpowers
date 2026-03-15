@@ -1,7 +1,49 @@
 import { chromium, type Browser, type Page, type BrowserContext } from 'playwright';
-import chalk from 'chalk';
 import { writeFileSync } from 'fs';
-import { Viewport, BrowseOptions, BrowseAction, FlowOptions, ScreenshotResult } from './types.js';
+
+// Types
+export interface Viewport {
+  width: number;
+  height: number;
+}
+
+export interface BrowseOptions {
+  url: string;
+  viewport?: 'mobile' | 'tablet' | 'desktop' | Viewport;
+  fullPage?: boolean;
+  selector?: string;
+  actions?: BrowseAction[];
+  outputPath?: string;
+  timeout?: number;
+}
+
+export interface BrowseAction {
+  type: 'click' | 'type' | 'wait' | 'scroll' | 'hover' | 'screenshot';
+  selector?: string;
+  text?: string;
+  duration?: number;
+  x?: number;
+  y?: number;
+  key?: string;
+  output?: string;
+}
+
+export interface FlowOptions {
+  url: string;
+  actions: BrowseAction[];
+  viewport?: string;
+  output?: string;
+}
+
+export interface ScreenshotResult {
+  success: boolean;
+  base64?: string;
+  path?: string;
+  error?: string;
+  viewport: Viewport;
+  url: string;
+  timestamp: string;
+}
 
 // Viewport presets
 const VIEWPORTS: Record<string, Viewport> = {
@@ -217,22 +259,4 @@ export async function flow(options: FlowOptions): Promise<string[]> {
     await context?.close();
     await browser?.close();
   }
-}
-
-// CLI entry point
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const args = process.argv.slice(2);
-  const url = args[0];
-  
-  if (!url) {
-    console.error(chalk.red('Usage: browse <url> [--viewport=mobile|tablet|desktop]'));
-    process.exit(1);
-  }
-  
-  const viewportArg = args.find(a => a.startsWith('--viewport='))?.split('=')[1] || 'desktop';
-  const fullPage = args.includes('--full-page');
-  const selector = args.find(a => a.startsWith('--selector='))?.split('=')[1];
-  const output = args.find(a => a.startsWith('--output='))?.split('=')[1];
-  
-  browseToFile({ url, viewport: viewportArg, fullPage, selector, outputPath: output });
 }

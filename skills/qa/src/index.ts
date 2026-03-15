@@ -1,7 +1,6 @@
 import { execSync, spawn } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
-import chalk from 'chalk';
 import { glob } from 'glob';
 
 export interface QaOptions {
