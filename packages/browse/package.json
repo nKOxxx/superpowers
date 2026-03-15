@@ -1,39 +1,25 @@
 {
-  "name": "@superpowers/browse",
+  "name": "browse",
   "version": "1.0.0",
   "description": "Browser automation for visual testing and QA with Playwright",
   "type": "module",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "bin": {
     "browse": "./cli.js"
   },
   "scripts": {
     "build": "tsc",
-    "clean": "rm -rf dist",
-    "prepack": "npm run build"
+    "package": "npm run build && tar -czf ../dist-skills/browse.skill.tar.gz -C .. browse/dist browse/cli.js browse/skill.json"
   },
   "keywords": [
     "openclaw",
-    "skill",
     "browser",
-    "playwright",
     "screenshot",
-    "automation",
-    "testing"
+    "playwright",
+    "automation"
   ],
-  "author": "nKO",
-  "license": "MIT",
   "dependencies": {
-    "chalk": "^5.3.0",
-    "commander": "^11.1.0",
-    "playwright": "^1.40.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "typescript": "^5.3.3"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "commander": "^14.0.3",
+    "playwright": "^1.58.2"
   }
 }

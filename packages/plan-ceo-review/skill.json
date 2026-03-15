@@ -1,24 +1,8 @@
 {
   "name": "plan-ceo-review",
   "version": "1.0.0",
-  "description": "BAT framework for product decisions",
-  "entry": "dist/index.js",
-  "command": "plan-ceo-review",
-  "args": ["question"],
-  "options": {
-    "auto": {
-      "type": "boolean",
-      "description": "Auto-generate BAT analysis without interactive prompts",
-      "default": false
-    },
-    "format": {
-      "type": "string",
-      "description": "Output format: markdown, json, text",
-      "default": "markdown"
-    },
-    "save": {
-      "type": "string",
-      "description": "Save output to file"
-    }
-  }
+  "description": "Product strategy review using BAT framework (Brand, Attention, Trust) and 10-star methodology",
+  "entry": "cli.js",
+  "type": "cli",
+  "config": {}
 }

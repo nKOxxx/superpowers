@@ -1,101 +1,65 @@
-# @superpowers/browse
+# /browse - Browser Automation Skill
 
-Browser automation for visual testing and QA with Playwright.
+Browser automation with Playwright for visual testing and QA.
 
-## Installation
+## Features
 
-```bash
-npm install @superpowers/browse
-```
+- **Screenshot capture**: Single URL, full page, or element-specific
+- **Viewport presets**: Mobile (375x667), Tablet (768x1024), Desktop (1920x1080)
+- **Custom viewport**: Specify exact dimensions
+- **Action sequences**: Click, type, wait, scroll, hover
+- **Base64 output**: For Telegram integration
 
 ## Usage
 
-### CLI
-
 ```bash
-# Basic screenshot of a URL
+# Capture desktop screenshot
 browse https://example.com
 
 # Mobile viewport
-browse https://example.com --viewport mobile
-
-# Custom dimensions
-browse https://example.com --width 1280 --height 720
+browse https://example.com --viewport=mobile
 
 # Full page screenshot
 browse https://example.com --full-page
 
-# Screenshot specific element
-browse https://example.com --selector "#header"
+# Specific element
+browse https://example.com --selector="#hero"
 
-# Save to file
-browse https://example.com --output screenshot.png
+# Custom viewport
+browse https://example.com --width=1400 --height=900
 
-# Wait longer for dynamic content
-browse https://example.com --wait 5000
-
-# Execute actions before screenshot
-browse https://example.com --actions '[{"type":"click","selector":"#menu"},{"type":"wait","duration":1000}]'
+# Action sequence
+browse https://example.com --actions="click:#button,wait:1000,type:#input:hello"
 ```
 
-### Programmatic
+## Options
 
-```typescript
-import { browseCommand } from '@superpowers/browse';
+| Option | Description |
+|--------|-------------|
+| `--viewport` | Preset: mobile, tablet, desktop |
+| `--width` | Custom viewport width |
+| `--height` | Custom viewport height |
+| `--full-page` | Capture full scrollable page |
+| `--selector` | Screenshot specific CSS element |
+| `--actions` | Action sequence (comma-separated) |
+| `--output` | Output file path |
 
-await browseCommand('https://example.com', {
-  viewport: 'desktop',
-  fullPage: true,
-  wait: '2000',
-});
+## Action Syntax
+
+Actions are comma-separated with colon delimiters:
+- `click:selector` - Click element
+- `type:selector:text` - Type text into element
+- `wait:ms` - Wait milliseconds
+- `scroll:selector` - Scroll to element
+- `hover:selector` - Hover over element
+
+## Requirements
+
+- Node.js 18+
+- Playwright (auto-installed)
+
+## Installation
+
+```bash
+openclaw skill install browse.skill.tar.gz
 ```
-
-## Viewport Presets
-
-- `mobile` - 375×667 (iPhone SE)
-- `mobile-lg` - 414×896 (iPhone 11 Pro Max)
-- `tablet` - 768×1024 (iPad)
-- `tablet-lg` - 1024×1366 (iPad Pro)
-- `desktop` - 1920×1080 (default)
-- `desktop-hd` - 2560×1440
-- `desktop-4k` - 3840×2160
-
-## Actions
-
-Actions can be passed as a JSON array to interact with the page before screenshot:
-
-```json
-[
-  { "type": "click", "selector": "#button" },
-  { "type": "type", "selector": "#input", "text": "Hello World" },
-  { "type": "wait", "duration": 1000 },
-  { "type": "scroll", "x": 0, "y": 500 },
-  { "type": "hover", "selector": "#dropdown" },
-  { "type": "press", "selector": "#input", "key": "Enter" },
-  { "type": "select", "selector": "#select", "value": "option1" }
-]
-```
-
-## CLI Options
-
-```
-Usage: browse [options] <url>
-
-Arguments:
-  url                    URL to browse
-
-Options:
-  -v, --viewport <preset>  Viewport preset (mobile, tablet, desktop) (default: "desktop")
-  -W, --width <number>     Custom viewport width
-  -H, --height <number>    Custom viewport height
-  -f, --full-page          Capture full page screenshot (default: false)
-  -s, --selector <selector>  CSS selector to capture specific element
-  -o, --output <path>      Output file path (default: base64 to stdout)
-  -w, --wait <ms>          Wait time in ms after load (default: "1000")
-  --actions <json>         JSON array of actions to perform before screenshot
-  -h, --help              display help for command
-```
-
-## License
-
-MIT

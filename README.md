@@ -1,4 +1,4 @@
-# @nko/superpowers
+# Superpowers
 
 AI-powered workflows for development, testing, and product decisions.
 
@@ -28,17 +28,10 @@ npm run package
 
 ```
 packages/
-├── browse/          # Browser automation
-│   ├── src/
-│   │   └── index.ts
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── skill.json
-│   ├── cli.js
-│   └── README.md
-├── qa/              # Testing automation
-├── ship/            # Release pipeline
-└── plan-ceo-review/ # Product review
+├── browse/           # Browser automation
+├── qa/               # Testing automation
+├── ship/             # Release pipeline
+└── plan-ceo-review/  # Product review
 ```
 
 ## Individual Skill Usage
@@ -85,12 +78,13 @@ Skills are packaged into `dist-skills/*.skill.tar.gz` files for OpenClaw deploym
 
 ```bash
 npm run package
-# Creates:
-# - dist-skills/browse.skill.tar.gz
-# - dist-skills/qa.skill.tar.gz
-# - dist-skills/ship.skill.tar.gz
-# - dist-skills/plan-ceo-review.skill.tar.gz
 ```
+
+Creates:
+- `dist-skills/browse.skill.tar.gz`
+- `dist-skills/qa.skill.tar.gz`
+- `dist-skills/ship.skill.tar.gz`
+- `dist-skills/plan-ceo-review.skill.tar.gz`
 
 ## Requirements
 

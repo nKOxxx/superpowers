@@ -1,39 +1,28 @@
 {
-  "name": "@superpowers/qa",
+  "name": "qa",
   "version": "1.0.0",
   "description": "Systematic testing as QA Lead - analyzes code changes and runs appropriate tests",
   "type": "module",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "bin": {
     "qa": "./cli.js"
   },
   "scripts": {
     "build": "tsc",
-    "clean": "rm -rf dist",
-    "prepack": "npm run build"
+    "package": "npm run build && tar -czf ../dist-skills/qa.skill.tar.gz -C .. qa/dist qa/cli.js qa/skill.json"
   },
   "keywords": [
     "openclaw",
-    "skill",
     "testing",
     "qa",
     "vitest",
     "jest",
-    "mocha",
-    "coverage"
+    "mocha"
   ],
-  "author": "nKO",
-  "license": "MIT",
-  "dependencies": {
-    "chalk": "^5.3.0",
-    "commander": "^11.1.0"
-  },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "typescript": "^5.3.3"
+    "vitest": "^1.0.0"
   },
-  "engines": {
-    "node": ">=18.0.0"
+  "dependencies": {
+    "commander": "^14.0.3"
   }
 }
