@@ -1,0 +1,8 @@
+{
+  "name": "plan-ceo-review",
+  "version": "1.0.0",
+  "description": "Product strategy with BAT framework",
+  "entry": "index.js",
+  "bin": { "plan-ceo-review": "./index.js" },
+  "permissions": []
+}

@@ -1,0 +1,8 @@
+{
+  "name": "ship",
+  "version": "1.0.0",
+  "description": "One-command release pipeline",
+  "entry": "index.js",
+  "bin": { "ship": "./index.js" },
+  "permissions": ["exec", "filesystem", "network"]
+}

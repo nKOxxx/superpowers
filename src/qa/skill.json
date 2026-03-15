@@ -1,0 +1,8 @@
+{
+  "name": "qa",
+  "version": "1.0.0",
+  "description": "Systematic testing as QA Lead",
+  "entry": "index.js",
+  "bin": { "qa": "./index.js" },
+  "permissions": ["exec", "filesystem"]
+}

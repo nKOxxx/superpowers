@@ -1,0 +1,13 @@
+{
+  "name": "browse",
+  "version": "1.0.0",
+  "description": "Browser automation with Playwright - Screenshot capture and flow-based testing",
+  "entry": "index.js",
+  "bin": {
+    "browse": "./index.js"
+  },
+  "permissions": ["network"],
+  "env": {
+    "PLAYWRIGHT_BROWSERS_PATH": "0"
+  }
+}
