@@ -257,7 +257,7 @@ function generateRisks(_input: ReviewInput, tenStar: TenStarRating): string[] {
     risks.push('Team capability gaps may require hiring or training');
   }
   
-  if (input.resources === 'limited') {
+  if (_input.resources === 'limited') {
     risks.push('Limited resources may constrain execution quality');
   }
   
@@ -486,9 +486,8 @@ function showFrameworks(): void {
   console.log('');
 }
 
-// Run if called directly (ES module check)
-const isMainModule = import.meta.url.startsWith('file://') && process.argv[1] && import.meta.url.endsWith(process.argv[1]);
-if (isMainModule) {
+// Run if called directly
+if (require.main === module) {
   program.parse();
 }
 
