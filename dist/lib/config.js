@@ -1,74 +1,91 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defaultConfig = void 0;
 exports.loadConfig = loadConfig;
-exports.getConfig = getConfig;
+exports.mergeWithDefaults = mergeWithDefaults;
 const fs_1 = require("fs");
 const path_1 = require("path");
-exports.defaultConfig = {
-    browser: {
-        defaultViewport: 'desktop',
-        screenshotDir: './screenshots',
-        viewports: {
-            mobile: { width: 375, height: 667 },
-            tablet: { width: 768, height: 1024 },
-            desktop: { width: 1280, height: 720 }
-        },
-        flows: {},
-        timeout: 30000
-    },
-    qa: {
-        defaultMode: 'targeted',
-        coverageThreshold: 80,
-        testCommand: 'npm test',
-        testPatterns: {
-            unit: ['**/*.test.ts', '**/*.spec.ts'],
-            integration: ['**/*.integration.test.ts'],
-            e2e: ['**/e2e/**/*.spec.ts']
+const CONFIG_FILES = [
+    'superpowers.config.json',
+    '.superpowers.json',
+    'superpowers.config.js',
+];
+/**
+ * Load configuration from file
+ */
+function loadConfig(cwd = process.cwd()) {
+    for (const configFile of CONFIG_FILES) {
+        const configPath = (0, path_1.join)(cwd, configFile);
+        if (!(0, fs_1.existsSync)(configPath)) {
+            continue;
         }
-    },
-    ship: {
-        requireCleanWorkingDir: true,
-        runTestsBeforeRelease: true,
-        testCommand: 'npm test',
-        changelog: {
-            preset: 'conventional',
-            includeContributors: true
-        },
-        github: {
-            defaultOrg: 'nKOxxx'
-        },
-        telegram: {
-            notifyOnShip: true
+        try {
+            if (configFile.endsWith('.js')) {
+                // Dynamic import for JS config
+                return require(configPath);
+            }
+            else {
+                // JSON config
+                const content = (0, fs_1.readFileSync)(configPath, 'utf-8');
+                return JSON.parse(content);
+            }
         }
-    },
-    ceoReview: {
-        minimumScore: 10,
-        requireAllBAT: false,
-        autoGenerateNextSteps: true,
-        marketAnalysis: true
+        catch (error) {
+            console.warn(`Warning: Failed to load config from ${configFile}`);
+        }
     }
-};
-async function loadConfig(cwd = process.cwd()) {
-    const configPath = (0, path_1.join)(cwd, 'superpowers.config.json');
-    try {
-        const content = await fs_1.promises.readFile(configPath, 'utf-8');
-        const userConfig = JSON.parse(content);
-        // Deep merge with defaults
-        return {
-            browser: { ...exports.defaultConfig.browser, ...userConfig.browser },
-            qa: { ...exports.defaultConfig.qa, ...userConfig.qa },
-            ship: { ...exports.defaultConfig.ship, ...userConfig.ship },
-            ceoReview: { ...exports.defaultConfig.ceoReview, ...userConfig.ceoReview }
-        };
-    }
-    catch (error) {
-        // Return defaults if config doesn't exist or is invalid
-        return exports.defaultConfig;
-    }
+    // Return default config
+    return {
+        browser: {
+            defaultViewport: 'desktop',
+            screenshotDir: './screenshots',
+        },
+        qa: {
+            defaultMode: 'targeted',
+            testCommand: 'npm test',
+        },
+        ship: {
+            requireCleanWorkingDir: true,
+            runTestsBeforeRelease: true,
+            changelogPath: 'CHANGELOG.md',
+        },
+        ceoReview: {
+            minimumScore: 10,
+            autoGenerateNextSteps: true,
+        },
+    };
 }
-function getConfig() {
-    // Synchronous version for when async isn't needed
-    return exports.defaultConfig;
+/**
+ * Merge user config with defaults
+ */
+function mergeWithDefaults(config) {
+    return {
+        browser: {
+            defaultViewport: 'desktop',
+            screenshotDir: './screenshots',
+            viewports: {},
+            flows: {},
+            ...config.browser,
+        },
+        qa: {
+            defaultMode: 'targeted',
+            testCommand: 'npm test',
+            coverageCommand: 'npm run test:coverage',
+            coverageThreshold: 80,
+            ...config.qa,
+        },
+        ship: {
+            requireCleanWorkingDir: true,
+            runTestsBeforeRelease: true,
+            changelogPath: 'CHANGELOG.md',
+            versionFiles: [],
+            ...config.ship,
+        },
+        ceoReview: {
+            minimumScore: 10,
+            requireAllBAT: false,
+            autoGenerateNextSteps: true,
+            ...config.ceoReview,
+        },
+    };
 }
 //# sourceMappingURL=config.js.map

@@ -1,48 +1,139 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createGitHubClient = createGitHubClient;
-exports.createRelease = createRelease;
-exports.getLatestRelease = getLatestRelease;
 exports.parseRepoString = parseRepoString;
-const rest_1 = require("@octokit/rest");
-function createGitHubClient() {
-    const token = process.env.GH_TOKEN;
-    if (!token) {
-        throw new Error('GH_TOKEN environment variable is required for GitHub operations');
+exports.createGitHubClient = createGitHubClient;
+exports.getToken = getToken;
+exports.hasGHCLI = hasGHCLI;
+exports.createRelease = createRelease;
+exports.getRepoInfo = getRepoInfo;
+const GITHUB_API = 'https://api.github.com';
+/**
+ * Parse owner/repo string format
+ */
+function parseRepoString(repoString) {
+    const parts = repoString.split('/');
+    if (parts.length !== 2) {
+        throw new Error('Invalid repo format. Expected: owner/repo');
     }
-    return new rest_1.Octokit({ auth: token });
+    return { owner: parts[0], repo: parts[1] };
 }
-async function createRelease(options) {
-    const octokit = createGitHubClient();
-    const response = await octokit.repos.createRelease({
-        owner: options.owner,
-        repo: options.repo,
-        tag_name: options.tag,
-        name: options.name,
-        body: options.body,
-        draft: options.draft ?? false,
-        prerelease: options.prerelease ?? false
-    });
-    return response.data.html_url;
+/**
+ * Create GitHub API client
+ */
+function createGitHubClient() {
+    const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+    if (!token) {
+        throw new Error('GH_TOKEN environment variable is required');
+    }
+    return { token };
 }
-async function getLatestRelease(owner, repo) {
+/**
+ * Get GitHub token from environment
+ */
+function getToken() {
+    return process.env.GH_TOKEN || process.env.GITHUB_TOKEN || null;
+}
+/**
+ * Check if GitHub CLI is available
+ */
+function hasGHCLI() {
     try {
-        const octokit = createGitHubClient();
-        const response = await octokit.repos.getLatestRelease({ owner, repo });
+        const { execSync } = require('child_process');
+        execSync('gh --version', { stdio: 'pipe' });
+        return true;
+    }
+    catch {
+        return false;
+    }
+}
+/**
+ * Create a GitHub release using gh CLI (preferred) or API
+ */
+async function createRelease(owner, repo, release) {
+    const token = getToken();
+    // Try gh CLI first
+    if (hasGHCLI()) {
+        try {
+            const { execSync } = require('child_process');
+            const args = [
+                'gh', 'release', 'create', release.tag_name,
+                '--title', release.name,
+                '--notes', release.body,
+            ];
+            if (release.draft)
+                args.push('--draft');
+            if (release.prerelease)
+                args.push('--prerelease');
+            execSync(args.join(' '), { stdio: 'pipe' });
+            return {
+                success: true,
+                url: `https://github.com/${owner}/${repo}/releases/tag/${release.tag_name}`,
+            };
+        }
+        catch (error) {
+            // Fall through to API method
+        }
+    }
+    // Fallback to API
+    if (!token) {
         return {
-            tag: response.data.tag_name,
-            url: response.data.html_url
+            success: false,
+            error: 'No GitHub token available. Set GH_TOKEN environment variable.',
+        };
+    }
+    try {
+        const response = await fetch(`${GITHUB_API}/repos/${owner}/${repo}/releases`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `token ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(release),
+        });
+        if (!response.ok) {
+            const error = await response.text();
+            return { success: false, error };
+        }
+        const data = await response.json();
+        return {
+            success: true,
+            url: data.html_url,
         };
     }
     catch (error) {
-        return undefined;
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        };
     }
 }
-function parseRepoString(repo) {
-    const parts = repo.split('/');
-    if (parts.length !== 2) {
-        throw new Error(`Invalid repo format: ${repo}. Expected "owner/repo"`);
+/**
+ * Get repository info
+ */
+async function getRepoInfo(owner, repo) {
+    const token = getToken();
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    if (token) {
+        headers['Authorization'] = `token ${token}`;
     }
-    return { owner: parts[0], repo: parts[1] };
+    try {
+        const response = await fetch(`${GITHUB_API}/repos/${owner}/${repo}`, { headers });
+        if (!response.ok) {
+            return { success: false, error: `HTTP ${response.status}` };
+        }
+        const data = await response.json();
+        return {
+            success: true,
+            default_branch: data.default_branch,
+        };
+    }
+    catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        };
+    }
 }
 //# sourceMappingURL=github.js.map

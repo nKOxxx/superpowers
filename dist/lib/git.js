@@ -1,134 +1,145 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getGitStatus = getGitStatus;
-exports.getDiffFiles = getDiffFiles;
-exports.getRecentCommits = getRecentCommits;
-exports.getConventionalCommits = getConventionalCommits;
-exports.createCommit = createCommit;
+exports.isGitRepo = isGitRepo;
+exports.getCurrentBranch = getCurrentBranch;
+exports.isWorkingDirectoryClean = isWorkingDirectoryClean;
+exports.getLatestTag = getLatestTag;
+exports.getChangedFiles = getChangedFiles;
+exports.getCommitsSince = getCommitsSince;
 exports.createTag = createTag;
 exports.pushToRemote = pushToRemote;
-exports.getCurrentBranch = getCurrentBranch;
-exports.getLastTag = getLastTag;
+exports.createCommit = createCommit;
+exports.runTests = runTests;
+exports.getRemoteUrl = getRemoteUrl;
+exports.parseRepoFromRemote = parseRepoFromRemote;
 const child_process_1 = require("child_process");
-function getGitStatus() {
+const fs_1 = require("fs");
+const path_1 = require("path");
+/**
+ * Check if we're in a git repository
+ */
+function isGitRepo(cwd = process.cwd()) {
+    return (0, fs_1.existsSync)((0, path_1.join)(cwd, '.git'));
+}
+/**
+ * Get current git branch
+ */
+function getCurrentBranch(cwd = process.cwd()) {
     try {
-        const statusOutput = (0, child_process_1.execSync)('git status --porcelain', { encoding: 'utf-8', cwd: process.cwd() });
-        const lines = statusOutput.trim().split('\n').filter(Boolean);
-        const modified = [];
-        const staged = [];
-        const untracked = [];
-        for (const line of lines) {
-            const status = line.slice(0, 2);
-            const file = line.slice(3);
-            if (status[0] !== ' ' && status[0] !== '?') {
-                staged.push(file);
-            }
-            if (status[1] !== ' ') {
-                modified.push(file);
-            }
-            if (status === '??') {
-                untracked.push(file);
-            }
-        }
-        return {
-            isClean: lines.length === 0,
-            modified,
-            staged,
-            untracked
-        };
+        return (0, child_process_1.execSync)('git branch --show-current', { cwd, encoding: 'utf-8' }).trim();
     }
-    catch (error) {
-        return {
-            isClean: true,
-            modified: [],
-            staged: [],
-            untracked: []
-        };
-    }
-}
-function getDiffFiles(ref = 'HEAD~1') {
-    try {
-        const output = (0, child_process_1.execSync)(`git diff --name-only ${ref}`, {
-            encoding: 'utf-8',
-            cwd: process.cwd()
-        });
-        return output.trim().split('\n').filter(Boolean);
-    }
-    catch (error) {
-        return [];
-    }
-}
-function getRecentCommits(count = 10) {
-    try {
-        const format = '%H|%s|%an|%ad';
-        const output = (0, child_process_1.execSync)(`git log -${count} --pretty=format:"${format}" --date=short`, { encoding: 'utf-8', cwd: process.cwd() });
-        return output.trim().split('\n').map(line => {
-            const [hash, message, author, date] = line.split('|');
-            return { hash, message, author, date };
-        });
-    }
-    catch (error) {
-        return [];
-    }
-}
-function getConventionalCommits(sinceTag) {
-    try {
-        const range = sinceTag ? `${sinceTag}..HEAD` : 'HEAD~20..HEAD';
-        const output = (0, child_process_1.execSync)(`git log ${range} --pretty=format:"%s"`, { encoding: 'utf-8', cwd: process.cwd() });
-        const conventionalRegex = /^(\w+)(?:\(([^)]+)\))?:\s*(.+)$/;
-        return output
-            .trim()
-            .split('\n')
-            .filter(msg => conventionalRegex.test(msg))
-            .map(msg => {
-            const match = msg.match(conventionalRegex);
-            if (match) {
-                return {
-                    type: match[1],
-                    scope: match[2],
-                    message: match[3]
-                };
-            }
-            return { type: 'other', message: msg };
-        });
-    }
-    catch (error) {
-        return [];
-    }
-}
-async function createCommit(message) {
-    (0, child_process_1.execSync)('git add -A', { cwd: process.cwd() });
-    (0, child_process_1.execSync)(`git commit -m "${message}"`, { cwd: process.cwd() });
-}
-async function createTag(version) {
-    (0, child_process_1.execSync)(`git tag -a v${version} -m "Release v${version}"`, { cwd: process.cwd() });
-}
-async function pushToRemote(includeTags = false) {
-    (0, child_process_1.execSync)('git push', { cwd: process.cwd() });
-    if (includeTags) {
-        (0, child_process_1.execSync)('git push --tags', { cwd: process.cwd() });
-    }
-}
-function getCurrentBranch() {
-    try {
-        return (0, child_process_1.execSync)('git branch --show-current', {
-            encoding: 'utf-8',
-            cwd: process.cwd()
-        }).trim();
-    }
-    catch (error) {
+    catch {
         return 'main';
     }
 }
-function getLastTag() {
+/**
+ * Check if working directory is clean
+ */
+function isWorkingDirectoryClean(cwd = process.cwd()) {
     try {
-        return (0, child_process_1.execSync)('git describe --tags --abbrev=0', {
-            encoding: 'utf-8',
-            cwd: process.cwd()
-        }).trim();
+        const status = (0, child_process_1.execSync)('git status --porcelain', { cwd, encoding: 'utf-8' }).trim();
+        return status === '';
     }
-    catch (error) {
-        return undefined;
+    catch {
+        return false;
     }
+}
+/**
+ * Get the latest git tag
+ */
+function getLatestTag(cwd = process.cwd()) {
+    try {
+        return (0, child_process_1.execSync)('git describe --tags --abbrev=0', { cwd, encoding: 'utf-8' }).trim();
+    }
+    catch {
+        return null;
+    }
+}
+/**
+ * Get list of files changed since a commit/tag
+ */
+function getChangedFiles(since = 'HEAD~1', cwd = process.cwd()) {
+    try {
+        const output = (0, child_process_1.execSync)(`git diff --name-only ${since}`, { cwd, encoding: 'utf-8' });
+        return output.trim().split('\n').filter(f => f.length > 0);
+    }
+    catch {
+        return [];
+    }
+}
+/**
+ * Get conventional commits since a tag
+ */
+function getCommitsSince(tag, cwd = process.cwd()) {
+    try {
+        const range = tag ? `${tag}..HEAD` : 'HEAD';
+        const output = (0, child_process_1.execSync)(`git log ${range} --pretty=format:"%s"`, { cwd, encoding: 'utf-8' });
+        return output.trim().split('\n').filter(c => c.length > 0);
+    }
+    catch {
+        return [];
+    }
+}
+/**
+ * Create a git tag
+ */
+function createTag(version, message, cwd = process.cwd()) {
+    (0, child_process_1.execSync)(`git tag -a v${version} -m "${message}"`, { cwd, stdio: 'inherit' });
+}
+/**
+ * Push commits and tags
+ */
+function pushToRemote(cwd = process.cwd()) {
+    (0, child_process_1.execSync)('git push && git push --tags', { cwd, stdio: 'inherit' });
+}
+/**
+ * Create a commit
+ */
+function createCommit(message, files = ['.'], cwd = process.cwd()) {
+    (0, child_process_1.execSync)(`git add ${files.join(' ')} && git commit -m "${message}"`, { cwd, stdio: 'inherit' });
+}
+/**
+ * Run tests via npm/yarn/pnpm
+ */
+async function runTests(command, cwd = process.cwd()) {
+    return new Promise((resolve) => {
+        const child = (0, child_process_1.spawn)('sh', ['-c', command], {
+            cwd,
+            stdio: 'pipe',
+        });
+        let output = '';
+        child.stdout?.on('data', (data) => {
+            output += data.toString();
+        });
+        child.stderr?.on('data', (data) => {
+            output += data.toString();
+        });
+        child.on('close', (code) => {
+            resolve({ success: code === 0, output });
+        });
+    });
+}
+/**
+ * Get repository remote URL
+ */
+function getRemoteUrl(cwd = process.cwd()) {
+    try {
+        return (0, child_process_1.execSync)('git remote get-url origin', { cwd, encoding: 'utf-8' }).trim();
+    }
+    catch {
+        return null;
+    }
+}
+/**
+ * Parse owner/repo from git remote URL
+ */
+function parseRepoFromRemote(url) {
+    // Handle HTTPS: https://github.com/owner/repo.git
+    // Handle SSH: git@github.com:owner/repo.git
+    const match = url.match(/github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/);
+    if (match) {
+        return { owner: match[1], repo: match[2] };
+    }
+    return null;
 }
 //# sourceMappingURL=git.js.map

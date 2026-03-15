@@ -1,53 +1,55 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendTelegramNotification = sendTelegramNotification;
-exports.formatShipNotification = formatShipNotification;
-exports.formatQANotification = formatQANotification;
-async function sendTelegramNotification(message) {
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = process.env.TELEGRAM_CHAT_ID;
-    if (!botToken || !chatId) {
-        console.warn('Telegram notification skipped: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set');
-        return;
+exports.sendTelegramMessage = sendTelegramMessage;
+exports.formatReleaseMessage = formatReleaseMessage;
+/**
+ * Send notification to Telegram
+ */
+async function sendTelegramMessage(message, botToken, chatId) {
+    const token = botToken || process.env.TELEGRAM_BOT_TOKEN;
+    const chat = chatId || process.env.TELEGRAM_CHAT_ID;
+    if (!token || !chat) {
+        return {
+            success: false,
+            error: 'Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID',
+        };
     }
-    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
     try {
-        const response = await fetch(url, {
+        const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
-                chat_id: chatId,
+                chat_id: chat,
                 text: message,
-                parse_mode: 'HTML'
-            })
+                parse_mode: 'Markdown',
+            }),
         });
         if (!response.ok) {
             const error = await response.text();
-            console.warn(`Failed to send Telegram notification: ${error}`);
+            return { success: false, error };
         }
+        return { success: true };
     }
     catch (error) {
-        console.warn(`Telegram notification error: ${error}`);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        };
     }
 }
-function formatShipNotification(repo, version, releaseUrl) {
-    return `
-🚀 <b>New Release Shipped!</b>
-
-<b>Repository:</b> ${repo}
-<b>Version:</b> v${version}
-
-<a href="${releaseUrl}">View Release</a>
-`.trim();
-}
-function formatQANotification(passed, failed, duration) {
-    const status = failed === 0 ? '✅' : '❌';
-    return `
-${status} <b>QA Test Results</b>
-
-<b>Passed:</b> ${passed}
-<b>Failed:</b> ${failed}
-<b>Duration:</b> ${duration}
-`.trim();
+/**
+ * Format release message for Telegram
+ */
+function formatReleaseMessage(repo, version, changelog) {
+    return [
+        `🚀 *New Release: ${repo} v${version}*`,
+        '',
+        '📝 *Changelog:*',
+        changelog.slice(0, 1000), // Telegram limit
+        '',
+        `[View on GitHub](https://github.com/${repo}/releases/tag/v${version})`,
+    ].join('\n');
 }
 //# sourceMappingURL=telegram.js.map

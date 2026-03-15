@@ -30,10 +30,10 @@ describe('BAT Framework', () => {
       expect(result.recommendation).toBe('CONSIDER');
     });
 
-    it('should recommend DONT_BUILD for scores < 7', () => {
+    it('should recommend DON\'T BUILD for scores < 7', () => {
       const result = calculateBATScore('Test Feature', 1, 2, 1);
       expect(result.total).toBe(4);
-      expect(result.recommendation).toBe('DONT_BUILD');
+      expect(result.recommendation).toBe("DON'T BUILD");
     });
   });
 

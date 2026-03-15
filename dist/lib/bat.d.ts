@@ -1,20 +1,16 @@
-export interface BATScore {
-    brand: number;
-    attention: number;
-    trust: number;
-}
-export interface BATEvaluation {
-    score: BATScore;
+import type { BATScores, Recommendation } from '../types/index.js';
+export interface BATResult {
+    feature: string;
+    score: BATScores;
     total: number;
-    rationale: {
-        brand: string;
-        attention: string;
-        trust: string;
-    };
-    recommendation: 'BUILD' | 'CONSIDER' | 'DONT_BUILD';
-    nextSteps: string[];
+    recommendation: Recommendation;
 }
-export declare function calculateBATScore(feature: string, brandScore: number, attentionScore: number, trustScore: number): BATEvaluation;
+/**
+ * Calculate BAT (Brand, Attention, Trust) scores for a feature
+ */
+export declare function calculateBATScore(feature: string, brand: number, attention: number, trust: number): BATResult;
+/**
+ * Format a score as star rating string
+ */
 export declare function formatStarRating(score: number): string;
-export declare function formatBATOutput(evaluation: BATEvaluation, feature: string): string;
 //# sourceMappingURL=bat.d.ts.map
