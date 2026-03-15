@@ -1,46 +1,7 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.run = run;
-const child_process_1 = require("child_process");
-const fs = __importStar(require("fs"));
-const path = __importStar(require("path"));
-const chalk_1 = __importDefault(require("chalk"));
+import { execSync } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
+import chalk from 'chalk';
 function detectTestFramework() {
     const packageJsonPath = path.join(process.cwd(), 'package.json');
     if (!fs.existsSync(packageJsonPath)) {
@@ -58,7 +19,7 @@ function detectTestFramework() {
 }
 function getChangedFiles(diffRange) {
     try {
-        const output = (0, child_process_1.execSync)(`git diff --name-only ${diffRange}`, { encoding: 'utf-8' });
+        const output = execSync(`git diff --name-only ${diffRange}`, { encoding: 'utf-8' });
         return output.trim().split('\n').filter(f => f.length > 0);
     }
     catch {
@@ -123,7 +84,7 @@ function runTests(testFiles, framework, coverage) {
     }
     const startTime = Date.now();
     try {
-        (0, child_process_1.execSync)(command, {
+        execSync(command, {
             encoding: 'utf-8',
             stdio: 'pipe',
             timeout: 300000 // 5 minutes
@@ -152,7 +113,7 @@ function runTests(testFiles, framework, coverage) {
     return results;
 }
 function runSmokeTests(framework) {
-    console.log(chalk_1.default.blue('\nℹ Running smoke tests...'));
+    console.log(chalk.blue('\nℹ Running smoke tests...'));
     let command;
     switch (framework) {
         case 'vitest':
@@ -166,7 +127,7 @@ function runSmokeTests(framework) {
     }
     const startTime = Date.now();
     try {
-        (0, child_process_1.execSync)(command, { encoding: 'utf-8', stdio: 'pipe' });
+        execSync(command, { encoding: 'utf-8', stdio: 'pipe' });
         return [{ file: 'smoke tests', passed: true, duration: Date.now() - startTime }];
     }
     catch (error) {
@@ -179,7 +140,7 @@ function runSmokeTests(framework) {
     }
 }
 function runFullSuite(framework, coverage) {
-    console.log(chalk_1.default.blue('\nℹ Running full test suite...'));
+    console.log(chalk.blue('\nℹ Running full test suite...'));
     const coverageFlag = coverage ? ' --coverage' : '';
     let command;
     switch (framework) {
@@ -194,7 +155,7 @@ function runFullSuite(framework, coverage) {
     }
     const startTime = Date.now();
     try {
-        (0, child_process_1.execSync)(command, { encoding: 'utf-8', stdio: 'pipe' });
+        execSync(command, { encoding: 'utf-8', stdio: 'pipe' });
         return [{ file: 'full suite', passed: true, duration: Date.now() - startTime }];
     }
     catch (error) {
@@ -206,29 +167,29 @@ function runFullSuite(framework, coverage) {
             }];
     }
 }
-async function run(options) {
-    console.log(chalk_1.default.cyan('══════════════════════════════════════════════════'));
-    console.log(chalk_1.default.cyan(`QA Mode: ${options.mode.toUpperCase()}`));
-    console.log(chalk_1.default.cyan('══════════════════════════════════════════════════\n'));
+export async function run(options) {
+    console.log(chalk.cyan('══════════════════════════════════════════════════'));
+    console.log(chalk.cyan(`QA Mode: ${options.mode.toUpperCase()}`));
+    console.log(chalk.cyan('══════════════════════════════════════════════════\n'));
     const framework = detectTestFramework();
-    console.log(chalk_1.default.gray(`Framework: ${framework}`));
-    console.log(chalk_1.default.gray(`Mode: ${options.mode}`));
-    console.log(chalk_1.default.gray(`Coverage: ${options.coverage ? 'enabled' : 'disabled'}\n`));
+    console.log(chalk.gray(`Framework: ${framework}`));
+    console.log(chalk.gray(`Mode: ${options.mode}`));
+    console.log(chalk.gray(`Coverage: ${options.coverage ? 'enabled' : 'disabled'}\n`));
     let results = [];
     if (options.mode === 'targeted') {
         const changedFiles = getChangedFiles(options.diff);
-        console.log(chalk_1.default.blue(`Files Changed: ${changedFiles.length}`));
-        changedFiles.forEach(f => console.log(chalk_1.default.gray(`  - ${f}`)));
+        console.log(chalk.blue(`Files Changed: ${changedFiles.length}`));
+        changedFiles.forEach(f => console.log(chalk.gray(`  - ${f}`)));
         if (changedFiles.length === 0) {
-            console.log(chalk_1.default.yellow('\n⚠ No files changed, running smoke tests instead'));
+            console.log(chalk.yellow('\n⚠ No files changed, running smoke tests instead'));
             results = runSmokeTests(framework);
         }
         else {
             const testFiles = mapToTestFiles(changedFiles);
-            console.log(chalk_1.default.blue(`\nTests Selected: ${testFiles.length}`));
-            testFiles.forEach(f => console.log(chalk_1.default.gray(`  - ${f}`)));
+            console.log(chalk.blue(`\nTests Selected: ${testFiles.length}`));
+            testFiles.forEach(f => console.log(chalk.gray(`  - ${f}`)));
             if (testFiles.length === 0) {
-                console.log(chalk_1.default.yellow('\n⚠ No test files found, running smoke tests'));
+                console.log(chalk.yellow('\n⚠ No test files found, running smoke tests'));
                 results = runSmokeTests(framework);
             }
             else {
@@ -243,30 +204,29 @@ async function run(options) {
         results = runFullSuite(framework, options.coverage);
     }
     // Display results
-    console.log(chalk_1.default.cyan('\n──────────────────────────────────────────────────'));
-    console.log(chalk_1.default.bold('Results:'));
+    console.log(chalk.cyan('\n──────────────────────────────────────────────────'));
+    console.log(chalk.bold('Results:'));
     let passed = 0;
     let failed = 0;
     for (const result of results) {
         if (result.passed) {
-            console.log(chalk_1.default.green(`  ✓ ${result.file} (${Math.round(result.duration)}ms)`));
+            console.log(chalk.green(`  ✓ ${result.file} (${Math.round(result.duration)}ms)`));
             passed++;
         }
         else {
-            console.log(chalk_1.default.red(`  ✗ ${result.file}${result.error ? ` - ${result.error}` : ''}`));
+            console.log(chalk.red(`  ✗ ${result.file}${result.error ? ` - ${result.error}` : ''}`));
             failed++;
         }
     }
-    console.log(chalk_1.default.cyan('──────────────────────────────────────────────────'));
-    console.log(chalk_1.default.bold(`Passed: ${passed}/${passed + failed}`));
+    console.log(chalk.cyan('──────────────────────────────────────────────────'));
+    console.log(chalk.bold(`Passed: ${passed}/${passed + failed}`));
     if (failed === 0) {
-        console.log(chalk_1.default.green('\n✓ All tests passed'));
-        console.log(chalk_1.default.cyan('══════════════════════════════════════════════════'));
+        console.log(chalk.green('\n✓ All tests passed'));
+        console.log(chalk.cyan('══════════════════════════════════════════════════'));
     }
     else {
-        console.log(chalk_1.default.red(`\n✗ ${failed} test(s) failed`));
-        console.log(chalk_1.default.cyan('══════════════════════════════════════════════════'));
+        console.log(chalk.red(`\n✗ ${failed} test(s) failed`));
+        console.log(chalk.cyan('══════════════════════════════════════════════════'));
         process.exit(1);
     }
 }
-//# sourceMappingURL=index.js.map

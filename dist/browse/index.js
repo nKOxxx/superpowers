@@ -1,46 +1,7 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.run = run;
-const playwright_1 = require("playwright");
-const fs = __importStar(require("fs"));
-const path = __importStar(require("path"));
-const chalk_1 = __importDefault(require("chalk"));
+import { chromium } from 'playwright';
+import * as fs from 'fs';
+import * as path from 'path';
+import chalk from 'chalk';
 const viewports = {
     mobile: { width: 375, height: 667 },
     tablet: { width: 768, height: 1024 },
@@ -59,10 +20,10 @@ function generateFilename(url, viewport) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     return `${hostname}_${viewport}_${timestamp}.png`;
 }
-async function run(url, options) {
-    console.log(chalk_1.default.cyan('══════════════════════════════════════════════════'));
-    console.log(chalk_1.default.cyan('Browser Automation'));
-    console.log(chalk_1.default.cyan('══════════════════════════════════════════════════\n'));
+export async function run(url, options) {
+    console.log(chalk.cyan('══════════════════════════════════════════════════'));
+    console.log(chalk.cyan('Browser Automation'));
+    console.log(chalk.cyan('══════════════════════════════════════════════════\n'));
     // Determine viewport
     let viewport;
     if (options.width && options.height) {
@@ -71,54 +32,54 @@ async function run(url, options) {
     else {
         viewport = viewports[options.viewport] || viewports.desktop;
     }
-    console.log(chalk_1.default.gray(`URL: ${url}`));
-    console.log(chalk_1.default.gray(`Viewport: ${viewport.width}x${viewport.height} (${options.viewport})`));
-    console.log(chalk_1.default.gray(`Full page: ${options.fullPage ? 'yes' : 'no'}\n`));
+    console.log(chalk.gray(`URL: ${url}`));
+    console.log(chalk.gray(`Viewport: ${viewport.width}x${viewport.height} (${options.viewport})`));
+    console.log(chalk.gray(`Full page: ${options.fullPage ? 'yes' : 'no'}\n`));
     let browser;
     try {
         // Launch browser
-        browser = await playwright_1.chromium.launch({ headless: true });
+        browser = await chromium.launch({ headless: true });
         const context = await browser.newContext({ viewport });
         const page = await context.newPage();
         // Navigate
-        console.log(chalk_1.default.blue('ℹ Navigating...'));
+        console.log(chalk.blue('ℹ Navigating...'));
         await page.goto(url, { timeout: options.timeout, waitUntil: 'networkidle' });
-        console.log(chalk_1.default.green('✓ Page loaded\n'));
+        console.log(chalk.green('✓ Page loaded\n'));
         // Execute actions if provided
         if (options.actions) {
             const actions = parseActions(options.actions);
-            console.log(chalk_1.default.blue('ℹ Executing actions...'));
+            console.log(chalk.blue('ℹ Executing actions...'));
             for (const action of actions) {
                 switch (action.type) {
                     case 'click':
                         await page.click(action.params[0]);
-                        console.log(chalk_1.default.gray(`  Clicked: ${action.params[0]}`));
+                        console.log(chalk.gray(`  Clicked: ${action.params[0]}`));
                         break;
                     case 'type':
                         await page.fill(action.params[0], action.params[1] || '');
-                        console.log(chalk_1.default.gray(`  Typed into: ${action.params[0]}`));
+                        console.log(chalk.gray(`  Typed into: ${action.params[0]}`));
                         break;
                     case 'wait':
                         await page.waitForTimeout(parseInt(action.params[0]) || 1000);
-                        console.log(chalk_1.default.gray(`  Waited: ${action.params[0]}ms`));
+                        console.log(chalk.gray(`  Waited: ${action.params[0]}ms`));
                         break;
                     case 'scroll':
                         await page.evaluate('window.scrollBy(0, window.innerHeight)');
-                        console.log(chalk_1.default.gray('  Scrolled down'));
+                        console.log(chalk.gray('  Scrolled down'));
                         break;
                     case 'hover':
                         await page.hover(action.params[0]);
-                        console.log(chalk_1.default.gray(`  Hovered: ${action.params[0]}`));
+                        console.log(chalk.gray(`  Hovered: ${action.params[0]}`));
                         break;
                 }
             }
-            console.log(chalk_1.default.green('✓ Actions completed\n'));
+            console.log(chalk.green('✓ Actions completed\n'));
         }
         // Wait for element if specified
         if (options.waitFor) {
-            console.log(chalk_1.default.blue(`ℹ Waiting for element: ${options.waitFor}...`));
+            console.log(chalk.blue(`ℹ Waiting for element: ${options.waitFor}...`));
             await page.waitForSelector(options.waitFor, { timeout: options.timeout });
-            console.log(chalk_1.default.green('✓ Element found\n'));
+            console.log(chalk.green('✓ Element found\n'));
         }
         // Ensure output directory exists
         if (!fs.existsSync(options.output)) {
@@ -127,16 +88,16 @@ async function run(url, options) {
         // Take screenshot
         const filename = generateFilename(url, options.viewport);
         const filepath = path.join(options.output, filename);
-        console.log(chalk_1.default.blue('ℹ Capturing screenshot...'));
+        console.log(chalk.blue('ℹ Capturing screenshot...'));
         await page.screenshot({
             path: filepath,
             fullPage: options.fullPage
         });
-        console.log(chalk_1.default.green(`✓ Screenshot saved: ${filepath}\n`));
-        console.log(chalk_1.default.cyan('══════════════════════════════════════════════════'));
+        console.log(chalk.green(`✓ Screenshot saved: ${filepath}\n`));
+        console.log(chalk.cyan('══════════════════════════════════════════════════'));
     }
     catch (error) {
-        console.error(chalk_1.default.red(`\n✗ Error: ${error.message}`));
+        console.error(chalk.red(`\n✗ Error: ${error.message}`));
         throw error;
     }
     finally {
@@ -145,4 +106,3 @@ async function run(url, options) {
         }
     }
 }
-//# sourceMappingURL=index.js.map

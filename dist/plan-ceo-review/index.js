@@ -1,10 +1,4 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.run = run;
-const chalk_1 = __importDefault(require("chalk"));
+import chalk from 'chalk';
 function renderStars(score) {
     const fullStars = Math.floor(score);
     const emptyStars = 5 - fullStars;
@@ -101,15 +95,15 @@ function generateNextSteps(scores, total) {
     }
     return steps;
 }
-async function run(options) {
-    console.log(chalk_1.default.cyan('══════════════════════════════════════════════════'));
-    console.log(chalk_1.default.cyan(options.feature));
-    console.log(chalk_1.default.cyan('══════════════════════════════════════════════════\n'));
+export async function run(options) {
+    console.log(chalk.cyan('══════════════════════════════════════════════════'));
+    console.log(chalk.cyan(options.feature));
+    console.log(chalk.cyan('══════════════════════════════════════════════════\n'));
     if (options.goal) {
-        console.log(chalk_1.default.gray(`Goal: ${options.goal}`));
+        console.log(chalk.gray(`Goal: ${options.goal}`));
     }
     if (options.audience) {
-        console.log(chalk_1.default.gray(`Audience: ${options.audience}\n`));
+        console.log(chalk.gray(`Audience: ${options.audience}\n`));
     }
     // Calculate scores
     const scores = {
@@ -123,41 +117,40 @@ async function run(options) {
     console.log(`Brand:     ${renderStars(scores.brand)} (${scores.brand}/5)`);
     console.log(`Attention: ${renderStars(scores.attention)} (${scores.attention}/5)`);
     console.log(`Trust:     ${renderStars(scores.trust)} (${scores.trust}/5)`);
-    console.log(chalk_1.default.cyan('\n──────────────────────────────────────────────────'));
-    console.log(chalk_1.default.bold(`Total: ${total}/15 ⭐`));
-    console.log(chalk_1.default.cyan('──────────────────────────────────────────────────\n'));
+    console.log(chalk.cyan('\n──────────────────────────────────────────────────'));
+    console.log(chalk.bold(`Total: ${total}/15 ⭐`));
+    console.log(chalk.cyan('──────────────────────────────────────────────────\n'));
     // Display recommendation
     const recColor = recommendation.color;
-    console.log(chalk_1.default.bold('Recommendation:'), chalk_1.default[recColor](`${recommendation.icon} ${recommendation.text}`));
+    console.log(chalk.bold('Recommendation:'), chalk[recColor](`${recommendation.icon} ${recommendation.text}`));
     // Generate rationale
-    console.log(chalk_1.default.gray('\nRationale:'));
+    console.log(chalk.gray('\nRationale:'));
     if (scores.brand >= 4) {
-        console.log(chalk_1.default.gray('  • Strong brand differentiation potential'));
+        console.log(chalk.gray('  • Strong brand differentiation potential'));
     }
     else if (scores.brand <= 2) {
-        console.log(chalk_1.default.gray('  • Limited brand impact - table stakes feature'));
+        console.log(chalk.gray('  • Limited brand impact - table stakes feature'));
     }
     if (scores.attention >= 4) {
-        console.log(chalk_1.default.gray('  • High user engagement potential'));
+        console.log(chalk.gray('  • High user engagement potential'));
     }
     else if (scores.attention <= 2) {
-        console.log(chalk_1.default.gray('  • Low usage frequency - consider if worth building'));
+        console.log(chalk.gray('  • Low usage frequency - consider if worth building'));
     }
     if (scores.trust >= 4) {
-        console.log(chalk_1.default.gray('  • Strong trust-building opportunity'));
+        console.log(chalk.gray('  • Strong trust-building opportunity'));
     }
     else if (scores.trust <= 2) {
-        console.log(chalk_1.default.gray('  • Consider trust implications before launch'));
+        console.log(chalk.gray('  • Consider trust implications before launch'));
     }
     if (total >= 10) {
-        console.log(chalk_1.default.gray('  • Meets 10-star threshold for building'));
+        console.log(chalk.gray('  • Meets 10-star threshold for building'));
     }
     // Next steps
-    console.log(chalk_1.default.gray('\nNext Steps:'));
+    console.log(chalk.gray('\nNext Steps:'));
     const steps = generateNextSteps(scores, total);
     steps.forEach((step, i) => {
-        console.log(chalk_1.default.gray(`  ${i + 1}. ${step}`));
+        console.log(chalk.gray(`  ${i + 1}. ${step}`));
     });
-    console.log(chalk_1.default.cyan('\n══════════════════════════════════════════════════'));
+    console.log(chalk.cyan('\n══════════════════════════════════════════════════'));
 }
-//# sourceMappingURL=index.js.map

@@ -1,6 +1,4 @@
-"use strict";
 /**
  * Shared types for superpowers
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-//# sourceMappingURL=index.js.map
+export {};
