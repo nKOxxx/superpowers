@@ -1,6 +1,6 @@
 # @nko/superpowers
 
-OpenClaw superpowers - AI-powered workflows for development, testing, and product decisions.
+OpenClaw superpowers - AI-powered development workflows
 
 ## Installation
 
@@ -12,135 +12,100 @@ npm install -g @nko/superpowers
 
 ### `/browse` - Browser Automation
 
-Capture screenshots and automate browser interactions with Playwright.
+Playwright-based browser automation for screenshots and visual testing.
 
 ```bash
-# Screenshot a website
+# Basic screenshot
 superpowers browse https://example.com
+
+# Full page capture
+superpowers browse https://example.com --full-page
 
 # Mobile viewport
 superpowers browse https://example.com --viewport=mobile
 
-# Full page screenshot
-superpowers browse https://example.com --full-page
+# Custom viewport
+superpowers browse https://example.com --width=1440 --height=900
 
-# Screenshot specific element
-superpowers browse https://example.com --selector="#hero"
+# Element screenshot
+superpowers browse https://example.com --element="header"
 
-# Save to file
-superpowers browse https://example.com --output=screenshot.png
+# With actions (click, type, wait, scroll, hover)
+superpowers browse https://example.com --actions='[
+  {"type": "click", "target": "button"},
+  {"type": "wait", "duration": 1000}
+]'
 ```
-
-**Viewports:** `mobile` (375x667), `tablet` (768x1024), `desktop` (1920x1080), or custom `WxH`
 
 ### `/qa` - Systematic Testing
 
-Run tests intelligently as a QA Lead.
+Auto-detects test framework and runs targeted, smoke, or full tests.
 
 ```bash
-# Targeted - run tests for changed files only
+# Targeted - runs tests for changed files
 superpowers qa --mode=targeted
 
-# Smoke tests - quick validation
+# Smoke tests
 superpowers qa --mode=smoke
 
-# Full regression suite
+# Full test suite
 superpowers qa --mode=full
 
 # With coverage
-superpowers qa --coverage
+superpowers qa --mode=full --coverage
 ```
 
-**Auto-detects:** vitest, jest, mocha
+Supported frameworks: Vitest, Jest, Mocha
 
 ### `/ship` - Release Pipeline
 
-One-command release with versioning, changelog, and GitHub releases.
+One-command release with semantic versioning and changelog generation.
 
 ```bash
-# Auto-detect version bump from commits
-superpowers ship
-
-# Explicit version bump
+# Patch release
 superpowers ship --version=patch
+
+# Minor release
 superpowers ship --version=minor
+
+# Major release
 superpowers ship --version=major
 
-# Dry run (preview only)
-superpowers ship --dry-run
+# Specific version
+superpowers ship --version=1.2.3
 
-# Skip GitHub release
-superpowers ship --skip-github-release
+# Dry run (preview)
+superpowers ship --version=patch --dry-run
+
+# Skip push/release
+superpowers ship --version=patch --skip-push --skip-release
 ```
 
-**Requirements:** `GH_TOKEN` env var for GitHub releases
+Requires `GH_TOKEN` environment variable for GitHub releases.
 
 ### `/plan-ceo-review` - Product Strategy
 
-BAT framework for product decisions (Brand, Attention, Trust).
+BAT framework evaluation for product decisions.
 
 ```bash
-# Auto-score a feature
-superpowers plan-ceo-review "Dark Mode: Allow users to switch to dark theme" --auto-score
-
 # Manual scoring
-superpowers plan-ceo-review "AI Assistant: Chat-based help" --brand=4 --attention=5 --trust=3
+superpowers plan-ceo-review "Feature Name: Description" \
+  --brand=4 --attention=5 --trust=3
 
-# JSON output
-superpowers plan-ceo-review "New Feature: Description" --auto-score --json
+# Auto-calculate from description
+superpowers plan-ceo-review "Premium secure messaging platform" --auto
 ```
 
-**Scoring:** 0-5 for each dimension, 10+ stars total = build recommendation
+**BAT Framework:**
+- **Brand** (0-5): Does it align with and enhance brand?
+- **Attention** (0-5): Does it capture meaningful demand?
+- **Trust** (0-5): Does it build user trust?
 
-## BAT Framework
+**10-Star Methodology:** 10/15 minimum to build, 2/3 dimensions strong.
 
-Evaluates features on three dimensions:
+## Repository
 
-| Dimension | Question | Score |
-|-----------|----------|-------|
-| **Brand** | Does this strengthen our brand? | 0-5 |
-| **Attention** | Will this capture market attention? | 0-5 |
-| **Trust** | Can we execute this well? | 0-5 |
-
-**Thresholds:**
-- **12-15 stars:** Build it
-- **8-11 stars:** Consider with caveats
-- **0-7 stars:** Don't build
-
-## OpenClaw Integration
-
-These skills are packaged for OpenClaw. Install as skill packages:
-
-```bash
-# Each skill is packaged in dist-skills/
-openclaw skills install ./dist-skills/browse.skill.tar.gz
-openclaw skills install ./dist-skills/qa.skill.tar.gz
-openclaw skills install ./dist-skills/ship.skill.tar.gz
-openclaw skills install ./dist-skills/plan-ceo-review.skill.tar.gz
-```
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Build TypeScript
-npm run build
-
-# Package skills
-npm run package:skills
-
-# Run tests
-npm test
-```
-
-## Requirements
-
-- Node.js 18+
-- Playwright (for /browse)
-- Git (for /ship)
-- GH_TOKEN environment variable (for GitHub releases)
+https://github.com/nKOxxx/superpowers
 
 ## License
 

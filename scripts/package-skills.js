@@ -1,104 +1,61 @@
 #!/usr/bin/env node
-/**
- * Package skills for OpenClaw distribution
- * Creates *.skill.tar.gz files for each skill
- */
-
-import fs from 'fs';
-import path from 'path';
 import { execSync } from 'child_process';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT_DIR = path.join(__dirname, '..');
-const DIST_DIR = path.join(ROOT_DIR, 'packages');
+import { existsSync, mkdirSync, copyFileSync, writeFileSync, readFileSync } from 'fs';
+import { join } from 'path';
 
 const skills = ['browse', 'qa', 'ship', 'plan-ceo-review'];
+const distDir = './dist';
+const outputDir = './dist-skills';
 
-// Ensure packages directory exists
-if (!fs.existsSync(DIST_DIR)) {
-  fs.mkdirSync(DIST_DIR, { recursive: true });
+if (!existsSync(outputDir)) {
+  mkdirSync(outputDir, { recursive: true });
 }
-
-console.log('📦 Packaging Superpowers skills...\n');
 
 for (const skill of skills) {
-  const skillDir = path.join(ROOT_DIR, skill);
-  const packageName = `${skill}.skill`;
-  const packageDir = path.join(DIST_DIR, packageName);
+  console.log(`📦 Packaging ${skill}...`);
   
-  // Check if skill exists
-  if (!fs.existsSync(skillDir)) {
-    console.warn(`⚠ Skipping ${skill} - directory not found`);
-    continue;
-  }
+  const skillDir = join(distDir, skill);
+  const tempDir = join(outputDir, `.temp-${skill}`);
   
-  // Clean and create package directory
-  if (fs.existsSync(packageDir)) {
-    fs.rmSync(packageDir, { recursive: true });
-  }
-  fs.mkdirSync(packageDir, { recursive: true });
+  // Create temp directory
+  execSync(`rm -rf ${tempDir} && mkdir -p ${tempDir}`, { stdio: 'inherit' });
+  
+  // Copy compiled files
+  execSync(`cp -r ${skillDir}/* ${tempDir}/`, { stdio: 'inherit' });
   
   // Copy skill.json
-  fs.copyFileSync(
-    path.join(skillDir, 'skill.json'),
-    path.join(packageDir, 'skill.json')
+  copyFileSync(
+    join('src', skill, 'skill.json'),
+    join(tempDir, 'skill.json')
   );
   
-  // Copy cli.js
-  fs.copyFileSync(
-    path.join(skillDir, 'cli.js'),
-    path.join(packageDir, 'cli.js')
+  // Copy cli.js for standalone usage
+  copyFileSync(
+    join('src', skill, 'cli.js'),
+    join(tempDir, 'cli.js')
   );
   
-  // Copy package.json
-  fs.copyFileSync(
-    path.join(skillDir, 'package.json'),
-    path.join(packageDir, 'package.json')
+  // Create package.json for skill
+  const skillPackage = {
+    name: `@nko/superpowers-${skill}`,
+    version: '1.0.0',
+    type: 'module',
+    main: 'index.js',
+    bin: skill === 'browse' ? { [`superpowers-${skill}`]: 'cli.js' } : undefined
+  };
+  writeFileSync(
+    join(tempDir, 'package.json'),
+    JSON.stringify(skillPackage, null, 2)
   );
   
-  // Copy dist folder
-  const distSource = path.join(skillDir, 'dist');
-  const distDest = path.join(packageDir, 'dist');
+  // Create tar.gz
+  const outputFile = join(outputDir, `${skill}.skill.tar.gz`);
+  execSync(`tar -czf ${outputFile} -C ${tempDir} .`, { stdio: 'inherit' });
   
-  if (fs.existsSync(distSource)) {
-    copyDir(distSource, distDest);
-  } else {
-    console.warn(`⚠ ${skill}: No dist folder found. Run 'npm run build' first.`);
-  }
+  // Cleanup temp
+  execSync(`rm -rf ${tempDir}`, { stdio: 'inherit' });
   
-  // Create tarball
-  const tarballName = `${packageName}.tar.gz`;
-  const tarballPath = path.join(DIST_DIR, tarballName);
-  
-  execSync(`tar -czf ${tarballPath} -C ${DIST_DIR} ${packageName}`);
-  
-  // Get file size
-  const stats = fs.statSync(tarballPath);
-  const sizeKB = (stats.size / 1024).toFixed(1);
-  
-  console.log(`✓ ${skill} → ${tarballName} (${sizeKB} KB)`);
+  console.log(`✅ ${skill}.skill.tar.gz created`);
 }
 
-console.log('\n✅ All skills packaged!');
-console.log(`\nLocation: ${DIST_DIR}/`);
-
-// Helper function to copy directory
-function copyDir(src, dest) {
-  if (!fs.existsSync(dest)) {
-    fs.mkdirSync(dest, { recursive: true });
-  }
-
-  const entries = fs.readdirSync(src, { withFileTypes: true });
-
-  for (const entry of entries) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
-
-    if (entry.isDirectory()) {
-      copyDir(srcPath, destPath);
-    } else {
-      fs.copyFileSync(srcPath, destPath);
-    }
-  }
-}
+console.log('\n🎉 All skills packaged!');

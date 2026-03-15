@@ -1,170 +1,61 @@
 #!/usr/bin/env node
-
-const { program } = require('commander');
-const chalk = require('chalk');
+import { program } from 'commander';
+import chalk from 'chalk';
 
 program
   .name('superpowers')
-  .description('OpenClaw superpowers - AI-powered workflows for development, testing, and product decisions')
+  .description('OpenClaw superpowers - AI-powered development workflows')
   .version('1.0.0');
 
-// Browse command
 program
-  .command('browse')
+  .command('browse <url>')
   .description('Browser automation with Playwright')
-  .argument('<url>', 'URL to browse')
-  .option('-v, --viewport <viewport>', 'Viewport preset (mobile, tablet, desktop) or custom WxH', 'desktop')
   .option('-f, --full-page', 'Capture full page screenshot')
-  .option('-s, --selector <selector>', 'CSS selector to screenshot specific element')
-  .option('-o, --output <path>', 'Output file path (saves as PNG)')
-  .option('--base64', 'Output base64 encoded screenshot (default)')
+  .option('-e, --element <selector>', 'Capture specific element')
+  .option('-v, --viewport <preset>', 'Viewport preset (mobile|tablet|desktop)', 'desktop')
+  .option('-w, --width <pixels>', 'Custom viewport width')
+  .option('-h, --height <pixels>', 'Custom viewport height')
+  .option('-o, --output <path>', 'Output file path')
+  .option('--base64', 'Output as base64 for Telegram')
+  .option('--actions <json>', 'Action sequence JSON')
   .action(async (url, options) => {
-    try {
-      const { browse } = require('./dist/browse/index.js');
-      console.log(chalk.blue(`Browsing ${url}...`));
-      
-      const result = await browse({
-        url,
-        viewport: options.viewport,
-        fullPage: options.fullPage,
-        selector: options.selector,
-        outputFormat: options.output ? 'file' : 'base64',
-        outputPath: options.output,
-      });
-
-      if (result.success) {
-        console.log(chalk.green(`✓ Screenshot captured in ${result.duration}ms`));
-        if (result.filePath) {
-          console.log(chalk.gray(`  Saved to: ${result.filePath}`));
-        } else if (result.screenshot) {
-          console.log(chalk.gray(`  Screenshot (base64): ${result.screenshot.substring(0, 50)}...`));
-        }
-      } else {
-        console.error(chalk.red(`✗ Failed: ${result.error}`));
-        process.exit(1);
-      }
-    } catch (error) {
-      console.error(chalk.red(`Error: ${error.message}`));
-      process.exit(1);
-    }
+    const { browseCommand } = await import('./dist/browse/index.js');
+    await browseCommand(url, options);
   });
 
-// QA command
 program
   .command('qa')
   .description('Systematic testing as QA Lead')
-  .option('-m, --mode <mode>', 'Test mode: targeted, smoke, or full', 'targeted')
+  .option('-m, --mode <mode>', 'Test mode (targeted|smoke|full)', 'targeted')
   .option('-c, --coverage', 'Enable coverage reporting')
-  .option('-w, --watch', 'Watch mode (if supported)')
+  .option('-w, --watch', 'Watch mode')
   .action(async (options) => {
-    try {
-      const { runQA } = require('./dist/qa/index.js');
-      console.log(chalk.blue(`Running ${options.mode} tests...`));
-      
-      const result = await runQA({
-        mode: options.mode,
-        coverage: options.coverage,
-        watch: options.watch,
-      });
-
-      console.log(chalk[result.success ? 'green' : 'red'](`\n${result.framework} ${result.mode} tests: ${result.success ? 'PASSED' : 'FAILED'}`));
-      console.log(chalk.gray(`  Duration: ${result.duration}ms`));
-      if (result.testCount) console.log(chalk.gray(`  Tests: ${result.testCount}`));
-      if (result.passedCount) console.log(chalk.gray(`  Passed: ${result.passedCount}`));
-      if (result.failedCount) console.log(chalk.gray(`  Failed: ${result.failedCount}`));
-      
-      if (!result.success) {
-        process.exit(1);
-      }
-    } catch (error) {
-      console.error(chalk.red(`Error: ${error.message}`));
-      process.exit(1);
-    }
+    const { qaCommand } = await import('./dist/qa/index.js');
+    await qaCommand(options);
   });
 
-// Ship command
 program
   .command('ship')
   .description('One-command release pipeline')
-  .option('-v, --version <version>', 'Version bump: patch, minor, major, or explicit semver')
+  .option('-v, --version <type>', 'Version bump (patch|minor|major|<semver>)', 'patch')
   .option('-d, --dry-run', 'Preview changes without applying')
-  .option('--skip-changelog', 'Skip changelog generation')
-  .option('--skip-git', 'Skip git operations')
-  .option('--skip-github-release', 'Skip GitHub release creation')
+  .option('--skip-push', 'Skip git push')
+  .option('--skip-release', 'Skip GitHub release')
   .action(async (options) => {
-    try {
-      const { ship } = require('./dist/ship/index.js');
-      console.log(chalk.blue('Preparing release...'));
-      
-      const result = await ship({
-        version: options.version,
-        dryRun: options.dryRun,
-        skipChangelog: options.skipChangelog,
-        skipGit: options.skipGit,
-        skipGithubRelease: options.skipGithubRelease,
-      });
-
-      if (result.success) {
-        console.log(chalk.green(`\n✓ Release prepared: v${result.previousVersion} → v${result.newVersion}`));
-        console.log(chalk.gray(`  Duration: ${result.duration}ms`));
-        console.log(chalk.gray(`  Changes: ${result.changes.length} commits`));
-        if (result.tagName) console.log(chalk.gray(`  Tag: ${result.tagName}`));
-        if (result.githubReleaseUrl) console.log(chalk.gray(`  Release: ${result.githubReleaseUrl}`));
-        
-        if (options.dryRun) {
-          console.log(chalk.yellow('\n(Dry run - no changes applied)'));
-        }
-      } else {
-        console.error(chalk.red(`\n✗ Failed: ${result.error}`));
-        process.exit(1);
-      }
-    } catch (error) {
-      console.error(chalk.red(`Error: ${error.message}`));
-      process.exit(1);
-    }
+    const { shipCommand } = await import('./dist/ship/index.js');
+    await shipCommand(options);
   });
 
-// Plan CEO Review command
 program
-  .command('plan-ceo-review')
+  .command('plan-ceo-review <feature>')
   .description('Product strategy review with BAT framework')
-  .argument('<feature>', 'Feature name and description (e.g., "Feature Name: Description")')
-  .option('-b, --brand <score>', 'Brand score (0-5)', parseFloat)
-  .option('-a, --attention <score>', 'Attention score (0-5)', parseFloat)
-  .option('-t, --trust <score>', 'Trust score (0-5)', parseFloat)
-  .option('--auto-score', 'Auto-calculate scores based on feature description')
-  .option('--json', 'Output as JSON')
+  .option('-b, --brand <score>', 'Brand score (0-5)', '3')
+  .option('-a, --attention <score>', 'Attention score (0-5)', '3')
+  .option('-t, --trust <score>', 'Trust score (0-5)', '3')
+  .option('--auto', 'Auto-calculate scores from feature description')
   .action(async (feature, options) => {
-    try {
-      const { planCEOReview, formatReviewOutput } = require('./dist/plan-ceo-review/index.js');
-      
-      // Parse feature name and description
-      const [featureName, ...descParts] = feature.split(':');
-      const description = descParts.join(':').trim();
-      
-      const result = await planCEOReview({
-        featureName: featureName.trim(),
-        description,
-        brand: options.brand,
-        attention: options.attention,
-        trust: options.trust,
-        autoScore: options.autoScore,
-      });
-
-      if (result.success) {
-        if (options.json) {
-          console.log(JSON.stringify(result, null, 2));
-        } else {
-          console.log(formatReviewOutput(result));
-        }
-      } else {
-        console.error(chalk.red(`Error: ${result.error}`));
-        process.exit(1);
-      }
-    } catch (error) {
-      console.error(chalk.red(`Error: ${error.message}`));
-      process.exit(1);
-    }
+    const { planCeoReviewCommand } = await import('./dist/plan-ceo-review/index.js');
+    await planCeoReviewCommand(feature, options);
   });
 
 program.parse();

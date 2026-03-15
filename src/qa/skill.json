@@ -1,0 +1,16 @@
+{
+  "name": "qa",
+  "description": "Systematic testing as QA Lead - auto-detects framework and runs targeted tests",
+  "version": "1.0.0",
+  "author": "nKO",
+  "entry": "index.js",
+  "cli": "cli.js",
+  "dependencies": ["chalk"],
+  "capabilities": [
+    "test-detection",
+    "targeted-testing",
+    "coverage-reporting",
+    "git-diff-analysis",
+    "framework-auto-detect"
+  ]
+}

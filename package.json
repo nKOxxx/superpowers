@@ -1,46 +1,31 @@
 {
   "name": "@nko/superpowers",
-  "version": "1.0.2",
-  "description": "OpenClaw superpowers - AI-powered workflows for development, testing, and product decisions",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "bin": {
-    "superpowers": "./cli.js"
-  },
+  "version": "1.0.0",
+  "description": "OpenClaw superpowers - AI-powered development workflows",
+  "type": "module",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "package:skills": "node scripts/package-skills.js",
-    "test": "vitest",
-    "lint": "eslint src/**/*.ts",
-    "typecheck": "tsc --noEmit"
+    "build": "tsc && npm run package",
+    "build:skills": "tsc",
+    "package": "node scripts/package-skills.js",
+    "test": "npm run build:skills && node dist/test-all.js",
+    "clean": "rm -rf dist dist-skills"
   },
-  "keywords": [
-    "openclaw",
-    "skills",
-    "browser-automation",
-    "testing",
-    "release",
-    "product-strategy"
-  ],
+  "keywords": ["openclaw", "skills", "ai", "automation", "playwright"],
   "author": "nKO",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/nKOxxx/superpowers.git"
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
   },
   "dependencies": {
-    "chalk": "^4.1.2",
-    "commander": "^12.0.0",
-    "playwright": "^1.42.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.11.0",
-    "eslint": "^8.56.0",
-    "typescript": "^5.3.3",
-    "vitest": "^1.2.0"
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "playwright": "^1.40.0"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "bin": {
+    "superpowers": "./cli.js"
   }
 }

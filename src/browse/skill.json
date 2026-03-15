@@ -1,0 +1,16 @@
+{
+  "name": "browse",
+  "description": "Browser automation with Playwright for screenshots and visual testing",
+  "version": "1.0.0",
+  "author": "nKO",
+  "entry": "index.js",
+  "cli": "cli.js",
+  "dependencies": ["playwright", "chalk"],
+  "capabilities": [
+    "screenshot",
+    "viewport-emulation",
+    "action-sequences",
+    "full-page-capture",
+    "element-capture"
+  ]
+}

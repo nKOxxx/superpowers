@@ -1,118 +1,126 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.browse = browse;
-const playwright_1 = require("playwright");
-const VIEWPORTS = {
+import { chromium } from 'playwright';
+import chalk from 'chalk';
+import { writeFileSync } from 'fs';
+import { resolve } from 'path';
+const viewportPresets = {
     mobile: { width: 375, height: 667 },
     tablet: { width: 768, height: 1024 },
-    desktop: { width: 1920, height: 1080 },
+    desktop: { width: 1920, height: 1080 }
 };
-function parseViewport(viewport) {
-    if (viewport in VIEWPORTS) {
-        return VIEWPORTS[viewport];
+export async function browseCommand(url, options) {
+    console.log(chalk.blue('🔍 Browse'), chalk.cyan(url));
+    let viewport = viewportPresets.desktop;
+    if (options.viewport && viewportPresets[options.viewport]) {
+        viewport = viewportPresets[options.viewport];
     }
-    // Parse custom dimensions like "1200x800"
-    const match = viewport.match(/(\d+)x(\d+)/);
-    if (match) {
-        return { width: parseInt(match[1], 10), height: parseInt(match[2], 10) };
+    if (options.width && options.height) {
+        viewport = {
+            width: parseInt(options.width, 10),
+            height: parseInt(options.height, 10)
+        };
     }
-    return VIEWPORTS.desktop;
-}
-async function browse(options) {
-    const startTime = Date.now();
-    let browser = null;
-    let context = null;
+    console.log(chalk.gray(`Viewport: ${viewport.width}x${viewport.height}`));
+    const browser = await chromium.launch({ headless: true });
     try {
-        const viewport = options.viewport ? parseViewport(options.viewport) : VIEWPORTS.desktop;
-        browser = await playwright_1.chromium.launch({ headless: true });
-        context = await browser.newContext({ viewport });
-        const page = await context.newPage();
-        // Navigate to URL
-        await page.goto(options.url, { waitUntil: 'networkidle' });
-        // Execute actions if provided
-        if (options.actions && options.actions.length > 0) {
-            await executeActions(page, options.actions);
-        }
-        // Determine screenshot target
-        let screenshotTarget = page;
-        if (options.selector) {
-            screenshotTarget = page.locator(options.selector);
-        }
-        // Take screenshot
-        const screenshotOptions = {
-            type: 'png',
-        };
-        if (options.fullPage && !options.selector) {
-            screenshotOptions.fullPage = true;
-        }
-        const screenshot = await screenshotTarget.screenshot(screenshotOptions);
-        const duration = Date.now() - startTime;
-        if (options.outputFormat === 'file' && options.outputPath) {
-            const fs = await import('fs');
-            fs.writeFileSync(options.outputPath, screenshot);
-            return {
-                success: true,
-                filePath: options.outputPath,
-                duration,
-                url: options.url,
-                viewport,
-            };
-        }
-        return {
-            success: true,
-            screenshot: screenshot.toString('base64'),
-            duration,
-            url: options.url,
+        const context = await browser.newContext({
             viewport,
-        };
+            deviceScaleFactor: 2
+        });
+        const page = await context.newPage();
+        console.log(chalk.gray('Navigating...'));
+        await page.goto(url, { waitUntil: 'networkidle' });
+        // Execute action sequence if provided
+        if (options.actions) {
+            const actions = JSON.parse(options.actions);
+            await executeActions(page, actions);
+        }
+        // Wait a bit for any animations
+        await page.waitForTimeout(500);
+        let screenshotBuffer;
+        if (options.element) {
+            console.log(chalk.gray(`Capturing element: ${options.element}`));
+            const element = await page.locator(options.element).first();
+            screenshotBuffer = await element.screenshot();
+        }
+        else {
+            console.log(chalk.gray(options.fullPage ? 'Capturing full page...' : 'Capturing viewport...'));
+            screenshotBuffer = await page.screenshot({
+                fullPage: options.fullPage || false
+            });
+        }
+        if (options.base64) {
+            const base64 = screenshotBuffer.toString('base64');
+            console.log(chalk.green('✅ Screenshot captured'));
+            console.log(chalk.gray(`Base64 length: ${base64.length} chars`));
+            console.log('\n---BASE64_START---');
+            console.log(base64);
+            console.log('---BASE64_END---');
+        }
+        else {
+            const outputPath = options.output || `screenshot-${Date.now()}.png`;
+            const resolvedPath = resolve(outputPath);
+            writeFileSync(resolvedPath, screenshotBuffer);
+            console.log(chalk.green('✅ Screenshot saved:'), chalk.cyan(resolvedPath));
+        }
     }
     catch (error) {
-        const duration = Date.now() - startTime;
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : String(error),
-            duration,
-            url: options.url,
-            viewport: options.viewport ? parseViewport(options.viewport) : VIEWPORTS.desktop,
-        };
+        console.error(chalk.red('❌ Error:'), error instanceof Error ? error.message : error);
+        process.exit(1);
     }
     finally {
-        if (context)
-            await context.close();
-        if (browser)
-            await browser.close();
+        await browser.close();
     }
 }
 async function executeActions(page, actions) {
+    console.log(chalk.gray(`Executing ${actions.length} actions...`));
     for (const action of actions) {
         switch (action.type) {
             case 'click':
-                if (action.selector) {
-                    await page.click(action.selector);
+                if (action.target) {
+                    console.log(chalk.gray(`  Click: ${action.target}`));
+                    await page.click(action.target);
                 }
                 break;
             case 'type':
-                if (action.selector && action.text !== undefined) {
-                    await page.fill(action.selector, action.text);
+                if (action.target && action.value) {
+                    console.log(chalk.gray(`  Type "${action.value}" into ${action.target}`));
+                    await page.fill(action.target, action.value);
                 }
                 break;
             case 'wait':
-                await page.waitForTimeout(action.delay || 1000);
+                const duration = action.duration || 1000;
+                console.log(chalk.gray(`  Wait: ${duration}ms`));
+                await page.waitForTimeout(duration);
                 break;
             case 'scroll':
                 if (action.x !== undefined && action.y !== undefined) {
-                    await page.evaluate(`window.scrollTo(${action.x}, ${action.y})`);
+                    console.log(chalk.gray(`  Scroll to: ${action.x}, ${action.y}`));
+                    await page.evaluate(({ x, y }) => {
+                        globalThis.scrollTo(x, y);
+                    }, { x: action.x, y: action.y });
                 }
-                else if (action.selector) {
-                    await page.locator(action.selector).scrollIntoViewIfNeeded();
+                else if (action.target) {
+                    console.log(chalk.gray(`  Scroll to element: ${action.target}`));
+                    await page.locator(action.target).scrollIntoViewIfNeeded();
                 }
                 break;
             case 'hover':
-                if (action.selector) {
-                    await page.hover(action.selector);
+                if (action.target) {
+                    console.log(chalk.gray(`  Hover: ${action.target}`));
+                    await page.hover(action.target);
                 }
                 break;
+            case 'fill':
+                if (action.target && action.value) {
+                    console.log(chalk.gray(`  Fill ${action.target} with "${action.value}"`));
+                    await page.fill(action.target, action.value);
+                }
+                break;
+            default:
+                console.log(chalk.yellow(`  Unknown action: ${action.type}`));
         }
+        // Small delay between actions
+        await page.waitForTimeout(200);
     }
 }
 //# sourceMappingURL=index.js.map
