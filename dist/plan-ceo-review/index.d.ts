@@ -1,20 +1,26 @@
-/**
- * Plan CEO Review Skill - BAT Framework for Product Strategy
- *
- * Usage: /plan-ceo-review "<product description>" [--brand=X] [--attention=X] [--trust=X]
- *
- * BAT Framework: Brand, Attention, Trust (0-5 each, 10+ to build)
- */
-import { CEORReviewInput, BATScore, SkillResult } from '../types.js';
-export declare class CEOReviewSkill {
-    execute(input: CEORReviewInput, scores?: BATScore): SkillResult;
-    private calculateScores;
-    private getRecommendation;
-    private getStrengthArea;
-    private getWeaknessArea;
-    private generateNextSteps;
-    private formatResult;
-    private scoreBar;
+export interface BATScores {
+    brand: number;
+    attention: number;
+    trust: number;
 }
-export declare function run(args: string[]): Promise<SkillResult>;
+export interface CEOReviewOptions {
+    featureName: string;
+    description?: string;
+    brand?: number;
+    attention?: number;
+    trust?: number;
+    autoScore?: boolean;
+}
+export interface CEOReviewResult {
+    success: boolean;
+    featureName: string;
+    scores: BATScores;
+    totalStars: number;
+    recommendation: 'build' | 'consider' | 'dont-build';
+    reasoning: string[];
+    nextSteps: string[];
+    error?: string;
+}
+export declare function planCEOReview(options: CEOReviewOptions): Promise<CEOReviewResult>;
+export declare function formatReviewOutput(result: CEOReviewResult): string;
 //# sourceMappingURL=index.d.ts.map

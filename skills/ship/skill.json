@@ -1,0 +1,22 @@
+{
+  "name": "ship",
+  "version": "1.0.0",
+  "description": "One-command release pipeline - versioning, changelog, git tags, GitHub releases",
+  "author": "nKO",
+  "entry": "cli.js",
+  "command": "superpowers ship",
+  "options": [
+    {
+      "name": "version",
+      "alias": "v",
+      "description": "Version bump: patch, minor, major, or explicit semver"
+    },
+    {
+      "name": "dry-run",
+      "alias": "d",
+      "description": "Preview changes without applying",
+      "type": "boolean"
+    }
+  ],
+  "dependencies": {}
+}

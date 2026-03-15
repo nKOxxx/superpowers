@@ -1,18 +1,31 @@
-/**
- * Browse Skill - Browser automation with Playwright
- *
- * Usage: /browse <url> [--viewport=mobile|tablet|desktop] [--full-page] [--actions=<json>]
- */
-import { BrowserOptions, SkillResult } from '../types.js';
-export declare class BrowseSkill {
-    private browser?;
-    private page?;
-    private startTime;
-    execute(options: BrowserOptions): Promise<SkillResult>;
-    private resolveViewport;
-    private executeAction;
-    private takeScreenshot;
-    private close;
+export interface BrowseOptions {
+    url: string;
+    viewport?: 'mobile' | 'tablet' | 'desktop' | string;
+    fullPage?: boolean;
+    selector?: string;
+    actions?: BrowseAction[];
+    outputFormat?: 'base64' | 'file';
+    outputPath?: string;
 }
-export declare function run(args: string[]): Promise<SkillResult>;
+export interface BrowseAction {
+    type: 'click' | 'type' | 'wait' | 'scroll' | 'hover';
+    selector?: string;
+    text?: string;
+    delay?: number;
+    x?: number;
+    y?: number;
+}
+export interface BrowseResult {
+    success: boolean;
+    screenshot?: string;
+    filePath?: string;
+    error?: string;
+    duration: number;
+    url: string;
+    viewport: {
+        width: number;
+        height: number;
+    };
+}
+export declare function browse(options: BrowseOptions): Promise<BrowseResult>;
 //# sourceMappingURL=index.d.ts.map

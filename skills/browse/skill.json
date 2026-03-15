@@ -1,0 +1,42 @@
+{
+  "name": "browse",
+  "version": "1.0.0",
+  "description": "Browser automation with Playwright - screenshots, viewport testing, and UI flows",
+  "author": "nKO",
+  "entry": "cli.js",
+  "command": "superpowers browse",
+  "arguments": [
+    {
+      "name": "url",
+      "description": "URL to browse",
+      "required": true
+    }
+  ],
+  "options": [
+    {
+      "name": "viewport",
+      "alias": "v",
+      "description": "Viewport preset (mobile, tablet, desktop) or custom WxH",
+      "default": "desktop"
+    },
+    {
+      "name": "full-page",
+      "alias": "f",
+      "description": "Capture full page screenshot",
+      "type": "boolean"
+    },
+    {
+      "name": "selector",
+      "alias": "s",
+      "description": "CSS selector to screenshot specific element"
+    },
+    {
+      "name": "output",
+      "alias": "o",
+      "description": "Output file path (saves as PNG)"
+    }
+  ],
+  "dependencies": {
+    "playwright": "^1.42.0"
+  }
+}

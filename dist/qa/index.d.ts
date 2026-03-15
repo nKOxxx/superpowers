@@ -1,23 +1,21 @@
-/**
- * QA Skill - Systematic testing as QA Lead
- *
- * Usage: /qa [--mode=targeted|smoke|full] [--coverage] [--pattern=<glob>]
- */
-import { QAOptions, SkillResult } from '../types.js';
-export declare class QASkill {
-    private cwd;
-    private framework?;
-    constructor(cwd?: string);
-    execute(options: QAOptions): Promise<SkillResult>;
-    private detectFramework;
-    private getTestFiles;
-    private getTargetedTests;
-    private findTestFile;
-    private getSmokeTests;
-    private getAllTests;
-    private runTests;
-    private buildTestCommand;
-    private parseTestOutput;
+export type TestMode = 'targeted' | 'smoke' | 'full';
+export type TestFramework = 'vitest' | 'jest' | 'mocha' | 'unknown';
+export interface QAOptions {
+    mode?: TestMode;
+    coverage?: boolean;
+    watch?: boolean;
+    testPathPattern?: string;
 }
-export declare function run(args: string[], cwd?: string): Promise<SkillResult>;
+export interface QAResult {
+    success: boolean;
+    framework: TestFramework;
+    mode: TestMode;
+    output: string;
+    error?: string;
+    duration: number;
+    testCount?: number;
+    passedCount?: number;
+    failedCount?: number;
+}
+export declare function runQA(options?: QAOptions): Promise<QAResult>;
 //# sourceMappingURL=index.d.ts.map

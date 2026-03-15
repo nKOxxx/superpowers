@@ -1,11 +1,5 @@
-/**
- * Superpowers - OpenClaw AI-driven development workflows
- * Main entry point
- */
-export { BrowseSkill, run as runBrowse } from './browse/index.js';
-export { QASkill, run as runQA } from './qa/index.js';
-export { ShipSkill, run as runShip } from './ship/index.js';
-export { CEOReviewSkill, run as runCEOReview } from './plan-ceo-review/index.js';
-export * from './types.js';
-export * from './utils.js';
+export { browse, type BrowseOptions, type BrowseResult, type BrowseAction } from './browse/index.js';
+export { runQA, type QAOptions, type QAResult, type TestMode, type TestFramework } from './qa/index.js';
+export { ship, type ShipOptions, type ShipResult, type VersionBump } from './ship/index.js';
+export { planCEOReview, formatReviewOutput, type CEOReviewOptions, type CEOReviewResult, type BATScores } from './plan-ceo-review/index.js';
 //# sourceMappingURL=index.d.ts.map

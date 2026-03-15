@@ -1,109 +1,123 @@
-# Superpowers for OpenClaw
+# @nko/superpowers
 
-AI-driven development workflows. Four TypeScript skills for the OpenClaw ecosystem.
+OpenClaw superpowers - AI-powered workflows for development, testing, and product decisions.
+
+## Installation
+
+```bash
+npm install -g @nko/superpowers
+```
 
 ## Skills
 
-| Skill | Command | Description | Size |
-|-------|---------|-------------|------|
-| **Browse** | `/browse <url>` | Browser automation with Playwright | ~5KB |
-| **QA** | `/qa [--mode=targeted]` | Systematic testing as QA Lead | ~6KB |
-| **Ship** | `/ship [--version=patch]` | One-command release pipeline | ~7KB |
-| **CEO Review** | `/plan-ceo-review "desc"` | BAT framework for product decisions | ~8KB |
+### `/browse` - Browser Automation
 
-## Quick Start
+Capture screenshots and automate browser interactions with Playwright.
 
 ```bash
-# Install
-npm install @nko/superpowers
+# Screenshot a website
+superpowers browse https://example.com
 
-# Or use directly
-npx @nko/superpowers <command>
+# Mobile viewport
+superpowers browse https://example.com --viewport=mobile
+
+# Full page screenshot
+superpowers browse https://example.com --full-page
+
+# Screenshot specific element
+superpowers browse https://example.com --selector="#hero"
+
+# Save to file
+superpowers browse https://example.com --output=screenshot.png
 ```
 
-## Browse
+**Viewports:** `mobile` (375x667), `tablet` (768x1024), `desktop` (1920x1080), or custom `WxH`
 
-Browser automation for visual testing and QA.
+### `/qa` - Systematic Testing
 
-```bash
-# Screenshot a page
-/browse https://example.com
-
-# Mobile viewport, full page
-/browse https://example.com --viewport=mobile --full-page
-
-# Flow-based testing
-/browse https://example.com --actions='[
-  {"kind":"click","selector":"#login"},
-  {"kind":"type","selector":"#email","text":"user@example.com"},
-  {"kind":"click","selector":"#submit"},
-  {"kind":"wait","ms":1000}
-]'
-```
-
-**Actions:** click, type, wait, scroll, hover, screenshot
-
-## QA
-
-Systematic testing with mode-based execution.
+Run tests intelligently as a QA Lead.
 
 ```bash
-# Targeted - test only changed files (default)
-/qa --mode=targeted
+# Targeted - run tests for changed files only
+superpowers qa --mode=targeted
 
-# Smoke - quick validation
-/qa --mode=smoke
+# Smoke tests - quick validation
+superpowers qa --mode=smoke
 
-# Full - complete regression
-/qa --mode=full --coverage
+# Full regression suite
+superpowers qa --mode=full
+
+# With coverage
+superpowers qa --coverage
 ```
 
 **Auto-detects:** vitest, jest, mocha
 
-## Ship
+### `/ship` - Release Pipeline
 
-Release pipeline with semantic versioning.
+One-command release with versioning, changelog, and GitHub releases.
 
 ```bash
-# Patch release (default)
-/ship
+# Auto-detect version bump from commits
+superpowers ship
 
-# Minor release
-/ship --version=minor
+# Explicit version bump
+superpowers ship --version=patch
+superpowers ship --version=minor
+superpowers ship --version=major
 
-# Dry run
-/ship --version=major --dry-run
+# Dry run (preview only)
+superpowers ship --dry-run
 
-# Skip tests (not recommended)
-/ship --skip-tests
+# Skip GitHub release
+superpowers ship --skip-github-release
 ```
 
-**Features:**
-- Conventional commit changelog generation
-- Git tag + push
-- GitHub release creation (requires GH_TOKEN)
+**Requirements:** `GH_TOKEN` env var for GitHub releases
 
-## CEO Review
+### `/plan-ceo-review` - Product Strategy
 
-BAT framework for build/don't-build decisions.
+BAT framework for product decisions (Brand, Attention, Trust).
 
 ```bash
-# Auto-score based on description
-/plan-ceo-review "MoltStamp: API key escrow service for AI-to-AI collaboration"
+# Auto-score a feature
+superpowers plan-ceo-review "Dark Mode: Allow users to switch to dark theme" --auto-score
 
 # Manual scoring
-/plan-ceo-review "Product X" --brand=4 --attention=5 --trust=3
+superpowers plan-ceo-review "AI Assistant: Chat-based help" --brand=4 --attention=5 --trust=3
+
+# JSON output
+superpowers plan-ceo-review "New Feature: Description" --auto-score --json
 ```
 
-**BAT Framework:**
-- **Brand** (0-5): Alignment with core identity
-- **Attention** (0-5): Market demand capture
-- **Trust** (0-5): Delivery capability
+**Scoring:** 0-5 for each dimension, 10+ stars total = build recommendation
 
-**Scoring:**
-- 10+ stars: ✅ BUILD
-- 7-9 stars: ⚠️ CONSIDER  
-- <7 stars: ❌ DON'T BUILD
+## BAT Framework
+
+Evaluates features on three dimensions:
+
+| Dimension | Question | Score |
+|-----------|----------|-------|
+| **Brand** | Does this strengthen our brand? | 0-5 |
+| **Attention** | Will this capture market attention? | 0-5 |
+| **Trust** | Can we execute this well? | 0-5 |
+
+**Thresholds:**
+- **12-15 stars:** Build it
+- **8-11 stars:** Consider with caveats
+- **0-7 stars:** Don't build
+
+## OpenClaw Integration
+
+These skills are packaged for OpenClaw. Install as skill packages:
+
+```bash
+# Each skill is packaged in dist-skills/
+openclaw skills install ./dist-skills/browse.skill.tar.gz
+openclaw skills install ./dist-skills/qa.skill.tar.gz
+openclaw skills install ./dist-skills/ship.skill.tar.gz
+openclaw skills install ./dist-skills/plan-ceo-review.skill.tar.gz
+```
 
 ## Development
 
@@ -111,35 +125,14 @@ BAT framework for build/don't-build decisions.
 # Install dependencies
 npm install
 
-# Build
+# Build TypeScript
 npm run build
 
-# Package skills for distribution
+# Package skills
 npm run package:skills
 
-# Test
+# Run tests
 npm test
-```
-
-## Installation as OpenClaw Skills
-
-Copy `.skill` files to your OpenClaw skills directory:
-
-```bash
-cp dist-skills/*.skill ~/.openclaw/skills/
-```
-
-Or reference directly in OpenClaw config:
-
-```json
-{
-  "skills": [
-    { "name": "browse", "path": "./dist-skills/browse.skill" },
-    { "name": "qa", "path": "./dist-skills/qa.skill" },
-    { "name": "ship", "path": "./dist-skills/ship.skill" },
-    { "name": "plan-ceo-review", "path": "./dist-skills/plan-ceo-review.skill" }
-  ]
-}
 ```
 
 ## Requirements
@@ -147,12 +140,8 @@ Or reference directly in OpenClaw config:
 - Node.js 18+
 - Playwright (for /browse)
 - Git (for /ship)
-- Vitest/Jest/Mocha (for /qa)
+- GH_TOKEN environment variable (for GitHub releases)
 
 ## License
 
 MIT
-
-## Author
-
-Nikola Kolev (@nKOxxx)
