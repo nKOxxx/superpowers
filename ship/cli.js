@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { program } from 'commander';
-import { shipCommand } from './index.js';
+import { shipCommand } from './dist/index.js';
 
 program
   .name('ship')
