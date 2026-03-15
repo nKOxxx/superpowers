@@ -1,80 +1,63 @@
 #!/usr/bin/env node
+
+/**
+ * Package skills into distributable tar.gz files
+ */
+
 import { execSync } from 'child_process';
-import { existsSync, mkdirSync, writeFileSync, readFileSync, cpSync, rmSync } from 'fs';
-import { join } from 'path';
-import { fileURLToPath } from 'url';
+import { existsSync, mkdirSync, copyFileSync, writeFileSync } from 'fs';
+import { join, resolve } from 'path';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
-const rootDir = join(__dirname, '..');
-const distDir = join(rootDir, 'dist');
-const distSkillsDir = join(rootDir, 'dist-skills');
+const skills = ['browse', 'qa', 'ship', 'plan-ceo-review'];
+const packagesDir = resolve(process.cwd(), 'packages');
+const outputDir = resolve(process.cwd(), 'dist-skills');
 
-const skills = [
-  { name: 'browse', description: 'Browser automation for visual testing and QA with Playwright' },
-  { name: 'qa', description: 'Systematic testing as QA Lead' },
-  { name: 'ship', description: 'One-command release pipeline' },
-  { name: 'plan-ceo-review', description: 'Product strategy review using BAT framework' }
-];
+console.log('📦 Packaging skills...\n');
 
-// Create dist-skills directory
-if (!existsSync(distSkillsDir)) {
-  mkdirSync(distSkillsDir, { recursive: true });
+// Ensure output directory exists
+if (!existsSync(outputDir)) {
+  mkdirSync(outputDir, { recursive: true });
 }
 
 for (const skill of skills) {
-  console.log(`Packaging ${skill.name}...`);
+  const skillDir = join(packagesDir, skill);
+  const distDir = join(skillDir, 'dist');
+  const skillJsonPath = join(skillDir, 'skill.json');
+  const cliPath = join(skillDir, 'cli.js');
+  const packageJsonPath = join(skillDir, 'package.json');
+  const readmePath = join(skillDir, 'README.md');
   
-  const skillDir = join(distSkillsDir, skill.name);
-  const skillDistDir = join(skillDir, 'dist');
-  
-  // Clean up
-  if (existsSync(skillDir)) {
-    rmSync(skillDir, { recursive: true });
+  // Check if build exists
+  if (!existsSync(distDir)) {
+    console.error(`❌ ${skill}: No dist directory found. Run 'npm run build' first.`);
+    continue;
   }
   
-  // Create structure
-  mkdirSync(skillDir, { recursive: true });
-  mkdirSync(skillDistDir, { recursive: true });
+  // Create temporary packaging directory
+  const tempDir = join(outputDir, `.temp-${skill}`);
+  if (existsSync(tempDir)) {
+    execSync(`rm -rf ${tempDir}`);
+  }
+  mkdirSync(tempDir, { recursive: true });
   
-  // Copy dist files
-  cpSync(distDir, skillDistDir, { recursive: true });
-  
-  // Create skill.json
-  const skillJson = {
-    name: skill.name,
-    description: skill.description,
-    version: '1.0.0',
-    entry: 'dist/cli.js',
-    bin: {
-      superpowers: 'dist/cli.js'
-    }
-  };
-  
-  writeFileSync(join(skillDir, 'skill.json'), JSON.stringify(skillJson, null, 2));
-  
-  // Copy package.json
-  const pkg = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf-8'));
-  const skillPkg = {
-    name: `@nko/superpowers-${skill.name}`,
-    version: '1.0.0',
-    description: skill.description,
-    type: 'module',
-    main: 'dist/cli.js',
-    bin: {
-      superpowers: 'dist/cli.js'
-    },
-    engines: pkg.engines,
-    dependencies: pkg.dependencies
-  };
-  
-  writeFileSync(join(skillDir, 'package.json'), JSON.stringify(skillPkg, null, 2));
+  // Copy files to temp directory
+  execSync(`cp -r ${distDir} ${join(tempDir, 'dist')}`);
+  copyFileSync(skillJsonPath, join(tempDir, 'skill.json'));
+  copyFileSync(cliPath, join(tempDir, 'cli.js'));
+  copyFileSync(packageJsonPath, join(tempDir, 'package.json'));
+  copyFileSync(readmePath, join(tempDir, 'README.md'));
   
   // Create tarball
-  const tarCmd = `tar -czf "${skill.name}.skill.tar.gz" -C "${distSkillsDir}" "${skill.name}"`;
-  execSync(tarCmd, { cwd: distSkillsDir });
+  const tarballPath = join(outputDir, `${skill}.skill.tar.gz`);
+  execSync(`tar -czf ${tarballPath} -C ${tempDir} .`);
   
-  console.log(`  ✓ ${skill.name}.skill.tar.gz created`);
+  // Clean up temp directory
+  execSync(`rm -rf ${tempDir}`);
+  
+  // Get file size
+  const stats = execSync(`ls -lh ${tarballPath} | awk '{print $5}'`, { encoding: 'utf-8' }).trim();
+  console.log(`✅ ${skill}: ${tarballPath.replace(process.cwd() + '/', '')} (${stats})`);
 }
 
-console.log('\nAll skills packaged successfully!');
-console.log(`Location: ${distSkillsDir}/`);
+console.log('\n🎉 All skills packaged successfully!');
+console.log(`\nOutput directory: ${outputDir}`);

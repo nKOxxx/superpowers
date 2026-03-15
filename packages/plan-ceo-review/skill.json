@@ -1,0 +1,8 @@
+{
+  "name": "plan-ceo-review",
+  "version": "1.0.0",
+  "description": "Product strategy review using BAT framework (Brand, Attention, Trust) and 10-star methodology",
+  "entry": "cli.js",
+  "type": "cli",
+  "config": {}
+}

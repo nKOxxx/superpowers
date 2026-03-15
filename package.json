@@ -3,30 +3,30 @@
   "version": "1.0.0",
   "description": "OpenClaw superpowers - AI-powered workflows for development, testing, and product decisions",
   "type": "module",
-  "main": "dist/index.js",
-  "bin": {
-    "superpowers": "./cli.js"
-  },
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "tsc",
-    "clean": "rm -rf dist dist-skills",
+    "build": "npm run build --workspaces",
+    "clean": "npm run clean --workspaces && rm -rf dist-skills",
     "package": "npm run build && npm run package:skills",
-    "package:skills": "mkdir -p dist-skills && cd dist && tar -czf ../dist-skills/browse.skill.tar.gz browse/ && tar -czf ../dist-skills/qa.skill.tar.gz qa/ && tar -czf ../dist-skills/ship.skill.tar.gz ship/ && tar -czf ../dist-skills/plan-ceo-review.skill.tar.gz plan-ceo-review/",
-    "test": "vitest run"
+    "package:skills": "node scripts/package-skills.js",
+    "test": "vitest run",
+    "lint": "tsc --noEmit"
   },
-  "keywords": ["openclaw", "skills", "cli", "automation", "testing", "release"],
+  "keywords": [
+    "openclaw",
+    "skills",
+    "cli",
+    "automation",
+    "testing",
+    "release"
+  ],
   "author": "nKO",
   "license": "MIT",
-  "dependencies": {
-    "chalk": "^5.3.0",
-    "commander": "^11.1.0",
-    "ora": "^8.0.1",
-    "playwright": "^1.40.0",
-    "semver": "^7.5.4"
-  },
   "devDependencies": {
     "@types/node": "^20.10.0",
-    "@types/semver": "^7.5.6",
     "typescript": "^5.3.3",
     "vitest": "^1.0.0"
   },
