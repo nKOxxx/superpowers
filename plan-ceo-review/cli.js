@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { program } from 'commander';
-import { reviewCommand } from './dist/index.js';
+import { reviewCommand } from './index.js';
 
 program
   .name('plan-ceo-review')

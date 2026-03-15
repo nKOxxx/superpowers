@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { planCEOReview } from './dist/index.js';
+import { planCEOReview } from './index.js';
 import { writeFileSync } from 'fs';
 
 function formatOutput(result, format) {

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { program } from 'commander';
-import { browseCommand } from './dist/index.js';
-// Note: This file gets copied to dist/ folder during build, import path is relative to dist/
+import { browseCommand } from './index.js';
+// Note: This file gets copied to dist/ folder during build
 
 program
   .name('browse')

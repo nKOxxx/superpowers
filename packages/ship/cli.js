@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { shipCommand } from './dist/index.js';
+import { shipCommand } from './index.js';
 
 const args = process.argv.slice(2);
 const options = {
