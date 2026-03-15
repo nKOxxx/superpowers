@@ -174,11 +174,28 @@ function getChangedFiles(since: string): string[] {
 function mapToTestFiles(changedFiles: string[], framework: string): string[] {
   const testFiles: string[] = [];
   const extensions = framework === 'mocha' ? ['.test.js', '.spec.js'] : ['.test.ts', '.test.js', '.spec.ts', '.spec.js'];
+  const sourceExtensions = ['.ts', '.js', '.tsx', '.jsx'];
   
   for (const file of changedFiles) {
-    // Skip test files themselves
+    // Skip non-source files (dist, node_modules, archives, etc.)
+    if (file.startsWith('dist/') || 
+        file.startsWith('dist-skills/') || 
+        file.startsWith('node_modules/') || 
+        file.startsWith('.git/') ||
+        file.endsWith('.tar.gz') ||
+        file.endsWith('.zip')) {
+      continue;
+    }
+    
+    // Skip test files themselves - they'll be run anyway
     if (extensions.some(ext => file.endsWith(ext))) {
       testFiles.push(file);
+      continue;
+    }
+    
+    // Only map actual source files
+    const isSourceFile = sourceExtensions.some(ext => file.endsWith(ext));
+    if (!isSourceFile) {
       continue;
     }
     

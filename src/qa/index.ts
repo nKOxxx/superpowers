@@ -74,9 +74,26 @@ function mapToTestFiles(changedFiles: string[]): string[] {
   const testFiles = new Set<string>();
   
   for (const file of changedFiles) {
-    // Skip test files themselves
-    if (file.includes('.test.') || file.includes('.spec.')) {
+    // Skip non-source files (dist, node_modules, archives, etc.)
+    if (file.includes('/dist/') || 
+        file.startsWith('dist/') || 
+        file.startsWith('dist-skills/') || 
+        file.startsWith('node_modules/') || 
+        file.startsWith('.git/') ||
+        file.endsWith('.tar.gz') ||
+        file.endsWith('.zip')) {
+      continue;
+    }
+    
+    // Skip test files themselves (check file name, not full path)
+    const fileName = file.split('/').pop() || '';
+    if (fileName.includes('.test.') || fileName.includes('.spec.')) {
       testFiles.add(file);
+      continue;
+    }
+    
+    // Only process actual source files (.ts, .tsx, .js, .jsx)
+    if (!file.match(/\.(ts|tsx|js|jsx)$/)) {
       continue;
     }
     
@@ -88,7 +105,7 @@ function mapToTestFiles(changedFiles: string[]): string[] {
       file.replace(/\.ts$/, '.test.ts'),
       file.replace(/\.tsx$/, '.test.tsx'),
       file.replace(/\.js$/, '.test.js'),
-    ];
+    ].filter(p => p !== file); // Filter out patterns that are the same as the original file
     
     for (const pattern of patterns) {
       if (existsSync(pattern)) {
