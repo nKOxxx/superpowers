@@ -3,6 +3,7 @@ import { Logger, execSync, loadConfig } from '../utils/index.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as semver from 'semver';
+import { execSync as childExecSync } from 'child_process';
 
 export class ShipSkill {
   private logger: Logger;
@@ -136,8 +137,7 @@ export class ShipSkill {
 
     this.logger.info('Running tests...');
     try {
-      const { execSync } = require('child_process');
-      execSync('npm test', { stdio: 'inherit' });
+      childExecSync('npm test', { stdio: 'inherit' });
       this.logger.success('Tests passed');
     } catch (error: any) {
       throw new Error('Tests failed. Fix before releasing.');
@@ -319,7 +319,6 @@ export class ShipSkill {
 
     // Fallback to API
     try {
-      const { execSync } = require('child_process');
       const data = JSON.stringify({
         tag_name: tag,
         name: name,
@@ -349,8 +348,7 @@ export class ShipSkill {
 
   private commandExists(command: string): boolean {
     try {
-      const { execSync } = require('child_process');
-      execSync(`which ${command}`, { stdio: 'ignore' });
+      childExecSync(`which ${command}`, { stdio: 'ignore' });
       return true;
     } catch {
       return false;

@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { execSync as childExecSync } from 'child_process';
 
 /**
  * Logger utility for consistent output
@@ -49,9 +50,8 @@ export class Logger {
  * Execute a shell command and return stdout
  */
 export function execSync(command: string, cwd?: string, stdio?: 'inherit' | 'ignore' | 'pipe'): string {
-  const { execSync } = require('child_process');
   try {
-    return execSync(command, { 
+    return childExecSync(command, { 
       cwd, 
       encoding: 'utf-8',
       stdio: stdio || ['pipe', 'pipe', 'pipe']
@@ -66,8 +66,7 @@ export function execSync(command: string, cwd?: string, stdio?: 'inherit' | 'ign
  */
 export function commandExists(command: string): boolean {
   try {
-    const { execSync } = require('child_process');
-    execSync(`which ${command}`, { stdio: 'ignore' });
+    childExecSync(`which ${command}`, { stdio: 'ignore' });
     return true;
   } catch {
     return false;
