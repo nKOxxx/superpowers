@@ -5,7 +5,7 @@ import * as https from 'https';
 
 // Types
 type VersionType = 'patch' | 'minor' | 'major';
-type ChangeType = 'added' | 'fixed' | 'changed' | 'deprecated' | 'removed' | 'security' | 'docs';
+type ChangeType = 'added' | 'fixed' | 'changed' | 'deprecated' | 'removed' | 'security' | 'docs' | 'other';
 
 interface ShipOptions {
   version: VersionType | string;
@@ -32,6 +32,7 @@ interface Changes {
   removed: string[];
   security: string[];
   docs: string[];
+  other: string[];
 }
 
 interface ReleaseResult {

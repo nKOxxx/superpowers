@@ -4,17 +4,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ceoReviewCommand = ceoReviewCommand;
-const chalk_1 = __importDefault(require("chalk"));
+const picocolors_1 = __importDefault(require("picocolors"));
 async function ceoReviewCommand(options) {
     console.log();
-    console.log(chalk_1.default.blue('══════════════════════════════════════════════════'));
-    console.log(chalk_1.default.bold(options.feature));
-    console.log(chalk_1.default.blue('══════════════════════════════════════════════════'));
+    console.log(picocolors_1.default.blue('══════════════════════════════════════════════════'));
+    console.log(picocolors_1.default.bold(options.feature));
+    console.log(picocolors_1.default.blue('══════════════════════════════════════════════════'));
     if (options.goal) {
-        console.log(chalk_1.default.gray(`Goal: ${options.goal}`));
+        console.log(picocolors_1.default.gray(`Goal: ${options.goal}`));
     }
     if (options.audience) {
-        console.log(chalk_1.default.gray(`Audience: ${options.audience}`));
+        console.log(picocolors_1.default.gray(`Audience: ${options.audience}`));
     }
     console.log();
     // Calculate BAT scores based on context
@@ -25,14 +25,14 @@ async function ceoReviewCommand(options) {
     const recommendation = getRecommendation(scores);
     // Display recommendation
     console.log();
-    console.log(`Recommendation: ${chalk_1.default.bold(recommendation.decision)} ${recommendation.emoji}`);
-    console.log(chalk_1.default.gray(`Threshold: ${recommendation.threshold}`));
+    console.log(`Recommendation: ${picocolors_1.default.bold(recommendation.decision)} ${recommendation.emoji}`);
+    console.log(picocolors_1.default.gray(`Threshold: ${recommendation.threshold}`));
     console.log();
     // Display rationale
     displayRationale(scores, options);
     // Display next steps
     displayNextSteps(recommendation, scores, options);
-    console.log(chalk_1.default.blue('══════════════════════════════════════════════════'));
+    console.log(picocolors_1.default.blue('══════════════════════════════════════════════════'));
     console.log();
 }
 function calculateBATScores(options) {
@@ -95,11 +95,11 @@ function calculateBATScores(options) {
 }
 function displayScores(scores) {
     const total = scores.brand + scores.attention + scores.trust;
-    console.log(`${chalk_1.default.cyan('Brand:')}     ${renderStars(scores.brand)} (${scores.brand}/5)`);
-    console.log(`${chalk_1.default.cyan('Attention:')} ${renderStars(scores.attention)} (${scores.attention}/5)`);
-    console.log(`${chalk_1.default.cyan('Trust:')}     ${renderStars(scores.trust)} (${scores.trust}/5)`);
+    console.log(`${picocolors_1.default.cyan('Brand:')}     ${renderStars(scores.brand)} (${scores.brand}/5)`);
+    console.log(`${picocolors_1.default.cyan('Attention:')} ${renderStars(scores.attention)} (${scores.attention}/5)`);
+    console.log(`${picocolors_1.default.cyan('Trust:')}     ${renderStars(scores.trust)} (${scores.trust}/5)`);
     console.log();
-    console.log(chalk_1.default.bold(`Total: ${total}/15 ⭐`));
+    console.log(picocolors_1.default.bold(`Total: ${total}/15 ⭐`));
 }
 function renderStars(score) {
     const filled = '⭐'.repeat(score);
@@ -122,7 +122,7 @@ function getRecommendation(scores) {
     }
 }
 function displayRationale(scores, options) {
-    console.log(chalk_1.default.cyan('Rationale:'));
+    console.log(picocolors_1.default.cyan('Rationale:'));
     const points = [];
     if (scores.brand >= 4) {
         points.push('Strong brand differentiation potential');
@@ -162,7 +162,7 @@ function displayRationale(scores, options) {
 }
 function displayNextSteps(recommendation, scores, options) {
     console.log();
-    console.log(chalk_1.default.cyan('Next Steps:'));
+    console.log(picocolors_1.default.cyan('Next Steps:'));
     const steps = [];
     if (recommendation.decision === 'BUILD') {
         steps.push('Define success metrics (DAU, engagement, revenue)');

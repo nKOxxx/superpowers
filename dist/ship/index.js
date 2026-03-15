@@ -7,15 +7,15 @@ exports.shipCommand = shipCommand;
 const child_process_1 = require("child_process");
 const promises_1 = __importDefault(require("fs/promises"));
 const path_1 = __importDefault(require("path"));
-const chalk_1 = __importDefault(require("chalk"));
+const picocolors_1 = __importDefault(require("picocolors"));
 const ora_1 = __importDefault(require("ora"));
 const semver_1 = __importDefault(require("semver"));
 async function shipCommand(options) {
-    console.log(chalk_1.default.blue('══════════════════════════════════════════════════'));
-    console.log(chalk_1.default.blue('Release Pipeline'));
-    console.log(chalk_1.default.blue('══════════════════════════════════════════════════\n'));
+    console.log(picocolors_1.default.blue('══════════════════════════════════════════════════'));
+    console.log(picocolors_1.default.blue('Release Pipeline'));
+    console.log(picocolors_1.default.blue('══════════════════════════════════════════════════\n'));
     if (options.dryRun) {
-        console.log(chalk_1.default.yellow('⚠ DRY RUN MODE - No changes will be made\n'));
+        console.log(picocolors_1.default.yellow('⚠ DRY RUN MODE - No changes will be made\n'));
     }
     const spinner = (0, ora_1.default)('Validating repository...').start();
     try {
@@ -23,8 +23,8 @@ async function shipCommand(options) {
         spinner.text = 'Checking git status...';
         const gitStatus = (0, child_process_1.execSync)('git status --porcelain', { encoding: 'utf-8', stdio: 'pipe' });
         if (gitStatus.trim() !== '') {
-            spinner.fail(chalk_1.default.red('Working directory is not clean. Commit or stash changes first.'));
-            console.log(chalk_1.default.gray(gitStatus));
+            spinner.fail(picocolors_1.default.red('Working directory is not clean. Commit or stash changes first.'));
+            console.log(picocolors_1.default.gray(gitStatus));
             process.exit(1);
         }
         // Step 2: Read current version
@@ -50,17 +50,17 @@ async function shipCommand(options) {
             newVersion = options.version;
         }
         spinner.stop();
-        console.log(chalk_1.default.cyan(`Current version: ${currentVersion}`));
-        console.log(chalk_1.default.cyan(`New version: ${newVersion}\n`));
+        console.log(picocolors_1.default.cyan(`Current version: ${currentVersion}`));
+        console.log(picocolors_1.default.cyan(`New version: ${newVersion}\n`));
         if (options.dryRun) {
-            console.log(chalk_1.default.yellow('Dry run - would execute:'));
-            console.log(chalk_1.default.gray('  1. Update version in package.json'));
-            console.log(chalk_1.default.gray('  2. Generate changelog'));
-            console.log(chalk_1.default.gray('  3. Create release commit'));
-            console.log(chalk_1.default.gray('  4. Create git tag'));
-            console.log(chalk_1.default.gray('  5. Push to remote'));
+            console.log(picocolors_1.default.yellow('Dry run - would execute:'));
+            console.log(picocolors_1.default.gray('  1. Update version in package.json'));
+            console.log(picocolors_1.default.gray('  2. Generate changelog'));
+            console.log(picocolors_1.default.gray('  3. Create release commit'));
+            console.log(picocolors_1.default.gray('  4. Create git tag'));
+            console.log(picocolors_1.default.gray('  5. Push to remote'));
             if (process.env.GH_TOKEN) {
-                console.log(chalk_1.default.gray('  6. Create GitHub release'));
+                console.log(picocolors_1.default.gray('  6. Create GitHub release'));
             }
             return;
         }
@@ -120,10 +120,10 @@ async function shipCommand(options) {
             spinner.succeed('GitHub release created');
         }
         console.log();
-        console.log(chalk_1.default.green('✓'), chalk_1.default.bold(`Released ${newVersion}`));
+        console.log(picocolors_1.default.green('✓'), picocolors_1.default.bold(`Released ${newVersion}`));
     }
     catch (error) {
-        spinner.fail(chalk_1.default.red(`Release failed: ${error instanceof Error ? error.message : String(error)}`));
+        spinner.fail(picocolors_1.default.red(`Release failed: ${error instanceof Error ? error.message : String(error)}`));
         throw error;
     }
 }

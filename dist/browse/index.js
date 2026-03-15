@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.browseCommand = browseCommand;
 const playwright_1 = require("playwright");
-const chalk_1 = __importDefault(require("chalk"));
+const picocolors_1 = __importDefault(require("picocolors"));
 const ora_1 = __importDefault(require("ora"));
 const promises_1 = __importDefault(require("fs/promises"));
 const path_1 = __importDefault(require("path"));
@@ -121,10 +121,10 @@ async function browseCommand(url, options) {
             // Capture screenshot
             await captureScreenshot(page, options, null, null, viewport);
         }
-        spinner.succeed(chalk_1.default.green('Browser automation complete'));
+        spinner.succeed(picocolors_1.default.green('Browser automation complete'));
     }
     catch (error) {
-        spinner.fail(chalk_1.default.red(`Browser automation failed: ${error instanceof Error ? error.message : String(error)}`));
+        spinner.fail(picocolors_1.default.red(`Browser automation failed: ${error instanceof Error ? error.message : String(error)}`));
         throw error;
     }
     finally {
@@ -185,7 +185,7 @@ async function captureScreenshot(page, options, flowName, stepName, viewport) {
         path: filepath,
         fullPage: options.fullPage
     });
-    console.log(chalk_1.default.green(`✓ Screenshot saved: ${filepath}`));
+    console.log(picocolors_1.default.green(`✓ Screenshot saved: ${filepath}`));
     return filepath;
 }
 //# sourceMappingURL=index.js.map

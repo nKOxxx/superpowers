@@ -7,12 +7,12 @@ exports.qaCommand = qaCommand;
 const child_process_1 = require("child_process");
 const promises_1 = __importDefault(require("fs/promises"));
 const path_1 = __importDefault(require("path"));
-const chalk_1 = __importDefault(require("chalk"));
+const picocolors_1 = __importDefault(require("picocolors"));
 const ora_1 = __importDefault(require("ora"));
 async function qaCommand(options) {
-    console.log(chalk_1.default.blue('══════════════════════════════════════════════════'));
-    console.log(chalk_1.default.blue(`QA Mode: ${options.mode.toUpperCase()}`));
-    console.log(chalk_1.default.blue('══════════════════════════════════════════════════\n'));
+    console.log(picocolors_1.default.blue('══════════════════════════════════════════════════'));
+    console.log(picocolors_1.default.blue(`QA Mode: ${options.mode.toUpperCase()}`));
+    console.log(picocolors_1.default.blue('══════════════════════════════════════════════════\n'));
     const spinner = (0, ora_1.default)('Analyzing repository...').start();
     try {
         // Check if we're in a git repo
@@ -46,7 +46,7 @@ async function qaCommand(options) {
         }
     }
     catch (error) {
-        spinner.fail(chalk_1.default.red(`QA failed: ${error instanceof Error ? error.message : String(error)}`));
+        spinner.fail(picocolors_1.default.red(`QA failed: ${error instanceof Error ? error.message : String(error)}`));
         throw error;
     }
 }
@@ -73,28 +73,28 @@ async function detectTestFramework() {
 }
 async function runTargetedTests(changedFiles, framework, options) {
     if (changedFiles.length === 0) {
-        console.log(chalk_1.default.yellow('No changed files detected. Running smoke tests instead...'));
+        console.log(picocolors_1.default.yellow('No changed files detected. Running smoke tests instead...'));
         await runSmokeTests(framework, options);
         return;
     }
-    console.log(chalk_1.default.cyan(`Files Changed: ${changedFiles.length}`));
+    console.log(picocolors_1.default.cyan(`Files Changed: ${changedFiles.length}`));
     for (const file of changedFiles.slice(0, 10)) {
-        console.log(chalk_1.default.gray(`  - ${file}`));
+        console.log(picocolors_1.default.gray(`  - ${file}`));
     }
     if (changedFiles.length > 10) {
-        console.log(chalk_1.default.gray(`  ... and ${changedFiles.length - 10} more`));
+        console.log(picocolors_1.default.gray(`  ... and ${changedFiles.length - 10} more`));
     }
     console.log();
     // Map changed files to test files
     const testFiles = mapFilesToTests(changedFiles);
     if (testFiles.length === 0) {
-        console.log(chalk_1.default.yellow('No test files mapped. Running smoke tests instead...'));
+        console.log(picocolors_1.default.yellow('No test files mapped. Running smoke tests instead...'));
         await runSmokeTests(framework, options);
         return;
     }
-    console.log(chalk_1.default.cyan(`Tests Selected: ${testFiles.length}`));
+    console.log(picocolors_1.default.cyan(`Tests Selected: ${testFiles.length}`));
     for (const file of testFiles) {
-        console.log(chalk_1.default.gray(`  - ${file}`));
+        console.log(picocolors_1.default.gray(`  - ${file}`));
     }
     console.log();
     // Run the tests
@@ -128,16 +128,16 @@ function mapFilesToTests(changedFiles) {
     return Array.from(testFiles);
 }
 async function runSmokeTests(framework, options) {
-    console.log(chalk_1.default.cyan('Running smoke tests...\n'));
+    console.log(picocolors_1.default.cyan('Running smoke tests...\n'));
     // For smoke tests, just run a basic build check if no specific smoke tests
     try {
         const spinner = (0, ora_1.default)('Running build check...').start();
         (0, child_process_1.execSync)('npm run build --if-present', { stdio: 'pipe' });
         spinner.succeed('Build check passed');
-        console.log(chalk_1.default.blue('──────────────────────────────────────────────────'));
-        console.log(chalk_1.default.green('Passed: Build successful'));
-        console.log(`Status: ${chalk_1.default.green('PASSED')}`);
-        console.log(chalk_1.default.blue('──────────────────────────────────────────────────'));
+        console.log(picocolors_1.default.blue('──────────────────────────────────────────────────'));
+        console.log(picocolors_1.default.green('Passed: Build successful'));
+        console.log(`Status: ${picocolors_1.default.green('PASSED')}`);
+        console.log(picocolors_1.default.blue('──────────────────────────────────────────────────'));
     }
     catch {
         // Fall back to running tests
@@ -145,7 +145,7 @@ async function runSmokeTests(framework, options) {
     }
 }
 async function runFullTests(framework, options) {
-    console.log(chalk_1.default.cyan('Running full test suite...\n'));
+    console.log(picocolors_1.default.cyan('Running full test suite...\n'));
     await runTestCommand(framework, [], options);
 }
 async function runTestCommand(framework, testFiles, options, extraArgs = []) {
@@ -215,7 +215,7 @@ async function runTestCommand(framework, testFiles, options, extraArgs = []) {
             }
         });
         child.on('error', (error) => {
-            spinner.fail(chalk_1.default.red(`Failed to run tests: ${error.message}`));
+            spinner.fail(picocolors_1.default.red(`Failed to run tests: ${error.message}`));
             reject(error);
         });
     });
@@ -244,15 +244,15 @@ function parseTestResults(output) {
     return results;
 }
 function printResults(results) {
-    console.log(chalk_1.default.blue('──────────────────────────────────────────────────'));
+    console.log(picocolors_1.default.blue('──────────────────────────────────────────────────'));
     const passed = results.filter(r => r.passed).length;
     const failed = results.filter(r => !r.passed).length;
-    console.log(chalk_1.default.green(`Passed: ${passed}/${results.length}`));
+    console.log(picocolors_1.default.green(`Passed: ${passed}/${results.length}`));
     if (failed > 0) {
-        console.log(chalk_1.default.red(`Failed: ${failed}/${results.length}`));
+        console.log(picocolors_1.default.red(`Failed: ${failed}/${results.length}`));
     }
-    const status = failed === 0 ? chalk_1.default.green('PASSED') : chalk_1.default.red('FAILED');
+    const status = failed === 0 ? picocolors_1.default.green('PASSED') : picocolors_1.default.red('FAILED');
     console.log(`Status: ${status}`);
-    console.log(chalk_1.default.blue('──────────────────────────────────────────────────'));
+    console.log(picocolors_1.default.blue('──────────────────────────────────────────────────'));
 }
 //# sourceMappingURL=index.js.map

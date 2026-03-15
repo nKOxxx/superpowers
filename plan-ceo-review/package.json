@@ -1,19 +1,15 @@
 {
-  "name": "@openclaw/plan-ceo-review-skill",
+  "name": "@superpowers/plan-ceo-review",
   "version": "1.0.0",
-  "description": "BAT framework for product decisions for OpenClaw",
-  "main": "dist/handler.js",
-  "types": "dist/handler.d.ts",
+  "description": "BAT framework product strategy skill for OpenClaw",
+  "main": "handler.ts",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "test": "vitest run"
+    "build": "tsc handler.ts --outDir dist --esModuleInterop --target ES2020 --module commonjs"
   },
   "dependencies": {},
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "typescript": "^5.3.0",
-    "vitest": "^1.0.0"
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
   },
   "engines": {
     "node": ">=18.0.0"

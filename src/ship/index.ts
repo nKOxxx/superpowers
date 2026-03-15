@@ -1,7 +1,7 @@
 import { execSync } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
-import chalk from 'chalk';
+import pc from 'picocolors';
 import ora from 'ora';
 import semver from 'semver';
 
@@ -21,12 +21,12 @@ interface PackageJson {
 }
 
 export async function shipCommand(options: ShipOptions): Promise<void> {
-  console.log(chalk.blue('══════════════════════════════════════════════════'));
-  console.log(chalk.blue('Release Pipeline'));
-  console.log(chalk.blue('══════════════════════════════════════════════════\n'));
+  console.log(pc.blue('══════════════════════════════════════════════════'));
+  console.log(pc.blue('Release Pipeline'));
+  console.log(pc.blue('══════════════════════════════════════════════════\n'));
   
   if (options.dryRun) {
-    console.log(chalk.yellow('⚠ DRY RUN MODE - No changes will be made\n'));
+    console.log(pc.yellow('⚠ DRY RUN MODE - No changes will be made\n'));
   }
   
   const spinner = ora('Validating repository...').start();
@@ -37,8 +37,8 @@ export async function shipCommand(options: ShipOptions): Promise<void> {
     const gitStatus = execSync('git status --porcelain', { encoding: 'utf-8', stdio: 'pipe' });
     
     if (gitStatus.trim() !== '') {
-      spinner.fail(chalk.red('Working directory is not clean. Commit or stash changes first.'));
-      console.log(chalk.gray(gitStatus));
+      spinner.fail(pc.red('Working directory is not clean. Commit or stash changes first.'));
+      console.log(pc.gray(gitStatus));
       process.exit(1);
     }
     
@@ -67,18 +67,18 @@ export async function shipCommand(options: ShipOptions): Promise<void> {
     
     spinner.stop();
     
-    console.log(chalk.cyan(`Current version: ${currentVersion}`));
-    console.log(chalk.cyan(`New version: ${newVersion}\n`));
+    console.log(pc.cyan(`Current version: ${currentVersion}`));
+    console.log(pc.cyan(`New version: ${newVersion}\n`));
     
     if (options.dryRun) {
-      console.log(chalk.yellow('Dry run - would execute:'));
-      console.log(chalk.gray('  1. Update version in package.json'));
-      console.log(chalk.gray('  2. Generate changelog'));
-      console.log(chalk.gray('  3. Create release commit'));
-      console.log(chalk.gray('  4. Create git tag'));
-      console.log(chalk.gray('  5. Push to remote'));
+      console.log(pc.yellow('Dry run - would execute:'));
+      console.log(pc.gray('  1. Update version in package.json'));
+      console.log(pc.gray('  2. Generate changelog'));
+      console.log(pc.gray('  3. Create release commit'));
+      console.log(pc.gray('  4. Create git tag'));
+      console.log(pc.gray('  5. Push to remote'));
       if (process.env.GH_TOKEN) {
-        console.log(chalk.gray('  6. Create GitHub release'));
+        console.log(pc.gray('  6. Create GitHub release'));
       }
       return;
     }
@@ -147,10 +147,10 @@ export async function shipCommand(options: ShipOptions): Promise<void> {
     }
     
     console.log();
-    console.log(chalk.green('✓'), chalk.bold(`Released ${newVersion}`));
+    console.log(pc.green('✓'), pc.bold(`Released ${newVersion}`));
     
   } catch (error) {
-    spinner.fail(chalk.red(`Release failed: ${error instanceof Error ? error.message : String(error)}`));
+    spinner.fail(pc.red(`Release failed: ${error instanceof Error ? error.message : String(error)}`));
     throw error;
   }
 }

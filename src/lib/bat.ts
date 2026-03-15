@@ -26,9 +26,11 @@ export function calculateBATScore(
   const total = clampedScores.brand + clampedScores.attention + clampedScores.trust;
 
   let recommendation: Recommendation;
-  if (total >= 10) {
+  if (total >= 12) {
     recommendation = 'BUILD';
-  } else if (total >= 7) {
+  } else if (total >= 10) {
+    recommendation = 'BUILD';
+  } else if (total >= 8) {
     recommendation = 'CONSIDER';
   } else {
     recommendation = "DON'T BUILD";

@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import pc from 'picocolors';
 
 interface CEOReviewOptions {
   feature: string;
@@ -22,15 +22,15 @@ interface Recommendation {
 
 export async function ceoReviewCommand(options: CEOReviewOptions): Promise<void> {
   console.log();
-  console.log(chalk.blue('══════════════════════════════════════════════════'));
-  console.log(chalk.bold(options.feature));
-  console.log(chalk.blue('══════════════════════════════════════════════════'));
+  console.log(pc.blue('══════════════════════════════════════════════════'));
+  console.log(pc.bold(options.feature));
+  console.log(pc.blue('══════════════════════════════════════════════════'));
   
   if (options.goal) {
-    console.log(chalk.gray(`Goal: ${options.goal}`));
+    console.log(pc.gray(`Goal: ${options.goal}`));
   }
   if (options.audience) {
-    console.log(chalk.gray(`Audience: ${options.audience}`));
+    console.log(pc.gray(`Audience: ${options.audience}`));
   }
   console.log();
   
@@ -45,8 +45,8 @@ export async function ceoReviewCommand(options: CEOReviewOptions): Promise<void>
   
   // Display recommendation
   console.log();
-  console.log(`Recommendation: ${chalk.bold(recommendation.decision)} ${recommendation.emoji}`);
-  console.log(chalk.gray(`Threshold: ${recommendation.threshold}`));
+  console.log(`Recommendation: ${pc.bold(recommendation.decision)} ${recommendation.emoji}`);
+  console.log(pc.gray(`Threshold: ${recommendation.threshold}`));
   console.log();
   
   // Display rationale
@@ -55,7 +55,7 @@ export async function ceoReviewCommand(options: CEOReviewOptions): Promise<void>
   // Display next steps
   displayNextSteps(recommendation, scores, options);
   
-  console.log(chalk.blue('══════════════════════════════════════════════════'));
+  console.log(pc.blue('══════════════════════════════════════════════════'));
   console.log();
 }
 
@@ -123,11 +123,11 @@ function calculateBATScores(options: CEOReviewOptions): BATScore {
 function displayScores(scores: BATScore): void {
   const total = scores.brand + scores.attention + scores.trust;
   
-  console.log(`${chalk.cyan('Brand:')}     ${renderStars(scores.brand)} (${scores.brand}/5)`);
-  console.log(`${chalk.cyan('Attention:')} ${renderStars(scores.attention)} (${scores.attention}/5)`);
-  console.log(`${chalk.cyan('Trust:')}     ${renderStars(scores.trust)} (${scores.trust}/5)`);
+  console.log(`${pc.cyan('Brand:')}     ${renderStars(scores.brand)} (${scores.brand}/5)`);
+  console.log(`${pc.cyan('Attention:')} ${renderStars(scores.attention)} (${scores.attention}/5)`);
+  console.log(`${pc.cyan('Trust:')}     ${renderStars(scores.trust)} (${scores.trust}/5)`);
   console.log();
-  console.log(chalk.bold(`Total: ${total}/15 ⭐`));
+  console.log(pc.bold(`Total: ${total}/15 ⭐`));
 }
 
 function renderStars(score: number): string {
@@ -151,7 +151,7 @@ function getRecommendation(scores: BATScore): Recommendation {
 }
 
 function displayRationale(scores: BATScore, options: CEOReviewOptions): void {
-  console.log(chalk.cyan('Rationale:'));
+  console.log(pc.cyan('Rationale:'));
   
   const points: string[] = [];
   
@@ -200,7 +200,7 @@ function displayNextSteps(
   options: CEOReviewOptions
 ): void {
   console.log();
-  console.log(chalk.cyan('Next Steps:'));
+  console.log(pc.cyan('Next Steps:'));
   
   const steps: string[] = [];
   

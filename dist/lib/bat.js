@@ -14,10 +14,13 @@ function calculateBATScore(feature, brand, attention, trust) {
     };
     const total = clampedScores.brand + clampedScores.attention + clampedScores.trust;
     let recommendation;
-    if (total >= 10) {
+    if (total >= 12) {
         recommendation = 'BUILD';
     }
-    else if (total >= 7) {
+    else if (total >= 10) {
+        recommendation = 'BUILD';
+    }
+    else if (total >= 8) {
         recommendation = 'CONSIDER';
     }
     else {
