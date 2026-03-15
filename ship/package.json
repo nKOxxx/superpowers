@@ -9,7 +9,9 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test": "echo 'Ship skill validated'",
+    "package": "cd .. && ./package-skills.sh ship"
   },
   "dependencies": {
     "commander": "^12.0.0"

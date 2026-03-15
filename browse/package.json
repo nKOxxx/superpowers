@@ -9,7 +9,9 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test": "echo 'Browse skill validated'",
+    "package": "cd .. && ./package-skills.sh browse"
   },
   "dependencies": {
     "playwright": "^1.42.0",

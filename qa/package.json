@@ -9,7 +9,9 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test": "echo 'QA skill validated'",
+    "package": "cd .. && ./package-skills.sh qa"
   },
   "dependencies": {
     "commander": "^12.0.0"

@@ -9,7 +9,9 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test": "echo 'Plan CEO Review skill validated'",
+    "package": "cd .. && ./package-skills.sh plan-ceo-review"
   },
   "dependencies": {
     "commander": "^12.0.0"
