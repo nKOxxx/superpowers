@@ -3,6 +3,13 @@
   "version": "1.0.0",
   "description": "OpenClaw Superpowers - AI-powered workflows for development, testing, and product decisions",
   "type": "module",
+  "bin": {
+    "superpowers": "./cli.js",
+    "browse": "./browse/cli.js",
+    "qa": "./qa/cli.js",
+    "ship": "./ship/cli.js",
+    "plan-ceo-review": "./plan-ceo-review/cli.js"
+  },
   "scripts": {
     "build": "tsc",
     "package": "npm run build && npm run package:skills",
