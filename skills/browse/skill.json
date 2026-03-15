@@ -2,10 +2,45 @@
   "name": "browse",
   "version": "1.0.0",
   "description": "Browser automation for visual testing and QA with Playwright",
-  "entry": "cli.js",
-  "bin": "superpowers browse",
-  "requires": {
-    "bins": ["node", "npx"],
-    "npm": ["@nko/superpowers"]
+  "entry": "dist/browse/index.js",
+  "cli": "cli.js browse",
+  "commands": {
+    "browse": {
+      "description": "Capture screenshots with browser automation",
+      "args": [
+        {
+          "name": "url",
+          "required": true,
+          "description": "URL to browse"
+        }
+      ],
+      "options": [
+        {
+          "name": "viewport",
+          "alias": "v",
+          "type": "string",
+          "default": "desktop",
+          "description": "Viewport preset (mobile, tablet, desktop) or WxH"
+        },
+        {
+          "name": "full-page",
+          "alias": "f",
+          "type": "boolean",
+          "description": "Capture full page"
+        },
+        {
+          "name": "selector",
+          "alias": "s",
+          "type": "string",
+          "description": "Capture specific element (CSS selector)"
+        },
+        {
+          "name": "output",
+          "alias": "o",
+          "type": "string",
+          "description": "Output file path"
+        }
+      ]
+    }
   }
 }

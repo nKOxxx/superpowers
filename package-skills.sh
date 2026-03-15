@@ -1,30 +1,30 @@
 #!/bin/bash
-# Package skills for OpenClaw distribution
+
+# Packaging script for OpenClaw skills
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DIST_DIR="$SCRIPT_DIR/dist-skills"
-PACKAGES_DIR="$SCRIPT_DIR/packages"
+DIST_DIR="dist-skills"
+mkdir -p "$DIST_DIR"
 
-mkdir -p "$PACKAGES_DIR"
+echo "📦 Packaging OpenClaw skills..."
 
-echo "📦 Packaging Superpowers skills..."
-
-for skill in browse qa ship plan-ceo-review; do
-  echo "  → Packaging $skill..."
-  
-  # Create tar.gz with skill contents
-  tar -czf "$PACKAGES_DIR/${skill}.skill" \
-    -C "$DIST_DIR" \
-    "$skill/SKILL.md" \
-    "$skill/package.json" \
-    "$skill/dist/"
+# Package each skill
+for skill_dir in skills/*/; do
+    skill_name=$(basename "$skill_dir")
+    skill_file="$DIST_DIR/$skill_name.skill"
     
-  SIZE=$(du -h "$PACKAGES_DIR/${skill}.skill" | cut -f1)
-  echo "    ✓ ${skill}.skill ($SIZE)"
+    echo "  → Packaging $skill_name..."
+    
+    # Create tar.gz with skill.json and dist contents
+    tar -czf "$skill_file" \
+        -C "$skill_dir" skill.json \
+        -C ../.. dist
+    
+    size=$(du -h "$skill_file" | cut -f1)
+    echo "    ✓ $skill_file ($size)"
 done
 
 echo ""
-echo "✅ All skills packaged in $PACKAGES_DIR/"
-ls -lh "$PACKAGES_DIR/"
+echo "✅ All skills packaged to $DIST_DIR/"
+ls -la "$DIST_DIR/"

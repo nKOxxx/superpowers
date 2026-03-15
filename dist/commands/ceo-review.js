@@ -1,4 +1,7 @@
-export async function ceoReviewCommand(options) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ceoReviewCommand = ceoReviewCommand;
+async function ceoReviewCommand(options) {
     console.log('');
     console.log('══════════════════════════════════════════════════');
     console.log(options.feature);

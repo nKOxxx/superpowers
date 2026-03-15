@@ -1,21 +1,26 @@
-import chalk from 'chalk';
 export type VersionBump = 'patch' | 'minor' | 'major';
 export interface ShipOptions {
-    version: VersionBump | string;
+    version?: VersionBump | string;
     dryRun?: boolean;
     skipChangelog?: boolean;
-    skipGit?: boolean;
-    skipGithub?: boolean;
+    skipTag?: boolean;
+    skipRelease?: boolean;
 }
-export interface ChangelogEntry {
-    type: string;
-    scope?: string;
-    message: string;
-    hash: string;
+export interface ShipResult {
+    success: boolean;
+    version?: string;
+    changelog?: string;
+    tag?: string;
+    releaseUrl?: string;
+    dryRun?: boolean;
 }
-export declare function bumpVersion(currentVersion: string, bump: VersionBump): string;
-export declare function parseConventionalCommits(commits: string[]): ChangelogEntry[];
-export declare function generateChangelog(entries: ChangelogEntry[], version: string): string;
-export declare function ship(options: ShipOptions, cwd?: string): Promise<void>;
-export { chalk };
+export declare class ShipSkill {
+    private getCurrentVersion;
+    private getCommitsSinceLastTag;
+    private generateChangelog;
+    private updateChangelogFile;
+    private updatePackageVersion;
+    release(options: ShipOptions): Promise<ShipResult>;
+    private getRepoSlug;
+}
 //# sourceMappingURL=index.d.ts.map

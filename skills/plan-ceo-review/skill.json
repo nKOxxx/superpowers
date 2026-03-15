@@ -1,11 +1,50 @@
 {
   "name": "plan-ceo-review",
   "version": "1.0.0",
-  "description": "Product strategy review using BAT framework (Brand, Attention, Trust)",
-  "entry": "cli.js",
-  "bin": "superpowers ceo-review",
-  "requires": {
-    "bins": ["node", "npx"],
-    "npm": ["@nko/superpowers"]
+  "description": "Product strategy review using BAT framework (Brand, Attention, Trust) and 10-star methodology",
+  "entry": "dist/plan-ceo-review/index.js",
+  "cli": "cli.js plan-ceo-review",
+  "commands": {
+    "plan-ceo-review": {
+      "description": "Product strategy review using BAT framework",
+      "args": [
+        {
+          "name": "feature",
+          "required": true,
+          "description": "Feature name to evaluate"
+        }
+      ],
+      "options": [
+        {
+          "name": "brand",
+          "alias": "b",
+          "type": "number",
+          "description": "Brand score (0-5)"
+        },
+        {
+          "name": "attention",
+          "alias": "a",
+          "type": "number",
+          "description": "Attention score (0-5)"
+        },
+        {
+          "name": "trust",
+          "alias": "t",
+          "type": "number",
+          "description": "Trust score (0-5)"
+        },
+        {
+          "name": "auto",
+          "type": "boolean",
+          "description": "Auto-calculate scores from keywords"
+        },
+        {
+          "name": "description",
+          "alias": "d",
+          "type": "string",
+          "description": "Feature description"
+        }
+      ]
+    }
   }
 }

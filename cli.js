@@ -1,61 +1,156 @@
 #!/usr/bin/env node
-import { program } from 'commander';
-import { browseCommand } from './dist/commands/browse.js';
-import { qaCommand } from './dist/commands/qa.js';
-import { shipCommand } from './dist/commands/ship.js';
-import { ceoReviewCommand } from './dist/commands/ceo-review.js';
+
+const { program } = require('commander');
+const chalk = require('chalk');
+
+// Import skills (compiled JS)
+const { BrowseSkill } = require('./dist/browse');
+const { QASkill } = require('./dist/qa');
+const { ShipSkill } = require('./dist/ship');
+const { PlanCEOReviewSkill } = require('./dist/plan-ceo-review');
 
 program
   .name('superpowers')
-  .description('OpenClaw superpowers - AI-powered development workflows')
+  .description('OpenClaw Superpowers - AI-powered workflows for development, testing, and product decisions')
   .version('1.0.0');
 
+// Browse command
 program
-  .command('browse')
-  .description('Browser automation for visual testing')
-  .argument('<url>', 'URL to browse')
-  .option('-v, --viewport <name>', 'Viewport preset (mobile, tablet, desktop)', 'desktop')
-  .option('-W, --width <pixels>', 'Custom viewport width')
-  .option('-H, --height <pixels>', 'Custom viewport height')
-  .option('-f, --full-page', 'Capture full page screenshot', false)
-  .option('-o, --output <dir>', 'Output directory', './screenshots')
-  .option('-w, --wait-for <selector>', 'Wait for element before screenshot')
-  .option('-a, --actions <actions>', 'Comma-separated actions')
-  .option('-t, --timeout <ms>', 'Navigation timeout', '30000')
-  .option('--base64', 'Output base64 encoded image for Telegram', false)
-  .action(browseCommand);
+  .command('browse <url>')
+  .description('Capture screenshots with browser automation')
+  .option('-v, --viewport <preset>', 'Viewport preset (mobile, tablet, desktop) or WxH', 'desktop')
+  .option('-f, --full-page', 'Capture full page')
+  .option('-s, --selector <selector>', 'Capture specific element')
+  .option('-o, --output <path>', 'Output file path')
+  .action(async (url, options) => {
+    console.log(chalk.blue('🌐 Browse: Capturing screenshot...'));
+    
+    const skill = new BrowseSkill();
+    try {
+      await skill.init();
+      
+      const result = await skill.captureScreenshot({
+        url,
+        viewport: options.viewport,
+        fullPage: options.fullPage,
+        selector: options.selector,
+        outputPath: options.output,
+      });
+      
+      console.log(chalk.green('✅ Screenshot captured!'));
+      console.log(chalk.gray(`   Saved to: ${result.path}`));
+      console.log(chalk.gray(`   Base64 length: ${result.base64.length} chars`));
+    } catch (error) {
+      console.error(chalk.red('❌ Error:'), error.message);
+      process.exit(1);
+    } finally {
+      await skill.close();
+    }
+  });
 
+// QA command
 program
   .command('qa')
-  .description('Systematic testing as QA Lead')
+  .description('Run systematic tests as QA Lead')
   .option('-m, --mode <mode>', 'Test mode (targeted, smoke, full)', 'targeted')
-  .option('-d, --diff <range>', 'Git diff range', 'HEAD~1')
-  .option('-c, --coverage', 'Enable coverage reporting', false)
-  .option('-p, --parallel', 'Run tests in parallel', false)
-  .action(qaCommand);
+  .option('-c, --coverage', 'Generate coverage report')
+  .option('-p, --path <path>', 'Specific test path')
+  .action(async (options) => {
+    console.log(chalk.blue('🧪 QA: Running tests...'));
+    
+    const skill = new QASkill();
+    try {
+      const result = await skill.runTests({
+        mode: options.mode,
+        coverage: options.coverage,
+        testPath: options.path,
+      });
+      
+      if (result.success) {
+        console.log(chalk.green(`✅ Tests passed! (${result.testsPassed} passed)`));
+      } else {
+        console.log(chalk.red(`❌ Tests failed! (${result.testsFailed} failed, ${result.testsPassed} passed)`));
+      }
+      console.log(chalk.gray(`   Framework: ${result.framework}`));
+      console.log(chalk.gray(`   Duration: ${result.duration}ms`));
+      
+      process.exit(result.success ? 0 : 1);
+    } catch (error) {
+      console.error(chalk.red('❌ Error:'), error.message);
+      process.exit(1);
+    }
+  });
 
+// Ship command
 program
   .command('ship')
   .description('One-command release pipeline')
-  .requiredOption('-v, --version <type>', 'Version type (patch, minor, major, or explicit)')
-  .option('-r, --repo <owner/repo>', 'Repository for GitHub release')
-  .option('-d, --dry-run', 'Preview changes without executing', false)
-  .option('--skip-tests', 'Skip test run before release', false)
-  .option('-n, --notes <text>', 'Custom release notes')
-  .option('--prerelease', 'Mark as prerelease', false)
-  .action(shipCommand);
+  .option('-v, --version <bump>', 'Version bump (patch, minor, major) or explicit version', 'patch')
+  .option('-d, --dry-run', 'Preview changes without applying')
+  .option('--skip-changelog', 'Skip changelog generation')
+  .option('--skip-tag', 'Skip git tag creation')
+  .option('--skip-release', 'Skip GitHub release creation')
+  .action(async (options) => {
+    console.log(chalk.blue('🚀 Ship: Preparing release...'));
+    
+    const skill = new ShipSkill();
+    try {
+      const result = await skill.release({
+        version: options.version,
+        dryRun: options.dryRun,
+        skipChangelog: options.skipChangelog,
+        skipTag: options.skipTag,
+        skipRelease: options.skipRelease,
+      });
+      
+      if (result.dryRun) {
+        console.log(chalk.yellow('📝 Dry run mode - no changes made'));
+        console.log(chalk.gray(`   Version: ${result.version}`));
+        console.log(chalk.gray(`   Changelog:\n${result.changelog}`));
+      } else {
+        console.log(chalk.green(`✅ Released v${result.version}!`));
+        if (result.tag) console.log(chalk.gray(`   Tag: ${result.tag}`));
+        if (result.releaseUrl) console.log(chalk.gray(`   Release: ${result.releaseUrl}`));
+      }
+    } catch (error) {
+      console.error(chalk.red('❌ Error:'), error.message);
+      process.exit(1);
+    }
+  });
 
+// Plan CEO Review command
 program
-  .command('ceo-review')
+  .command('plan-ceo-review <feature>')
   .description('Product strategy review using BAT framework')
-  .requiredOption('-f, --feature <name>', 'Feature name')
-  .option('-g, --goal <text>', 'Business goal')
-  .option('-a, --audience <text>', 'Target audience')
-  .option('-c, --competition <text>', 'Competitors')
-  .option('-t, --trust <text>', 'Trust assets')
-  .option('--brand <score>', 'Brand score (0-5)')
-  .option('--attention <score>', 'Attention score (0-5)')
-  .option('--trust-score <score>', 'Trust score (0-5)')
-  .action(ceoReviewCommand);
+  .option('-b, --brand <score>', 'Brand score (0-5)', parseInt)
+  .option('-a, --attention <score>', 'Attention score (0-5)', parseInt)
+  .option('-t, --trust <score>', 'Trust score (0-5)', parseInt)
+  .option('--auto', 'Auto-calculate scores from keywords')
+  .option('-d, --description <text>', 'Feature description')
+  .action(async (feature, options) => {
+    console.log(chalk.blue('📊 CEO Review: Analyzing feature...'));
+    
+    const skill = new PlanCEOReviewSkill();
+    try {
+      const scores = options.brand !== undefined ? {
+        brand: options.brand,
+        attention: options.attention || 0,
+        trust: options.trust || 0,
+      } : undefined;
+
+      const result = await skill.review({
+        feature,
+        description: options.description,
+        scores,
+        autoScore: options.auto,
+      });
+      
+      console.log('');
+      console.log(skill.formatReview(result));
+    } catch (error) {
+      console.error(chalk.red('❌ Error:'), error.message);
+      process.exit(1);
+    }
+  });
 
 program.parse();

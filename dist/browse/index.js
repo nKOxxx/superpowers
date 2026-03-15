@@ -1,158 +1,195 @@
-import { chromium } from 'playwright';
-import chalk from 'chalk';
-const viewportPresets = {
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BrowseSkill = void 0;
+const playwright_1 = require("playwright");
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
+const VIEWPORT_PRESETS = {
     mobile: { width: 375, height: 667 },
     tablet: { width: 768, height: 1024 },
-    desktop: { width: 1920, height: 1080 }
+    desktop: { width: 1920, height: 1080 },
 };
-export function parseViewport(viewport) {
-    if (viewport in viewportPresets) {
-        return viewportPresets[viewport];
+class BrowseSkill {
+    browser = null;
+    async init() {
+        this.browser = await playwright_1.chromium.launch({
+            headless: true,
+        });
     }
-    // Parse custom dimensions like "1200x800"
-    const match = viewport.match(/^(\d+)x(\d+)$/);
-    if (match) {
-        return { width: parseInt(match[1], 10), height: parseInt(match[2], 10) };
-    }
-    return viewportPresets.desktop;
-}
-export function parseActions(actionsStr) {
-    if (!actionsStr)
-        return [];
-    const actions = [];
-    const parts = actionsStr.split(',');
-    for (const part of parts) {
-        const [type, ...rest] = part.trim().split(':');
-        switch (type) {
-            case 'click':
-                actions.push({ type: 'click', target: rest[0] });
-                break;
-            case 'type':
-                actions.push({ type: 'type', target: rest[0], value: rest[1] || '' });
-                break;
-            case 'wait':
-                actions.push({ type: 'wait', duration: parseInt(rest[0], 10) || 1000 });
-                break;
-            case 'scroll':
-                actions.push({ type: 'scroll', target: rest[0] });
-                break;
-            case 'hover':
-                actions.push({ type: 'hover', target: rest[0] });
-                break;
+    async close() {
+        if (this.browser) {
+            await this.browser.close();
+            this.browser = null;
         }
     }
-    return actions;
-}
-export async function executeActions(page, actions) {
-    for (const action of actions) {
-        switch (action.type) {
-            case 'click':
-                if (action.target) {
-                    await page.click(action.target);
-                    console.log(chalk.gray(`  Clicked: ${action.target}`));
-                }
-                break;
-            case 'type':
-                if (action.target && action.value !== undefined) {
-                    await page.fill(action.target, action.value);
-                    console.log(chalk.gray(`  Typed in: ${action.target}`));
-                }
-                break;
-            case 'wait':
-                await page.waitForTimeout(action.duration || 1000);
-                console.log(chalk.gray(`  Waited: ${action.duration}ms`));
-                break;
-            case 'scroll':
-                if (action.target) {
-                    await page.locator(action.target).scrollIntoViewIfNeeded();
-                    console.log(chalk.gray(`  Scrolled to: ${action.target}`));
-                }
-                else {
-                    await page.evaluate(() => {
-                        const w = globalThis;
-                        const d = w.document;
-                        w.scrollTo(0, d.body.scrollHeight);
-                    });
-                    console.log(chalk.gray('  Scrolled to bottom'));
-                }
-                break;
-            case 'hover':
-                if (action.target) {
-                    await page.hover(action.target);
-                    console.log(chalk.gray(`  Hovered: ${action.target}`));
-                }
-                break;
+    parseViewport(viewport) {
+        if (!viewport)
+            return VIEWPORT_PRESETS.desktop;
+        if (typeof viewport === 'string') {
+            if (viewport in VIEWPORT_PRESETS) {
+                return VIEWPORT_PRESETS[viewport];
+            }
+            // Parse format like "1200x800"
+            const match = viewport.match(/(\d+)x(\d+)/);
+            if (match) {
+                return { width: parseInt(match[1], 10), height: parseInt(match[2], 10) };
+            }
         }
+        return viewport;
     }
-}
-export async function browse(options) {
-    const startTime = Date.now();
-    let viewportSize;
-    if (typeof options.viewport === 'string') {
-        viewportSize = parseViewport(options.viewport);
-    }
-    else if (options.viewport) {
-        viewportSize = options.viewport;
-    }
-    else {
-        viewportSize = viewportPresets.desktop;
-    }
-    console.log(chalk.blue(`🌐 Navigating to: ${options.url}`));
-    console.log(chalk.gray(`   Viewport: ${viewportSize.width}x${viewportSize.height}`));
-    const browser = await chromium.launch({ headless: true });
-    try {
-        const context = await browser.newContext({
-            viewport: viewportSize,
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    async captureScreenshot(options) {
+        if (!this.browser) {
+            await this.init();
+        }
+        const viewport = this.parseViewport(options.viewport);
+        const context = await this.browser.newContext({
+            viewport,
+            deviceScaleFactor: 2,
         });
         const page = await context.newPage();
-        // Navigate to URL
-        await page.goto(options.url, { waitUntil: 'networkidle' });
-        const title = await page.title();
-        console.log(chalk.gray(`   Page title: ${title}`));
-        // Execute actions if provided
-        if (options.actions && options.actions.length > 0) {
-            console.log(chalk.blue(`🎬 Executing ${options.actions.length} action(s)...`));
-            await executeActions(page, options.actions);
+        try {
+            // Navigate to URL
+            await page.goto(options.url, { waitUntil: 'networkidle' });
+            // Execute actions if provided
+            if (options.actions) {
+                await this.executeActions(page, options.actions);
+            }
+            // Determine screenshot options
+            let screenshotOptions = {
+                type: 'png',
+                encoding: 'base64',
+            };
+            if (options.fullPage) {
+                screenshotOptions.fullPage = true;
+            }
+            else if (options.selector) {
+                const element = await page.$(options.selector);
+                if (!element) {
+                    throw new Error(`Element not found: ${options.selector}`);
+                }
+                screenshotOptions.clip = await element.boundingBox();
+            }
+            // Capture screenshot as base64
+            const screenshotBuffer = await page.screenshot(screenshotOptions);
+            const base64 = screenshotBuffer.toString('base64');
+            // Save to file if outputPath provided
+            let outputPath = options.outputPath;
+            if (!outputPath) {
+                const timestamp = Date.now();
+                outputPath = path.join(process.cwd(), `screenshot-${timestamp}.png`);
+            }
+            fs.writeFileSync(outputPath, Buffer.from(base64, 'base64'));
+            await context.close();
+            return { path: outputPath, base64 };
         }
-        // Take screenshot
-        let screenshot;
-        if (options.selector) {
-            // Screenshot specific element
-            const element = page.locator(options.selector).first();
-            await element.waitFor({ state: 'visible' });
-            screenshot = await element.screenshot();
-            console.log(chalk.gray(`   Captured element: ${options.selector}`));
+        catch (error) {
+            await context.close();
+            throw error;
         }
-        else if (options.fullPage) {
-            screenshot = await page.screenshot({ fullPage: true });
-            console.log(chalk.gray('   Captured full page'));
-        }
-        else {
-            screenshot = await page.screenshot();
-            console.log(chalk.gray('   Captured viewport'));
-        }
-        const duration = Date.now() - startTime;
-        console.log(chalk.green(`✅ Screenshot captured in ${duration}ms`));
-        // Save to file if requested
-        if (options.output === 'file' && options.outputPath) {
-            const fs = await import('fs');
-            fs.writeFileSync(options.outputPath, screenshot);
-            console.log(chalk.gray(`   Saved to: ${options.outputPath}`));
-        }
-        return {
-            screenshot,
-            url: options.url,
-            viewport: viewportSize,
-            title,
-            duration
-        };
     }
-    finally {
-        await browser.close();
+    async executeActions(page, actions) {
+        for (const action of actions) {
+            switch (action.type) {
+                case 'click':
+                    if (!action.selector)
+                        throw new Error('Click action requires selector');
+                    await page.click(action.selector);
+                    break;
+                case 'type':
+                    if (!action.selector || !action.text) {
+                        throw new Error('Type action requires selector and text');
+                    }
+                    await page.fill(action.selector, action.text);
+                    break;
+                case 'wait':
+                    await page.waitForTimeout(action.delay || 1000);
+                    break;
+                case 'scroll':
+                    await page.evaluate(`window.scrollTo(${action.x || 0}, ${action.y || 0})`);
+                    break;
+                case 'hover':
+                    if (!action.selector)
+                        throw new Error('Hover action requires selector');
+                    await page.hover(action.selector);
+                    break;
+            }
+        }
     }
 }
-export function screenshotToBase64(screenshot) {
-    return screenshot.toString('base64');
+exports.BrowseSkill = BrowseSkill;
+// CLI entry point
+if (require.main === module) {
+    const args = process.argv.slice(2);
+    async function main() {
+        const url = args[0];
+        if (!url) {
+            console.error('Usage: browse <url> [options]');
+            process.exit(1);
+        }
+        const options = { url };
+        // Parse arguments
+        for (let i = 1; i < args.length; i++) {
+            const arg = args[i];
+            if (arg.startsWith('--viewport=')) {
+                options.viewport = arg.split('=')[1];
+            }
+            else if (arg === '--full-page') {
+                options.fullPage = true;
+            }
+            else if (arg.startsWith('--selector=')) {
+                options.selector = arg.split('=')[1];
+            }
+            else if (arg.startsWith('--output=')) {
+                options.outputPath = arg.split('=')[1];
+            }
+        }
+        const skill = new BrowseSkill();
+        try {
+            await skill.init();
+            const result = await skill.captureScreenshot(options);
+            console.log(JSON.stringify({ success: true, ...result }, null, 2));
+        }
+        catch (error) {
+            console.error(JSON.stringify({ success: false, error: error.message }));
+            process.exit(1);
+        }
+        finally {
+            await skill.close();
+        }
+    }
+    main();
 }
 //# sourceMappingURL=index.js.map

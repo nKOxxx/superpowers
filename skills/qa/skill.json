@@ -1,11 +1,33 @@
 {
   "name": "qa",
   "version": "1.0.0",
-  "description": "Systematic testing as QA Lead with targeted, smoke, and full modes",
-  "entry": "cli.js",
-  "bin": "superpowers qa",
-  "requires": {
-    "bins": ["node", "npx", "git"],
-    "npm": ["@nko/superpowers"]
+  "description": "Systematic testing as QA Lead - auto-detects frameworks and runs relevant tests",
+  "entry": "dist/qa/index.js",
+  "cli": "cli.js qa",
+  "commands": {
+    "qa": {
+      "description": "Run systematic tests",
+      "options": [
+        {
+          "name": "mode",
+          "alias": "m",
+          "type": "string",
+          "default": "targeted",
+          "description": "Test mode: targeted (git diff), smoke, or full"
+        },
+        {
+          "name": "coverage",
+          "alias": "c",
+          "type": "boolean",
+          "description": "Generate coverage report"
+        },
+        {
+          "name": "path",
+          "alias": "p",
+          "type": "string",
+          "description": "Specific test path"
+        }
+      ]
+    }
   }
 }

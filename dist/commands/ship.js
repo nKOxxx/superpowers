@@ -1,7 +1,10 @@
-import { execSync } from 'child_process';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
-export async function shipCommand(options) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.shipCommand = shipCommand;
+const child_process_1 = require("child_process");
+const fs_1 = require("fs");
+const path_1 = require("path");
+async function shipCommand(options) {
     console.log('');
     console.log('══════════════════════════════════════════════════');
     console.log('Release Pipeline');
@@ -14,8 +17,8 @@ export async function shipCommand(options) {
         console.log('✓ Repository validated');
         console.log('');
         // Get current version
-        const packageJsonPath = resolve('package.json');
-        const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+        const packageJsonPath = (0, path_1.resolve)('package.json');
+        const packageJson = JSON.parse((0, fs_1.readFileSync)(packageJsonPath, 'utf-8'));
         const currentVersion = packageJson.version;
         // Calculate new version
         const newVersion = calculateVersion(currentVersion, options.version);
@@ -31,7 +34,7 @@ export async function shipCommand(options) {
         if (!options.skipTests) {
             console.log('Step 2: Running tests...');
             try {
-                execSync('npm test', { stdio: 'inherit' });
+                (0, child_process_1.execSync)('npm test', { stdio: 'inherit' });
                 console.log('✓ Tests passed');
             }
             catch {
@@ -47,7 +50,7 @@ export async function shipCommand(options) {
         // Step 3: Update version
         console.log('Step 3: Updating version...');
         packageJson.version = newVersion;
-        writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
+        (0, fs_1.writeFileSync)(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
         console.log(`✓ Version updated to ${newVersion}`);
         console.log('');
         // Step 4: Generate changelog
@@ -58,20 +61,20 @@ export async function shipCommand(options) {
         console.log('');
         // Step 5: Create release commit
         console.log('Step 5: Creating release commit...');
-        execSync('git add -A');
-        execSync(`git commit -m "chore(release): ${newVersion}"`);
+        (0, child_process_1.execSync)('git add -A');
+        (0, child_process_1.execSync)(`git commit -m "chore(release): ${newVersion}"`);
         console.log('✓ Commit created');
         console.log('');
         // Step 6: Create git tag
         console.log('Step 6: Creating git tag...');
         const tagName = `v${newVersion}`;
-        execSync(`git tag -a ${tagName} -m "Release ${newVersion}"`);
+        (0, child_process_1.execSync)(`git tag -a ${tagName} -m "Release ${newVersion}"`);
         console.log(`✓ Tag ${tagName} created`);
         console.log('');
         // Step 7: Push to remote
         console.log('Step 7: Pushing to remote...');
-        execSync('git push origin HEAD');
-        execSync(`git push origin ${tagName}`);
+        (0, child_process_1.execSync)('git push origin HEAD');
+        (0, child_process_1.execSync)(`git push origin ${tagName}`);
         console.log('✓ Pushed to remote');
         console.log('');
         // Step 8: Create GitHub release
@@ -105,7 +108,7 @@ export async function shipCommand(options) {
 function validateRepo() {
     // Check git status
     try {
-        const status = execSync('git status --porcelain', { encoding: 'utf-8' });
+        const status = (0, child_process_1.execSync)('git status --porcelain', { encoding: 'utf-8' });
         if (status.trim()) {
             throw new Error('Working directory not clean. Commit or stash changes first.');
         }
@@ -117,7 +120,7 @@ function validateRepo() {
         throw new Error('Not a git repository');
     }
     // Check package.json exists
-    if (!existsSync(resolve('package.json'))) {
+    if (!(0, fs_1.existsSync)((0, path_1.resolve)('package.json'))) {
         throw new Error('package.json not found');
     }
 }
@@ -142,9 +145,9 @@ function generateChangelog(version) {
     const entries = [];
     try {
         // Get commits since last tag
-        const lastTag = execSync('git describe --tags --abbrev=0 2>/dev/null || echo ""', { encoding: 'utf-8' }).trim();
+        const lastTag = (0, child_process_1.execSync)('git describe --tags --abbrev=0 2>/dev/null || echo ""', { encoding: 'utf-8' }).trim();
         const range = lastTag ? `${lastTag}..HEAD` : 'HEAD~20';
-        const commits = execSync(`git log ${range} --pretty=format:"%s" --no-merges`, { encoding: 'utf-8' });
+        const commits = (0, child_process_1.execSync)(`git log ${range} --pretty=format:"%s" --no-merges`, { encoding: 'utf-8' });
         for (const line of commits.split('\n')) {
             const match = line.match(/^(feat|fix|chore|docs|style|refactor|test|build)(?:\(([^)]+)\))?:\s*(.+)$/);
             if (match) {
@@ -191,22 +194,22 @@ function generateChangelog(version) {
     return markdown.trim();
 }
 function updateChangelogFile(changelog, version) {
-    const changelogPath = resolve('CHANGELOG.md');
+    const changelogPath = (0, path_1.resolve)('CHANGELOG.md');
     const header = `# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n`;
     let existing = '';
-    if (existsSync(changelogPath)) {
-        existing = readFileSync(changelogPath, 'utf-8');
+    if ((0, fs_1.existsSync)(changelogPath)) {
+        existing = (0, fs_1.readFileSync)(changelogPath, 'utf-8');
         // Remove header if exists
         existing = existing.replace(header, '');
         // Remove old version header pattern
         existing = existing.replace(/^# Changelog.*\n\n/, '');
     }
     const newContent = header + changelog + '\n\n' + existing;
-    writeFileSync(changelogPath, newContent);
+    (0, fs_1.writeFileSync)(changelogPath, newContent);
 }
 function detectRepo() {
     try {
-        const remote = execSync('git remote get-url origin', { encoding: 'utf-8' }).trim();
+        const remote = (0, child_process_1.execSync)('git remote get-url origin', { encoding: 'utf-8' }).trim();
         const match = remote.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
         if (match) {
             return `${match[1]}/${match[2]}`;
@@ -236,7 +239,7 @@ function createGitHubRelease(repo, tag, version, changelog, options) {
       "prerelease": ${prerelease}
     }'`;
     try {
-        execSync(curlCmd, { encoding: 'utf-8' });
+        (0, child_process_1.execSync)(curlCmd, { encoding: 'utf-8' });
     }
     catch (error) {
         console.error('Warning: Failed to create GitHub release');

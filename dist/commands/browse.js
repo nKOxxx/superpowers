@@ -1,13 +1,16 @@
-import { chromium } from 'playwright';
-import { writeFileSync, existsSync, mkdirSync } from 'fs';
-import { join, resolve } from 'path';
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.browseCommand = browseCommand;
+const playwright_1 = require("playwright");
+const fs_1 = require("fs");
+const path_1 = require("path");
 const viewports = {
     mobile: { width: 375, height: 667 },
     tablet: { width: 768, height: 1024 },
     desktop: { width: 1280, height: 720 },
     wide: { width: 1920, height: 1080 }
 };
-export async function browseCommand(url, options) {
+async function browseCommand(url, options) {
     console.log('');
     console.log('══════════════════════════════════════════════════');
     console.log('Browser Automation');
@@ -26,7 +29,7 @@ export async function browseCommand(url, options) {
         }
         console.log(`Viewport: ${viewport.width}x${viewport.height}`);
         // Launch browser
-        browser = await chromium.launch({ headless: true });
+        browser = await playwright_1.chromium.launch({ headless: true });
         const context = await browser.newContext({ viewport });
         const page = await context.newPage();
         // Navigate
@@ -46,21 +49,21 @@ export async function browseCommand(url, options) {
             await page.waitForSelector(options.waitFor, { timeout: 10000 });
         }
         // Ensure output directory exists
-        const outputDir = resolve(options.output);
-        if (!existsSync(outputDir)) {
-            mkdirSync(outputDir, { recursive: true });
+        const outputDir = (0, path_1.resolve)(options.output);
+        if (!(0, fs_1.existsSync)(outputDir)) {
+            (0, fs_1.mkdirSync)(outputDir, { recursive: true });
         }
         // Generate filename
         const hostname = new URL(url).hostname.replace(/[^a-zA-Z0-9]/g, '-');
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `${hostname}_${options.viewport}_${timestamp}.png`;
-        const filepath = join(outputDir, filename);
+        const filepath = (0, path_1.join)(outputDir, filename);
         // Take screenshot
         const screenshotBuffer = await page.screenshot({
             fullPage: options.fullPage,
             type: 'png'
         });
-        writeFileSync(filepath, screenshotBuffer);
+        (0, fs_1.writeFileSync)(filepath, screenshotBuffer);
         console.log('');
         console.log(`✓ Screenshot saved: ${filepath}`);
         if (options.base64) {

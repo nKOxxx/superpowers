@@ -1,14 +1,42 @@
 {
   "name": "ship",
   "version": "1.0.0",
-  "description": "One-command release pipeline with versioning, changelog, and GitHub releases",
-  "entry": "cli.js",
-  "bin": "superpowers ship",
-  "requires": {
-    "bins": ["node", "npx", "git"],
-    "npm": ["@nko/superpowers"]
-  },
-  "env": {
-    "GH_TOKEN": "GitHub personal access token with repo scope"
+  "description": "One-command release pipeline - version bump, changelog, tag, and GitHub release",
+  "entry": "dist/ship/index.js",
+  "cli": "cli.js ship",
+  "commands": {
+    "ship": {
+      "description": "Release pipeline",
+      "options": [
+        {
+          "name": "version",
+          "alias": "v",
+          "type": "string",
+          "default": "patch",
+          "description": "Version bump (patch, minor, major) or explicit version"
+        },
+        {
+          "name": "dry-run",
+          "alias": "d",
+          "type": "boolean",
+          "description": "Preview changes without applying"
+        },
+        {
+          "name": "skip-changelog",
+          "type": "boolean",
+          "description": "Skip changelog generation"
+        },
+        {
+          "name": "skip-tag",
+          "type": "boolean",
+          "description": "Skip git tag creation"
+        },
+        {
+          "name": "skip-release",
+          "type": "boolean",
+          "description": "Skip GitHub release creation"
+        }
+      ]
+    }
   }
 }

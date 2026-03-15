@@ -1,22 +1,25 @@
-import chalk from 'chalk';
-export type TestFramework = 'vitest' | 'jest' | 'mocha' | 'npm';
-export type TestMode = 'targeted' | 'smoke' | 'full';
+export type QAMode = 'targeted' | 'smoke' | 'full';
 export interface QAOptions {
-    mode?: TestMode;
+    mode: QAMode;
     coverage?: boolean;
-    watch?: boolean;
-    testPathPattern?: string;
+    testPath?: string;
 }
-export interface TestFrameworkInfo {
-    framework: TestFramework;
-    command: string;
-    args: string[];
+export interface QAResult {
+    success: boolean;
+    framework: string;
+    mode: QAMode;
+    testsRun: number;
+    testsPassed: number;
+    testsFailed: number;
+    duration: number;
+    output: string;
+    coverage?: string;
 }
-export declare function detectFramework(cwd?: string): TestFrameworkInfo;
-export declare function getGitDiffFiles(cwd?: string): string[];
-export declare function getStagedFiles(cwd?: string): string[];
-export declare function mapSourceToTest(sourceFile: string): string | null;
-export declare function findRelatedTests(files: string[], cwd?: string): string[];
-export declare function runTests(options?: QAOptions, cwd?: string): Promise<void>;
-export { chalk };
+export declare class QASkill {
+    private detectFramework;
+    private getChangedFiles;
+    private findTestFiles;
+    private buildCommand;
+    runTests(options: QAOptions): Promise<QAResult>;
+}
 //# sourceMappingURL=index.d.ts.map

@@ -1,7 +1,10 @@
-import { execSync } from 'child_process';
-import { existsSync, readFileSync } from 'fs';
-import { join, resolve } from 'path';
-export async function qaCommand(options) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.qaCommand = qaCommand;
+const child_process_1 = require("child_process");
+const fs_1 = require("fs");
+const path_1 = require("path");
+async function qaCommand(options) {
     console.log('');
     console.log('══════════════════════════════════════════════════');
     console.log(`QA Mode: ${options.mode.toUpperCase()}`);
@@ -68,11 +71,11 @@ export async function qaCommand(options) {
     }
 }
 function detectTestFramework() {
-    const packageJsonPath = resolve('package.json');
-    if (!existsSync(packageJsonPath)) {
+    const packageJsonPath = (0, path_1.resolve)('package.json');
+    if (!(0, fs_1.existsSync)(packageJsonPath)) {
         return 'unknown';
     }
-    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    const packageJson = JSON.parse((0, fs_1.readFileSync)(packageJsonPath, 'utf-8'));
     const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
     if (deps.vitest)
         return 'vitest';
@@ -86,8 +89,8 @@ function detectTestFramework() {
 }
 function getChangedFiles(diffRange) {
     try {
-        const output = execSync(`git diff --name-only ${diffRange}`, { encoding: 'utf-8' });
-        return output.trim().split('\n').filter(f => f && existsSync(f));
+        const output = (0, child_process_1.execSync)(`git diff --name-only ${diffRange}`, { encoding: 'utf-8' });
+        return output.trim().split('\n').filter(f => f && (0, fs_1.existsSync)(f));
     }
     catch {
         return [];
@@ -107,7 +110,7 @@ function mapToTestFiles(changedFiles, framework) {
         const base = dir.replace(/\.[^.]+$/, '');
         for (const ext of extensions) {
             const testFile = `${base}${ext}`;
-            if (existsSync(testFile)) {
+            if ((0, fs_1.existsSync)(testFile)) {
                 testFiles.add(testFile);
             }
         }
@@ -115,10 +118,10 @@ function mapToTestFiles(changedFiles, framework) {
         const altLocations = [
             file.replace(/\.[^.]+$/, `.test.${file.endsWith('.ts') ? 'ts' : 'js'}`),
             file.replace(/\.[^.]+$/, `.spec.${file.endsWith('.ts') ? 'ts' : 'js'}`),
-            join('__tests__', file.replace(/\.[^.]+$/, `.test.${file.endsWith('.ts') ? 'ts' : 'js'}`)),
+            (0, path_1.join)('__tests__', file.replace(/\.[^.]+$/, `.test.${file.endsWith('.ts') ? 'ts' : 'js'}`)),
         ];
         for (const alt of altLocations) {
-            if (existsSync(alt)) {
+            if ((0, fs_1.existsSync)(alt)) {
                 testFiles.add(alt);
             }
         }
@@ -134,7 +137,7 @@ function findSmokeTests(framework) {
     try {
         const files = [];
         for (const pattern of patterns) {
-            const output = execSync(`find . -path '${pattern}' -type f 2>/dev/null | head -20`, { encoding: 'utf-8' });
+            const output = (0, child_process_1.execSync)(`find . -path '${pattern}' -type f 2>/dev/null | head -20`, { encoding: 'utf-8' });
             files.push(...output.trim().split('\n').filter(f => f));
         }
         return [...new Set(files)];
@@ -148,7 +151,7 @@ function findAllTests(framework) {
     const files = [];
     try {
         for (const ext of extensions) {
-            const output = execSync(`find . -name '*.${ext}' -type f 2>/dev/null | grep -v node_modules | head -50`, { encoding: 'utf-8' });
+            const output = (0, child_process_1.execSync)(`find . -name '*.${ext}' -type f 2>/dev/null | grep -v node_modules | head -50`, { encoding: 'utf-8' });
             files.push(...output.trim().split('\n').filter(f => f));
         }
         return [...new Set(files)];
@@ -165,7 +168,7 @@ function runTests(testFiles, framework, options) {
             const coverageFlag = options.coverage ? ' --coverage' : '';
             const parallelFlag = options.parallel ? ' --parallel' : '';
             const startTime = Date.now();
-            execSync(`npx vitest run${coverageFlag}${parallelFlag} ${testPattern}`, {
+            (0, child_process_1.execSync)(`npx vitest run${coverageFlag}${parallelFlag} ${testPattern}`, {
                 stdio: 'inherit',
                 encoding: 'utf-8'
             });
@@ -188,7 +191,7 @@ function runTests(testFiles, framework, options) {
             const testPattern = testFiles.length > 0 ? ` --testPathPattern="${testFiles.join('|')}"` : '';
             const coverageFlag = options.coverage ? ' --coverage' : '';
             const startTime = Date.now();
-            execSync(`npx jest${coverageFlag}${testPattern}`, {
+            (0, child_process_1.execSync)(`npx jest${coverageFlag}${testPattern}`, {
                 stdio: 'inherit',
                 encoding: 'utf-8'
             });
@@ -210,7 +213,7 @@ function runTests(testFiles, framework, options) {
         // Generic npm test
         try {
             const startTime = Date.now();
-            execSync('npm test', {
+            (0, child_process_1.execSync)('npm test', {
                 stdio: 'inherit',
                 encoding: 'utf-8'
             });
