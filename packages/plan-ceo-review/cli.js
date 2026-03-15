@@ -31,7 +31,10 @@ ${result.nextSteps.map(s => `  • ${s}`).join('\n')}
     case 'markdown':
     default:
       return `
-# BAT CEO Review: ${result.question.slice(0, 50)}...
+# BAT CEO Review
+
+## Question
+${result.question}
 
 ## Executive Summary
 
@@ -49,13 +52,13 @@ ${result.summary}
 | 🤝 Trust | ${result.bat.trust}/100 | 30% |
 | **Overall** | **${result.bat.overall}/100** | 100% |
 
-## Brand Analysis (${result.bat.brand}/100)
+## Brand Analysis
 ${result.brand.recommendations.map(r => `- ${r}`).join('\n')}
 
-## Attention Analysis (${result.bat.attention}/100)
+## Attention Analysis
 ${result.attention.recommendations.map(r => `- ${r}`).join('\n')}
 
-## Trust Analysis (${result.bat.trust}/100)
+## Trust Analysis
 ${result.trust.recommendations.map(r => `- ${r}`).join('\n')}
 
 ## Next Steps
@@ -76,8 +79,9 @@ if (args.length === 0 || args[0].startsWith('-')) {
   process.exit(1);
 }
 
-const description = args[0];
+const question = args[0];
 const options = { 
+  question,
   format: 'markdown',
   auto: false
 };
@@ -100,7 +104,7 @@ for (let i = 1; i < args.length; i++) {
   }
 }
 
-planCEOReview({ question: description, ...options })
+planCEOReview(options)
   .then(result => {
     const output = formatOutput(result, options.format);
     console.log(output);
