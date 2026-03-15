@@ -1,7 +1,5 @@
-export { browse, BrowseOptions } from './skills/browse.js';
-export { qa, QAOptions, QAResult, QAMode } from './skills/qa.js';
-export { ship, ShipOptions, ShipResult, VersionType } from './skills/ship.js';
-export { planCEOReview, CEOReviewOptions, CEOReviewResult } from './skills/plan-ceo-review.js';
-export { loadConfig, SuperpowersConfig } from './lib/config.js';
-export * as format from './lib/format.js';
+export { browseCommand } from './browse/index.js';
+export { qaCommand } from './qa/index.js';
+export { shipCommand } from './ship/index.js';
+export { ceoReviewCommand } from './plan-ceo-review/index.js';
 //# sourceMappingURL=index.d.ts.map
