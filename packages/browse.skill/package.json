@@ -1,0 +1,35 @@
+{
+  "name": "@superpowers/browse",
+  "version": "1.0.0",
+  "description": "Browser automation with Playwright - screenshots, viewport testing, and UI flows",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "browse": "cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "playwright": "^1.42.0",
+    "commander": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "openclaw",
+    "skill",
+    "browser",
+    "playwright",
+    "screenshot",
+    "automation"
+  ],
+  "author": "nKO",
+  "license": "MIT"
+}

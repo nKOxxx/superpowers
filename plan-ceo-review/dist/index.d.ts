@@ -1,25 +1,33 @@
-interface BATScore {
-    brand: number;
-    attention: number;
-    trust: number;
+#!/usr/bin/env node
+type BATScore = 0 | 1 | 2 | 3 | 4 | 5;
+type Recommendation = 'BUILD' | 'CONSIDER' | "DON'T BUILD";
+type Confidence = 'low' | 'medium' | 'high';
+interface DimensionScore {
+    score: BATScore;
+    rationale: string;
 }
-interface ReviewResult {
-    product: string;
-    scores: BATScore;
-    reasoning: {
-        brand: string;
-        attention: string;
-        trust: string;
-    };
-    total: number;
-    normalized: number;
-    recommendation: 'BUILD' | 'CONSIDER' | "DON'T BUILD";
+interface BATAnalysis {
+    brand: DimensionScore;
+    attention: DimensionScore;
+    trust: DimensionScore;
+}
+interface CEOReviewResult {
+    question: string;
+    bat: BATAnalysis;
+    totalScore: number;
+    stars: string;
+    recommendation: Recommendation;
+    confidence: Confidence;
+    risks: string[];
     nextSteps: string[];
 }
-declare function parseArgs(): string;
-declare function analyzeBAT(product: string): ReviewResult;
-declare function generateReasoning(dimension: string, score: number, product: string): string;
-declare function generateNextSteps(rec: 'BUILD' | 'CONSIDER' | "DON'T BUILD", product: string): string[];
-declare function printReview(result: ReviewResult): void;
-declare const product: string;
-declare const result: ReviewResult;
+interface ReviewOptions {
+    question: string;
+    brand?: BATScore;
+    attention?: BATScore;
+    trust?: BATScore;
+    autoScore: boolean;
+    json: boolean;
+}
+export declare function review(options: ReviewOptions): CEOReviewResult;
+export {};

@@ -1,0 +1,50 @@
+{
+  "name": "qa",
+  "version": "1.0.0",
+  "description": "Systematic testing - auto-detect framework, run targeted/smoke/full tests",
+  "author": "nKO",
+  "entry": {
+    "type": "node",
+    "bin": "node",
+    "args": ["cli.js"]
+  },
+  "triggers": [
+    "/qa",
+    "run tests",
+    "test coverage",
+    "QA review",
+    "quality check"
+  ],
+  "requires": {
+    "bins": ["node", "git"],
+    "npm": []
+  },
+  "env": {},
+  "config": {
+    "schema": {
+      "defaultMode": {
+        "type": "string",
+        "enum": ["targeted", "smoke", "full"],
+        "default": "targeted"
+      },
+      "coverageThreshold": {
+        "type": "number",
+        "default": 80
+      }
+    }
+  },
+  "examples": [
+    {
+      "prompt": "/qa",
+      "description": "Run targeted tests based on git diff"
+    },
+    {
+      "prompt": "/qa --mode=smoke",
+      "description": "Quick smoke test validation"
+    },
+    {
+      "prompt": "/qa --mode=full --coverage",
+      "description": "Full test suite with coverage"
+    }
+  ]
+}

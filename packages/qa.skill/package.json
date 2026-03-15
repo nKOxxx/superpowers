@@ -1,0 +1,35 @@
+{
+  "name": "@superpowers/qa",
+  "version": "1.0.0",
+  "description": "Systematic testing - auto-detect framework, run targeted/smoke/full tests",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "qa": "cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "commander": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "openclaw",
+    "skill",
+    "testing",
+    "qa",
+    "vitest",
+    "jest",
+    "mocha"
+  ],
+  "author": "nKO",
+  "license": "MIT"
+}

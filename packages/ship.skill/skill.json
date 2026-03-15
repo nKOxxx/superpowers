@@ -1,0 +1,58 @@
+{
+  "name": "ship",
+  "version": "1.0.0",
+  "description": "One-command release pipeline with semantic versioning and changelog generation",
+  "author": "nKO",
+  "entry": {
+    "type": "node",
+    "bin": "node",
+    "args": ["cli.js"]
+  },
+  "triggers": [
+    "/ship",
+    "release new version",
+    "publish package",
+    "create release",
+    "version bump"
+  ],
+  "requires": {
+    "bins": ["node", "git"],
+    "npm": []
+  },
+  "env": {
+    "GITHUB_TOKEN": {
+      "description": "GitHub personal access token for creating releases",
+      "required": false
+    },
+    "GH_TOKEN": {
+      "description": "Alternative GitHub token environment variable",
+      "required": false
+    }
+  },
+  "config": {
+    "schema": {
+      "requireCleanWorkingDir": {
+        "type": "boolean",
+        "default": true
+      },
+      "changelogPath": {
+        "type": "string",
+        "default": "CHANGELOG.md"
+      }
+    }
+  },
+  "examples": [
+    {
+      "prompt": "/ship --version=patch",
+      "description": "Release patch version"
+    },
+    {
+      "prompt": "/ship --version=minor --dry-run",
+      "description": "Preview minor release"
+    },
+    {
+      "prompt": "/ship --version=1.2.3",
+      "description": "Release specific version"
+    }
+  ]
+}

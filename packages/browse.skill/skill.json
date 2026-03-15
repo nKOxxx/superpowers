@@ -1,0 +1,63 @@
+{
+  "name": "browse",
+  "version": "1.0.0",
+  "description": "Browser automation with Playwright - screenshots, viewport testing, and UI flows",
+  "author": "nKO",
+  "entry": {
+    "type": "node",
+    "bin": "node",
+    "args": ["cli.js"]
+  },
+  "triggers": [
+    "/browse",
+    "screenshot",
+    "visual testing",
+    "browser automation",
+    "UI testing"
+  ],
+  "requires": {
+    "bins": ["node"],
+    "npm": ["playwright", "commander"]
+  },
+  "env": {
+    "BROWSE_HEADLESS": {
+      "description": "Run browser in headless mode",
+      "default": "true"
+    },
+    "OUTPUT_BASE64": {
+      "description": "Output screenshot as base64 for integration",
+      "default": "false"
+    }
+  },
+  "config": {
+    "schema": {
+      "defaultViewport": {
+        "type": "string",
+        "enum": ["mobile", "tablet", "desktop"],
+        "default": "desktop"
+      },
+      "screenshotDir": {
+        "type": "string",
+        "default": "./screenshots"
+      }
+    }
+  },
+  "examples": [
+    {
+      "prompt": "/browse https://example.com",
+      "description": "Capture screenshot of URL"
+    },
+    {
+      "prompt": "/browse https://example.com --viewport=mobile",
+      "description": "Mobile viewport screenshot"
+    },
+    {
+      "prompt": "/browse https://example.com --full-page",
+      "description": "Full page screenshot"
+    },
+    {
+      "prompt": "/browse https://example.com --selector='#hero'",
+      "description": "Screenshot specific element"
+    }
+  ]
+}
