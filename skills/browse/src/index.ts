@@ -1,9 +1,8 @@
 /**
  * Browse skill - Browser automation with Playwright
  */
-import { chromium, Browser, Page, ViewportSize } from 'playwright';
+import { chromium, Page, ViewportSize } from 'playwright';
 import { Logger, parseEnvOptions, exitWithError, exitWithSuccess, ensureDir } from '@nko/superpowers-shared';
-import * as fs from 'fs';
 import * as path from 'path';
 
 const logger = new Logger({ prefix: 'browse' });
@@ -96,10 +95,10 @@ async function executeAction(page: Page, action: BrowseAction): Promise<void> {
       break;
     
     case 'scroll':
-      await page.evaluate(({ x, y }) => window.scrollTo(x || 0, y || 0), {
-        x: action.x,
-        y: action.y,
-      });
+      await page.evaluate((scrollTo: { x?: number; y?: number }) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (globalThis as any).scrollTo(scrollTo.x || 0, scrollTo.y || 0);
+      }, { x: action.x, y: action.y });
       logger.debug(`Scrolled to: ${action.x || 0}, ${action.y || 0}`);
       break;
     
@@ -151,11 +150,6 @@ async function captureScreenshot(
       actionSpinner.succeed('Actions completed');
     }
 
-    // Determine screenshot options
-    let screenshotOptions: { path?: string; fullPage?: boolean; type?: 'png' | 'jpeg'; encoding?: 'base64' } = {
-      type: 'png',
-    };
-
     // Handle output path
     let outputPath: string | undefined;
     if (options.output) {
@@ -168,31 +162,25 @@ async function captureScreenshot(
 
     if (outputPath) {
       ensureDir(path.dirname(outputPath));
-      screenshotOptions.path = outputPath;
     }
 
     // Handle full page or element screenshot
     if (options.element) {
-      const element = await page.locator(options.element).first();
-      screenshotOptions.fullPage = false;
+      const element = page.locator(options.element).first();
       
       if (options.base64) {
-        screenshotOptions.encoding = 'base64';
-        const base64 = await element.screenshot(screenshotOptions as { encoding: 'base64' });
-        return { base64 };
+        const buffer = await element.screenshot({ type: 'png' });
+        return { base64: buffer.toString('base64') };
       } else {
-        await element.screenshot(screenshotOptions);
+        await element.screenshot({ path: outputPath, type: 'png' });
         return { path: outputPath };
       }
     } else {
-      screenshotOptions.fullPage = options.fullPage;
-      
       if (options.base64) {
-        screenshotOptions.encoding = 'base64';
-        const base64 = await page.screenshot(screenshotOptions as { encoding: 'base64' });
-        return { base64 };
+        const buffer = await page.screenshot({ fullPage: options.fullPage, type: 'png' });
+        return { base64: buffer.toString('base64') };
       } else {
-        await page.screenshot(screenshotOptions);
+        await page.screenshot({ path: outputPath, fullPage: options.fullPage, type: 'png' });
         return { path: outputPath };
       }
     }

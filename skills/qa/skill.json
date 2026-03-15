@@ -1,23 +1,13 @@
 {
   "name": "qa",
   "version": "1.0.0",
-  "description": "Systematic testing as QA Lead - targeted, smoke, and full test modes",
-  "author": "nKO",
-  "entry": "cli.js",
-  "command": "superpowers qa",
-  "options": [
-    {
-      "name": "mode",
-      "alias": "m",
-      "description": "Test mode: targeted, smoke, or full",
-      "default": "targeted"
-    },
-    {
-      "name": "coverage",
-      "alias": "c",
-      "description": "Enable coverage reporting",
-      "type": "boolean"
-    }
-  ],
-  "dependencies": {}
+  "description": "Systematic testing as QA Lead with auto-detect framework support",
+  "entry": "dist/index.js",
+  "bin": "qa",
+  "capabilities": [
+    "testing",
+    "qa",
+    "coverage",
+    "test-framework"
+  ]
 }
