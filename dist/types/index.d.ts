@@ -99,3 +99,4 @@ export interface ScreenshotResult {
     viewport: string;
     timestamp: string;
 }
+//# sourceMappingURL=index.d.ts.map

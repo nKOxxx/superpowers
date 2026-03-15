@@ -1,11 +1,17 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join, resolve } from 'path';
-import pc from 'picocolors';
-import { loadConfig, mergeWithDefaults } from '../lib/config.js';
-import { isGitRepo, isWorkingDirectoryClean, getLatestTag, getCommitsSince, getRemoteUrl, parseRepoFromRemote, runTests, } from '../lib/git.js';
-import { createRelease } from '../lib/github.js';
-import { sendTelegramMessage, formatReleaseMessage } from '../lib/telegram.js';
-export function shipCommand(program) {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.shipCommand = shipCommand;
+const fs_1 = require("fs");
+const path_1 = require("path");
+const picocolors_1 = __importDefault(require("picocolors"));
+const config_js_1 = require("../lib/config.js");
+const git_js_1 = require("../lib/git.js");
+const github_js_1 = require("../lib/github.js");
+const telegram_js_1 = require("../lib/telegram.js");
+function shipCommand(program) {
     program
         .command('ship')
         .description('One-command release pipeline')
@@ -20,168 +26,168 @@ export function shipCommand(program) {
             await runShip(options);
         }
         catch (error) {
-            console.error(pc.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
+            console.error(picocolors_1.default.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
             process.exit(1);
         }
     });
 }
 async function runShip(options) {
-    const config = mergeWithDefaults(loadConfig());
+    const config = (0, config_js_1.mergeWithDefaults)((0, config_js_1.loadConfig)());
     const cwd = process.cwd();
     // Validate git repo
-    if (!isGitRepo(cwd)) {
+    if (!(0, git_js_1.isGitRepo)(cwd)) {
         throw new Error('Not a git repository');
     }
     // Check working directory
-    if (config.ship.requireCleanWorkingDir && !isWorkingDirectoryClean(cwd)) {
+    if (config.ship.requireCleanWorkingDir && !(0, git_js_1.isWorkingDirectoryClean)(cwd)) {
         throw new Error('Working directory is not clean. Commit or stash changes first.');
     }
-    console.log(pc.cyan('══════════════════════════════════════════════════'));
-    console.log(pc.cyan('Release Pipeline'));
-    console.log(pc.cyan('══════════════════════════════════════════════════'));
+    console.log(picocolors_1.default.cyan('══════════════════════════════════════════════════'));
+    console.log(picocolors_1.default.cyan('Release Pipeline'));
+    console.log(picocolors_1.default.cyan('══════════════════════════════════════════════════'));
     console.log();
     // Get current version
-    const packagePath = join(cwd, 'package.json');
-    if (!existsSync(packagePath)) {
+    const packagePath = (0, path_1.join)(cwd, 'package.json');
+    if (!(0, fs_1.existsSync)(packagePath)) {
         throw new Error('package.json not found');
     }
-    const pkg = JSON.parse(readFileSync(packagePath, 'utf-8'));
+    const pkg = JSON.parse((0, fs_1.readFileSync)(packagePath, 'utf-8'));
     const currentVersion = pkg.version;
     const newVersion = calculateNewVersion(currentVersion, options.version);
-    console.log(pc.blue(`Current version: ${currentVersion}`));
-    console.log(pc.blue(`New version: ${newVersion}`));
+    console.log(picocolors_1.default.blue(`Current version: ${currentVersion}`));
+    console.log(picocolors_1.default.blue(`New version: ${newVersion}`));
     console.log();
     if (options.dryRun) {
-        console.log(pc.yellow('DRY RUN - No changes will be made'));
+        console.log(picocolors_1.default.yellow('DRY RUN - No changes will be made'));
         console.log();
     }
     // Run tests
     if (!options.skipTests && config.ship.runTestsBeforeRelease) {
-        console.log(pc.blue('Running tests...'));
-        const { success } = await runTests(config.qa.testCommand || 'npm test', cwd);
+        console.log(picocolors_1.default.blue('Running tests...'));
+        const { success } = await (0, git_js_1.runTests)(config.qa.testCommand || 'npm test', cwd);
         if (!success) {
             throw new Error('Tests failed. Fix before releasing.');
         }
-        console.log(pc.green('✓ Tests passed'));
+        console.log(picocolors_1.default.green('✓ Tests passed'));
         console.log();
     }
     // Get changelog
-    const latestTag = getLatestTag(cwd);
-    const commits = getCommitsSince(latestTag, cwd);
+    const latestTag = (0, git_js_1.getLatestTag)(cwd);
+    const commits = (0, git_js_1.getCommitsSince)(latestTag, cwd);
     const changelog = generateChangelog(commits);
     if (options.dryRun) {
-        console.log(pc.cyan('Changelog:'));
+        console.log(picocolors_1.default.cyan('Changelog:'));
         console.log(changelog || '  (no conventional commits found)');
         console.log();
-        console.log(pc.yellow('Dry run complete. No changes made.'));
+        console.log(picocolors_1.default.yellow('Dry run complete. No changes made.'));
         return;
     }
     // Update version
-    console.log(pc.blue('Updating version...'));
+    console.log(picocolors_1.default.blue('Updating version...'));
     pkg.version = newVersion;
-    writeFileSync(packagePath, JSON.stringify(pkg, null, 2) + '\n');
-    console.log(pc.green(`✓ Version updated to ${newVersion}`));
+    (0, fs_1.writeFileSync)(packagePath, JSON.stringify(pkg, null, 2) + '\n');
+    console.log(picocolors_1.default.green(`✓ Version updated to ${newVersion}`));
     console.log();
     // Update additional version files
     if (config.ship.versionFiles && config.ship.versionFiles.length > 0) {
         for (const versionFile of config.ship.versionFiles) {
             if (!versionFile)
                 continue;
-            const filePath = resolve(cwd, versionFile);
-            if (existsSync(filePath)) {
-                let content = readFileSync(filePath, 'utf-8');
+            const filePath = (0, path_1.resolve)(cwd, versionFile);
+            if ((0, fs_1.existsSync)(filePath)) {
+                let content = (0, fs_1.readFileSync)(filePath, 'utf-8');
                 // Replace version patterns
                 content = content.replace(/version\s*=\s*['"][\d.]+['"]/, `version = '${newVersion}'`);
                 content = content.replace(/VERSION\s*=\s*['"][\d.]+['"]/, `VERSION = '${newVersion}'`);
                 content = content.replace(/version:\s*['"][\d.]+['"]/, `version: '${newVersion}'`);
-                writeFileSync(filePath, content);
-                console.log(pc.green(`✓ Updated ${versionFile}`));
+                (0, fs_1.writeFileSync)(filePath, content);
+                console.log(picocolors_1.default.green(`✓ Updated ${versionFile}`));
             }
         }
         console.log();
     }
     // Update changelog
-    console.log(pc.blue('Generating changelog...'));
+    console.log(picocolors_1.default.blue('Generating changelog...'));
     await updateChangelog(config.ship.changelogPath || 'CHANGELOG.md', newVersion, changelog, options.notes);
-    console.log(pc.green('✓ Changelog updated'));
+    console.log(picocolors_1.default.green('✓ Changelog updated'));
     console.log();
     // Git operations
-    console.log(pc.blue('Creating release commit...'));
+    console.log(picocolors_1.default.blue('Creating release commit...'));
     const { execSync } = require('child_process');
     execSync('git add -A', { cwd });
     execSync(`git commit -m "chore(release): v${newVersion}"`, { cwd });
-    console.log(pc.green('✓ Commit created'));
+    console.log(picocolors_1.default.green('✓ Commit created'));
     console.log();
-    console.log(pc.blue('Creating git tag...'));
+    console.log(picocolors_1.default.blue('Creating git tag...'));
     execSync(`git tag -a v${newVersion} -m "Release v${newVersion}"`, { cwd });
-    console.log(pc.green(`✓ Tag v${newVersion} created`));
+    console.log(picocolors_1.default.green(`✓ Tag v${newVersion} created`));
     console.log();
-    console.log(pc.blue('Pushing to remote...'));
+    console.log(picocolors_1.default.blue('Pushing to remote...'));
     execSync('git push && git push --tags', { cwd, stdio: 'pipe' });
-    console.log(pc.green('✓ Pushed to remote'));
+    console.log(picocolors_1.default.green('✓ Pushed to remote'));
     console.log();
     // Create GitHub release
-    console.log(pc.blue('Creating GitHub release...'));
-    const repoInfo = options.repo || parseRepoFromRemote(getRemoteUrl(cwd) || '');
+    console.log(picocolors_1.default.blue('Creating GitHub release...'));
+    const repoInfo = options.repo || (0, git_js_1.parseRepoFromRemote)((0, git_js_1.getRemoteUrl)(cwd) || '');
     if (repoInfo && typeof repoInfo !== 'string') {
         const releaseBody = options.notes || changelog || `Release v${newVersion}`;
-        const { success, url, error } = await createRelease(repoInfo.owner, repoInfo.repo, {
+        const { success, url, error } = await (0, github_js_1.createRelease)(repoInfo.owner, repoInfo.repo, {
             tag_name: `v${newVersion}`,
             name: `v${newVersion}`,
             body: releaseBody,
             prerelease: options.prerelease || false,
         });
         if (success) {
-            console.log(pc.green('✓ GitHub release created'));
+            console.log(picocolors_1.default.green('✓ GitHub release created'));
             if (url) {
-                console.log(pc.blue(`  ${url}`));
+                console.log(picocolors_1.default.blue(`  ${url}`));
             }
         }
         else {
-            console.warn(pc.yellow(`Warning: Failed to create GitHub release: ${error}`));
+            console.warn(picocolors_1.default.yellow(`Warning: Failed to create GitHub release: ${error}`));
         }
     }
     else if (options.repo) {
         const [owner, repo] = options.repo.split('/');
         if (owner && repo) {
             const releaseBody = options.notes || changelog || `Release v${newVersion}`;
-            const { success, url, error } = await createRelease(owner, repo, {
+            const { success, url, error } = await (0, github_js_1.createRelease)(owner, repo, {
                 tag_name: `v${newVersion}`,
                 name: `v${newVersion}`,
                 body: releaseBody,
                 prerelease: options.prerelease || false,
             });
             if (success) {
-                console.log(pc.green('✓ GitHub release created'));
+                console.log(picocolors_1.default.green('✓ GitHub release created'));
                 if (url) {
-                    console.log(pc.blue(`  ${url}`));
+                    console.log(picocolors_1.default.blue(`  ${url}`));
                 }
             }
             else {
-                console.warn(pc.yellow(`Warning: Failed to create GitHub release: ${error}`));
+                console.warn(picocolors_1.default.yellow(`Warning: Failed to create GitHub release: ${error}`));
             }
         }
     }
     else {
-        console.warn(pc.yellow('Warning: Could not detect repository. Skipping GitHub release.'));
+        console.warn(picocolors_1.default.yellow('Warning: Could not detect repository. Skipping GitHub release.'));
     }
     console.log();
     // Telegram notification
-    const telegramMessage = formatReleaseMessage(pkg.name || 'unknown', newVersion, changelog);
-    const { success: telegramSuccess, error: telegramError } = await sendTelegramMessage(telegramMessage);
+    const telegramMessage = (0, telegram_js_1.formatReleaseMessage)(pkg.name || 'unknown', newVersion, changelog);
+    const { success: telegramSuccess, error: telegramError } = await (0, telegram_js_1.sendTelegramMessage)(telegramMessage);
     if (telegramSuccess) {
-        console.log(pc.green('✓ Telegram notification sent'));
+        console.log(picocolors_1.default.green('✓ Telegram notification sent'));
     }
     else if (telegramError?.includes('Missing')) {
         // Silently skip if no telegram config
     }
     else if (telegramError) {
-        console.warn(pc.yellow(`Warning: Failed to send Telegram notification: ${telegramError}`));
+        console.warn(picocolors_1.default.yellow(`Warning: Failed to send Telegram notification: ${telegramError}`));
     }
     console.log();
-    console.log(pc.cyan('══════════════════════════════════════════════════'));
-    console.log(pc.green(`✓ Released ${newVersion}`));
-    console.log(pc.cyan('══════════════════════════════════════════════════'));
+    console.log(picocolors_1.default.cyan('══════════════════════════════════════════════════'));
+    console.log(picocolors_1.default.green(`✓ Released ${newVersion}`));
+    console.log(picocolors_1.default.cyan('══════════════════════════════════════════════════'));
 }
 function calculateNewVersion(current, bump) {
     // If explicit version provided
@@ -257,7 +263,7 @@ function generateChangelog(commits) {
     return lines.join('\n');
 }
 async function updateChangelog(changelogPath, version, changelog, customNotes) {
-    const fullPath = resolve(changelogPath);
+    const fullPath = (0, path_1.resolve)(changelogPath);
     const date = new Date().toISOString().split('T')[0];
     const newEntry = [
         `## [${version}] - ${date}`,
@@ -265,20 +271,20 @@ async function updateChangelog(changelogPath, version, changelog, customNotes) {
         customNotes || changelog || '(No changes documented)',
         '',
     ].join('\n');
-    if (existsSync(fullPath)) {
-        const existing = readFileSync(fullPath, 'utf-8');
+    if ((0, fs_1.existsSync)(fullPath)) {
+        const existing = (0, fs_1.readFileSync)(fullPath, 'utf-8');
         // Insert after header
         const lines = existing.split('\n');
         const headerEnd = lines.findIndex(line => line.startsWith('## '));
         if (headerEnd === -1) {
             // No existing entries, append at end
-            writeFileSync(fullPath, `${existing}\n${newEntry}`);
+            (0, fs_1.writeFileSync)(fullPath, `${existing}\n${newEntry}`);
         }
         else {
             // Insert before first entry
             const before = lines.slice(0, headerEnd).join('\n');
             const after = lines.slice(headerEnd).join('\n');
-            writeFileSync(fullPath, `${before}\n${newEntry}${after}`);
+            (0, fs_1.writeFileSync)(fullPath, `${before}\n${newEntry}${after}`);
         }
     }
     else {
@@ -290,6 +296,7 @@ async function updateChangelog(changelogPath, version, changelog, customNotes) {
             '',
             newEntry,
         ].join('\n');
-        writeFileSync(fullPath, content);
+        (0, fs_1.writeFileSync)(fullPath, content);
     }
 }
+//# sourceMappingURL=ship.js.map

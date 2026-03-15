@@ -1,7 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.calculateBATScore = calculateBATScore;
+exports.formatStarRating = formatStarRating;
 /**
  * Calculate BAT (Brand, Attention, Trust) scores for a feature
  */
-export function calculateBATScore(feature, brand, attention, trust) {
+function calculateBATScore(feature, brand, attention, trust) {
     // Clamp scores to 0-5 range
     const clampedScores = {
         brand: Math.max(0, Math.min(5, brand)),
@@ -32,9 +36,10 @@ export function calculateBATScore(feature, brand, attention, trust) {
 /**
  * Format a score as star rating string
  */
-export function formatStarRating(score) {
+function formatStarRating(score) {
     const clamped = Math.max(0, Math.min(5, score));
     const filled = '⭐'.repeat(clamped);
     const empty = '⬜'.repeat(5 - clamped);
     return filled + empty;
 }
+//# sourceMappingURL=bat.js.map

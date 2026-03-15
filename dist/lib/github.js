@@ -1,8 +1,16 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseRepoString = parseRepoString;
+exports.createGitHubClient = createGitHubClient;
+exports.getToken = getToken;
+exports.hasGHCLI = hasGHCLI;
+exports.createRelease = createRelease;
+exports.getRepoInfo = getRepoInfo;
 const GITHUB_API = 'https://api.github.com';
 /**
  * Parse owner/repo string format
  */
-export function parseRepoString(repoString) {
+function parseRepoString(repoString) {
     const parts = repoString.split('/');
     if (parts.length !== 2) {
         throw new Error('Invalid repo format. Expected: owner/repo');
@@ -12,7 +20,7 @@ export function parseRepoString(repoString) {
 /**
  * Create GitHub API client
  */
-export function createGitHubClient() {
+function createGitHubClient() {
     const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
     if (!token) {
         throw new Error('GH_TOKEN environment variable is required');
@@ -22,13 +30,13 @@ export function createGitHubClient() {
 /**
  * Get GitHub token from environment
  */
-export function getToken() {
+function getToken() {
     return process.env.GH_TOKEN || process.env.GITHUB_TOKEN || null;
 }
 /**
  * Check if GitHub CLI is available
  */
-export function hasGHCLI() {
+function hasGHCLI() {
     try {
         const { execSync } = require('child_process');
         execSync('gh --version', { stdio: 'pipe' });
@@ -41,7 +49,7 @@ export function hasGHCLI() {
 /**
  * Create a GitHub release using gh CLI (preferred) or API
  */
-export async function createRelease(owner, repo, release) {
+async function createRelease(owner, repo, release) {
     const token = getToken();
     // Try gh CLI first
     if (hasGHCLI()) {
@@ -102,7 +110,7 @@ export async function createRelease(owner, repo, release) {
 /**
  * Get repository info
  */
-export async function getRepoInfo(owner, repo) {
+async function getRepoInfo(owner, repo) {
     const token = getToken();
     const headers = {
         'Content-Type': 'application/json',
@@ -128,3 +136,4 @@ export async function getRepoInfo(owner, repo) {
         };
     }
 }
+//# sourceMappingURL=github.js.map

@@ -1,66 +1,158 @@
-# 🦞 Superpowers for OpenClaw
+# Superpowers for OpenClaw
 
-A 4-pack of TypeScript skills for OpenClaw - browser automation, testing, releases, and product strategy.
+AI-driven development workflows. Four TypeScript skills for the OpenClaw ecosystem.
 
 ## Skills
 
-### `/browse` - Browser Automation
-Visual testing and QA with Playwright.
+| Skill | Command | Description | Size |
+|-------|---------|-------------|------|
+| **Browse** | `/browse <url>` | Browser automation with Playwright | ~5KB |
+| **QA** | `/qa [--mode=targeted]` | Systematic testing as QA Lead | ~6KB |
+| **Ship** | `/ship [--version=patch]` | One-command release pipeline | ~7KB |
+| **CEO Review** | `/plan-ceo-review "desc"` | BAT framework for product decisions | ~8KB |
+
+## Quick Start
+
 ```bash
-/browse https://example.com --viewport mobile --full-page
-/browse https://example.com --selector "#hero" --actions '[{"type":"click","selector":"#menu"}]'
+# Install
+npm install @nko/superpowers
+
+# Or use directly
+npx @nko/superpowers <command>
 ```
 
-### `/qa` - Systematic Testing
-Analyzes code changes and runs appropriate tests.
+## Browse
+
+Browser automation for visual testing and QA.
+
 ```bash
-/qa --mode targeted      # Auto-detect changes (default)
-/qa --mode smoke         # Quick validation
-/qa --mode full          # Complete regression
+# Screenshot a page
+/browse https://example.com
+
+# Mobile viewport, full page
+/browse https://example.com --viewport=mobile --full-page
+
+# Flow-based testing
+/browse https://example.com --actions='[
+  {"kind":"click","selector":"#login"},
+  {"kind":"type","selector":"#email","text":"user@example.com"},
+  {"kind":"click","selector":"#submit"},
+  {"kind":"wait","ms":1000}
+]'
 ```
 
-### `/ship` - Release Pipeline
-One-command versioning, changelog, and GitHub releases.
+**Actions:** click, type, wait, scroll, hover, screenshot
+
+## QA
+
+Systematic testing with mode-based execution.
+
 ```bash
-/ship --version patch    # Bug fixes
-/ship --version minor    # New features
-/ship --version major    # Breaking changes
-/ship --dry-run          # Preview only
+# Targeted - test only changed files (default)
+/qa --mode=targeted
+
+# Smoke - quick validation
+/qa --mode=smoke
+
+# Full - complete regression
+/qa --mode=full --coverage
 ```
 
-### `/plan-ceo-review` - BAT Framework
-Product strategy review using Brand, Attention, Trust scoring.
+**Auto-detects:** vitest, jest, mocha
+
+## Ship
+
+Release pipeline with semantic versioning.
+
 ```bash
-/plan-ceo-review "Add AI voice assistant"
-/plan-ceo-review "Build a referral program"
+# Patch release (default)
+/ship
+
+# Minor release
+/ship --version=minor
+
+# Dry run
+/ship --version=major --dry-run
+
+# Skip tests (not recommended)
+/ship --skip-tests
 ```
 
-## Installation
+**Features:**
+- Conventional commit changelog generation
+- Git tag + push
+- GitHub release creation (requires GH_TOKEN)
+
+## CEO Review
+
+BAT framework for build/don't-build decisions.
 
 ```bash
-# Clone and install
-git clone https://github.com/nKOxxx/superpowers.git
-cd superpowers
+# Auto-score based on description
+/plan-ceo-review "MoltStamp: API key escrow service for AI-to-AI collaboration"
+
+# Manual scoring
+/plan-ceo-review "Product X" --brand=4 --attention=5 --trust=3
+```
+
+**BAT Framework:**
+- **Brand** (0-5): Alignment with core identity
+- **Attention** (0-5): Market demand capture
+- **Trust** (0-5): Delivery capability
+
+**Scoring:**
+- 10+ stars: ✅ BUILD
+- 7-9 stars: ⚠️ CONSIDER  
+- <7 stars: ❌ DON'T BUILD
+
+## Development
+
+```bash
+# Install dependencies
 npm install
 
-# Build all skills
+# Build
 npm run build
+
+# Package skills for distribution
+npm run package:skills
+
+# Test
+npm test
+```
+
+## Installation as OpenClaw Skills
+
+Copy `.skill` files to your OpenClaw skills directory:
+
+```bash
+cp dist-skills/*.skill ~/.openclaw/skills/
+```
+
+Or reference directly in OpenClaw config:
+
+```json
+{
+  "skills": [
+    { "name": "browse", "path": "./dist-skills/browse.skill" },
+    { "name": "qa", "path": "./dist-skills/qa.skill" },
+    { "name": "ship", "path": "./dist-skills/ship.skill" },
+    { "name": "plan-ceo-review", "path": "./dist-skills/plan-ceo-review.skill" }
+  ]
+}
 ```
 
 ## Requirements
 
 - Node.js 18+
 - Playwright (for /browse)
-- Git + GitHub CLI (for /ship)
-- Vitest/Jest/Mocha project (for /qa)
-
-## Architecture
-
-Each skill is self-contained with:
-- `SKILL.md` - Documentation
-- `src/index.ts` - Implementation
-- `dist/` - Compiled output
+- Git (for /ship)
+- Vitest/Jest/Mocha (for /qa)
 
 ## License
 
 MIT
+
+## Author
+
+Nikola Kolev (@nKOxxx)

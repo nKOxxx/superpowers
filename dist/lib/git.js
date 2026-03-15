@@ -1,18 +1,32 @@
-import { execSync, spawn } from 'child_process';
-import { existsSync } from 'fs';
-import { join } from 'path';
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.isGitRepo = isGitRepo;
+exports.getCurrentBranch = getCurrentBranch;
+exports.isWorkingDirectoryClean = isWorkingDirectoryClean;
+exports.getLatestTag = getLatestTag;
+exports.getChangedFiles = getChangedFiles;
+exports.getCommitsSince = getCommitsSince;
+exports.createTag = createTag;
+exports.pushToRemote = pushToRemote;
+exports.createCommit = createCommit;
+exports.runTests = runTests;
+exports.getRemoteUrl = getRemoteUrl;
+exports.parseRepoFromRemote = parseRepoFromRemote;
+const child_process_1 = require("child_process");
+const fs_1 = require("fs");
+const path_1 = require("path");
 /**
  * Check if we're in a git repository
  */
-export function isGitRepo(cwd = process.cwd()) {
-    return existsSync(join(cwd, '.git'));
+function isGitRepo(cwd = process.cwd()) {
+    return (0, fs_1.existsSync)((0, path_1.join)(cwd, '.git'));
 }
 /**
  * Get current git branch
  */
-export function getCurrentBranch(cwd = process.cwd()) {
+function getCurrentBranch(cwd = process.cwd()) {
     try {
-        return execSync('git branch --show-current', { cwd, encoding: 'utf-8' }).trim();
+        return (0, child_process_1.execSync)('git branch --show-current', { cwd, encoding: 'utf-8' }).trim();
     }
     catch {
         return 'main';
@@ -21,9 +35,9 @@ export function getCurrentBranch(cwd = process.cwd()) {
 /**
  * Check if working directory is clean
  */
-export function isWorkingDirectoryClean(cwd = process.cwd()) {
+function isWorkingDirectoryClean(cwd = process.cwd()) {
     try {
-        const status = execSync('git status --porcelain', { cwd, encoding: 'utf-8' }).trim();
+        const status = (0, child_process_1.execSync)('git status --porcelain', { cwd, encoding: 'utf-8' }).trim();
         return status === '';
     }
     catch {
@@ -33,9 +47,9 @@ export function isWorkingDirectoryClean(cwd = process.cwd()) {
 /**
  * Get the latest git tag
  */
-export function getLatestTag(cwd = process.cwd()) {
+function getLatestTag(cwd = process.cwd()) {
     try {
-        return execSync('git describe --tags --abbrev=0', { cwd, encoding: 'utf-8' }).trim();
+        return (0, child_process_1.execSync)('git describe --tags --abbrev=0', { cwd, encoding: 'utf-8' }).trim();
     }
     catch {
         return null;
@@ -44,9 +58,9 @@ export function getLatestTag(cwd = process.cwd()) {
 /**
  * Get list of files changed since a commit/tag
  */
-export function getChangedFiles(since = 'HEAD~1', cwd = process.cwd()) {
+function getChangedFiles(since = 'HEAD~1', cwd = process.cwd()) {
     try {
-        const output = execSync(`git diff --name-only ${since}`, { cwd, encoding: 'utf-8' });
+        const output = (0, child_process_1.execSync)(`git diff --name-only ${since}`, { cwd, encoding: 'utf-8' });
         return output.trim().split('\n').filter(f => f.length > 0);
     }
     catch {
@@ -56,10 +70,10 @@ export function getChangedFiles(since = 'HEAD~1', cwd = process.cwd()) {
 /**
  * Get conventional commits since a tag
  */
-export function getCommitsSince(tag, cwd = process.cwd()) {
+function getCommitsSince(tag, cwd = process.cwd()) {
     try {
         const range = tag ? `${tag}..HEAD` : 'HEAD';
-        const output = execSync(`git log ${range} --pretty=format:"%s"`, { cwd, encoding: 'utf-8' });
+        const output = (0, child_process_1.execSync)(`git log ${range} --pretty=format:"%s"`, { cwd, encoding: 'utf-8' });
         return output.trim().split('\n').filter(c => c.length > 0);
     }
     catch {
@@ -69,27 +83,27 @@ export function getCommitsSince(tag, cwd = process.cwd()) {
 /**
  * Create a git tag
  */
-export function createTag(version, message, cwd = process.cwd()) {
-    execSync(`git tag -a v${version} -m "${message}"`, { cwd, stdio: 'inherit' });
+function createTag(version, message, cwd = process.cwd()) {
+    (0, child_process_1.execSync)(`git tag -a v${version} -m "${message}"`, { cwd, stdio: 'inherit' });
 }
 /**
  * Push commits and tags
  */
-export function pushToRemote(cwd = process.cwd()) {
-    execSync('git push && git push --tags', { cwd, stdio: 'inherit' });
+function pushToRemote(cwd = process.cwd()) {
+    (0, child_process_1.execSync)('git push && git push --tags', { cwd, stdio: 'inherit' });
 }
 /**
  * Create a commit
  */
-export function createCommit(message, files = ['.'], cwd = process.cwd()) {
-    execSync(`git add ${files.join(' ')} && git commit -m "${message}"`, { cwd, stdio: 'inherit' });
+function createCommit(message, files = ['.'], cwd = process.cwd()) {
+    (0, child_process_1.execSync)(`git add ${files.join(' ')} && git commit -m "${message}"`, { cwd, stdio: 'inherit' });
 }
 /**
  * Run tests via npm/yarn/pnpm
  */
-export async function runTests(command, cwd = process.cwd()) {
+async function runTests(command, cwd = process.cwd()) {
     return new Promise((resolve) => {
-        const child = spawn('sh', ['-c', command], {
+        const child = (0, child_process_1.spawn)('sh', ['-c', command], {
             cwd,
             stdio: 'pipe',
         });
@@ -108,9 +122,9 @@ export async function runTests(command, cwd = process.cwd()) {
 /**
  * Get repository remote URL
  */
-export function getRemoteUrl(cwd = process.cwd()) {
+function getRemoteUrl(cwd = process.cwd()) {
     try {
-        return execSync('git remote get-url origin', { cwd, encoding: 'utf-8' }).trim();
+        return (0, child_process_1.execSync)('git remote get-url origin', { cwd, encoding: 'utf-8' }).trim();
     }
     catch {
         return null;
@@ -119,7 +133,7 @@ export function getRemoteUrl(cwd = process.cwd()) {
 /**
  * Parse owner/repo from git remote URL
  */
-export function parseRepoFromRemote(url) {
+function parseRepoFromRemote(url) {
     // Handle HTTPS: https://github.com/owner/repo.git
     // Handle SSH: git@github.com:owner/repo.git
     const match = url.match(/github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/);
@@ -128,3 +142,4 @@ export function parseRepoFromRemote(url) {
     }
     return null;
 }
+//# sourceMappingURL=git.js.map

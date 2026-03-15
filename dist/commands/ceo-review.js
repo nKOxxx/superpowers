@@ -1,6 +1,12 @@
-import pc from 'picocolors';
-import { loadConfig, mergeWithDefaults } from '../lib/config.js';
-export function ceoReviewCommand(program) {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ceoReviewCommand = ceoReviewCommand;
+const picocolors_1 = __importDefault(require("picocolors"));
+const config_js_1 = require("../lib/config.js");
+function ceoReviewCommand(program) {
     program
         .command('ceo-review')
         .description('Product strategy review using BAT framework')
@@ -17,16 +23,16 @@ export function ceoReviewCommand(program) {
             await runCEOReview(options);
         }
         catch (error) {
-            console.error(pc.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
+            console.error(picocolors_1.default.red('Error:'), error instanceof Error ? error.message : 'Unknown error');
             process.exit(1);
         }
     });
 }
 async function runCEOReview(options) {
-    const config = mergeWithDefaults(loadConfig());
-    console.log(pc.cyan('══════════════════════════════════════════════════'));
-    console.log(pc.cyan('BAT Framework - Product Strategy Review'));
-    console.log(pc.cyan('══════════════════════════════════════════════════'));
+    const config = (0, config_js_1.mergeWithDefaults)((0, config_js_1.loadConfig)());
+    console.log(picocolors_1.default.cyan('══════════════════════════════════════════════════'));
+    console.log(picocolors_1.default.cyan('BAT Framework - Product Strategy Review'));
+    console.log(picocolors_1.default.cyan('══════════════════════════════════════════════════'));
     console.log();
     // Parse scores from options or prompt
     const scores = {
@@ -165,7 +171,7 @@ function generateReview(options, scores, config) {
     };
 }
 function displayResults(result) {
-    console.log(pc.bold(pc.white(result.feature)));
+    console.log(picocolors_1.default.bold(picocolors_1.default.white(result.feature)));
     console.log();
     // Scores
     console.log(`Brand:     ${renderStars(result.scores.brand)} (${result.scores.brand}/5)`);
@@ -174,25 +180,26 @@ function displayResults(result) {
     console.log();
     // Total
     const totalColor = result.total >= 12 ? 'green' : result.total >= 10 ? 'yellow' : 'red';
-    console.log(pc[totalColor](`Total: ${result.total}/15 ⭐`));
+    console.log(picocolors_1.default[totalColor](`Total: ${result.total}/15 ⭐`));
     console.log();
     // Recommendation
     const recColor = result.recommendation === 'BUILD' ? 'green' : result.recommendation === 'CONSIDER' ? 'yellow' : 'red';
     const recIcon = result.recommendation === 'BUILD' ? '✅' : result.recommendation === 'CONSIDER' ? '⚠️' : '❌';
-    console.log(pc.bold('Recommendation:'), pc[recColor](`${result.recommendation} ${recIcon}`));
+    console.log(picocolors_1.default.bold('Recommendation:'), picocolors_1.default[recColor](`${result.recommendation} ${recIcon}`));
     console.log();
     // Rationale
-    console.log(pc.cyan('Rationale:'));
+    console.log(picocolors_1.default.cyan('Rationale:'));
     result.rationale.forEach(r => console.log(`  • ${r}`));
     console.log();
     // Next steps
-    console.log(pc.cyan('Next Steps:'));
+    console.log(picocolors_1.default.cyan('Next Steps:'));
     result.nextSteps.forEach((step, i) => console.log(`  ${i + 1}. ${step}`));
     console.log();
-    console.log(pc.cyan('══════════════════════════════════════════════════'));
+    console.log(picocolors_1.default.cyan('══════════════════════════════════════════════════'));
 }
 function renderStars(score) {
     const filled = '⭐';
     const empty = '○';
     return filled.repeat(score) + empty.repeat(5 - score);
 }
+//# sourceMappingURL=ceo-review.js.map

@@ -1,7 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.sendTelegramMessage = sendTelegramMessage;
+exports.formatReleaseMessage = formatReleaseMessage;
 /**
  * Send notification to Telegram
  */
-export async function sendTelegramMessage(message, botToken, chatId) {
+async function sendTelegramMessage(message, botToken, chatId) {
     const token = botToken || process.env.TELEGRAM_BOT_TOKEN;
     const chat = chatId || process.env.TELEGRAM_CHAT_ID;
     if (!token || !chat) {
@@ -38,7 +42,7 @@ export async function sendTelegramMessage(message, botToken, chatId) {
 /**
  * Format release message for Telegram
  */
-export function formatReleaseMessage(repo, version, changelog) {
+function formatReleaseMessage(repo, version, changelog) {
     return [
         `🚀 *New Release: ${repo} v${version}*`,
         '',
@@ -48,3 +52,4 @@ export function formatReleaseMessage(repo, version, changelog) {
         `[View on GitHub](https://github.com/${repo}/releases/tag/v${version})`,
     ].join('\n');
 }
+//# sourceMappingURL=telegram.js.map

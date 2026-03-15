@@ -1,11 +1,11 @@
-export { browseCommand as browse } from './commands/browse.js';
-export { qaCommand as qa } from './commands/qa.js';
-export { shipCommand as ship } from './commands/ship.js';
-export { ceoReviewCommand as ceoReview } from './commands/ceo-review.js';
-export type { Viewport, ViewportPreset, ActionType, FlowAction, FlowStep, BrowserConfig, QAConfig, ShipConfig, CEOReviewConfig, SuperpowersConfig, GitHubRelease, BATScores, CEOReviewInput, Recommendation, CEOReviewResult, ChangelogEntry, TestResult, ScreenshotResult, } from './types/index.js';
-export { loadConfig, mergeWithDefaults } from './lib/config.js';
-export { calculateBATScore, formatStarRating } from './lib/bat.js';
-export { formatDuration, formatBytes } from './lib/format.js';
-export { sendTelegramMessage, formatReleaseMessage } from './lib/telegram.js';
-export { createRelease, getToken, hasGHCLI, parseRepoString } from './lib/github.js';
-export { isGitRepo, getCurrentBranch, isWorkingDirectoryClean, getLatestTag, getChangedFiles, getCommitsSince, createTag, pushToRemote, createCommit, runTests, getRemoteUrl, parseRepoFromRemote, } from './lib/git.js';
+/**
+ * Superpowers - OpenClaw AI-driven development workflows
+ * Main entry point
+ */
+export { BrowseSkill, run as runBrowse } from './browse/index.js';
+export { QASkill, run as runQA } from './qa/index.js';
+export { ShipSkill, run as runShip } from './ship/index.js';
+export { CEOReviewSkill, run as runCEOReview } from './plan-ceo-review/index.js';
+export * from './types.js';
+export * from './utils.js';
+//# sourceMappingURL=index.d.ts.map

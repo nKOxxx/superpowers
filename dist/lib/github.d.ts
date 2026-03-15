@@ -36,3 +36,4 @@ export declare function getRepoInfo(owner: string, repo: string): Promise<{
     default_branch?: string;
     error?: string;
 }>;
+//# sourceMappingURL=github.d.ts.map

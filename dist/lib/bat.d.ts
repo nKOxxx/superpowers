@@ -13,3 +13,4 @@ export declare function calculateBATScore(feature: string, brand: number, attent
  * Format a score as star rating string
  */
 export declare function formatStarRating(score: number): string;
+//# sourceMappingURL=bat.d.ts.map

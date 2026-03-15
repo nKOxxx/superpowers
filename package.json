@@ -1,27 +1,37 @@
 {
-  "name": "superpowers",
+  "name": "@nko/superpowers",
   "version": "1.0.0",
-  "description": "OpenClaw superpowers - 4-pack skill set",
-  "type": "module",
+  "description": "OpenClaw superpowers - AI-driven development workflows",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
-    "browse": "node browse/dist/index.js",
-    "qa": "node qa/dist/index.js",
-    "ship": "node ship/dist/index.js",
-    "plan-ceo-review": "node plan-ceo-review/dist/index.js"
+    "build:skills": "npm run build && npm run package:skills",
+    "package:skills": "node scripts/package-skills.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@types/semver": "^7.7.1",
-    "chalk": "^5.3.0",
-    "commander": "^14.0.3",
-    "ora": "^9.3.0",
-    "picocolors": "^1.1.1",
-    "playwright": "^1.42.0",
-    "semver": "^7.7.4"
+  "keywords": ["openclaw", "skills", "ai", "automation", "testing", "browser"],
+  "author": "Nikola Kolev <nko@example.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nKOxxx/superpowers.git"
   },
   "devDependencies": {
-    "@types/node": "^20.11.0",
-    "typescript": "^5.3.0"
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
