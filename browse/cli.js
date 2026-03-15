@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { program } from 'commander';
-import { browseCommand } from './index.js';
+import { browseCommand } from './dist/index.js';
 // Note: This file gets copied to dist/ folder during build
 
 program

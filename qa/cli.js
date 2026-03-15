@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { program } from 'commander';
-import { qaCommand } from './index.js';
+import { qaCommand } from './dist/index.js';
 
 program
   .name('qa')
