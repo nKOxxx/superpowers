@@ -3,139 +3,75 @@ name: ship
 description: One-command release pipeline. Bumps version, generates changelog, creates GitHub release. Use when user wants to release a new version, publish package, or create GitHub release. Triggers on requests like /ship, release new version, publish, create release, or version bump.
 ---
 
-# Ship Skill
+# Ship - Release Pipeline Skill
 
-One-command release pipeline with semantic versioning, changelog generation, and GitHub releases.
+Automated semantic versioning and release management.
+
+## Capabilities
+
+- Semantic versioning (patch, minor, major, explicit)
+- Conventional commit changelog generation
+- Git tag creation and push
+- GitHub release creation (via GH_TOKEN)
+- Dry-run preview mode
 
 ## Usage
 
-```
-/ship [options]
+```bash
+# Patch release (bug fixes)
+/ship --version=patch
+
+# Minor release (features)
+/ship --version=minor
+
+# Major release (breaking changes)
+/ship --version=major
+
+# Explicit version
+/ship --version=1.2.3
+
+# Dry run (preview only)
+/ship --version=minor --dry-run
 ```
 
-### Options
+## Version Bumping
 
-- `--version=<type>` - Version bump: `patch`, `minor`, `major`, or specific version
-- `--repo=<name>` - Repository name (auto-detected from git remote)
-- `--dry-run` - Simulate release without making changes
+- **patch** - 1.0.0 → 1.0.1 (bug fixes)
+- **minor** - 1.0.0 → 1.1.0 (features, backward compatible)
+- **major** - 1.0.0 → 2.0.0 (breaking changes)
+- **explicit** - Use exact version provided
+
+## Changelog Generation
+
+Parses conventional commits since last tag:
+- `feat:` → Features section
+- `fix:` → Bug Fixes section
+- `docs:` → Documentation section
+- `refactor:` → Code Refactoring section
+- `test:` → Tests section
+- `chore:` → Chores section
+- `BREAKING CHANGE:` → Breaking Changes section
+
+## CLI Arguments
+
+- `--version` - patch | minor | major | x.x.x
+- `--dry-run` - Preview changes without applying
 - `--no-push` - Skip git push
 - `--no-release` - Skip GitHub release creation
-- `--changelog-only` - Only generate changelog, skip release
-- `--prerelease=<tag>` - Create prerelease (e.g., `alpha`, `beta`)
 
-### Semantic Versioning
+## Prerequisites
 
-| Type | When to use | Example |
-|------|-------------|---------|
-| patch | Bug fixes | 1.0.0 → 1.0.1 |
-| minor | New features, backwards compatible | 1.0.0 → 1.1.0 |
-| major | Breaking changes | 1.0.0 → 2.0.0 |
+- Git repo with clean working directory
+- GH_TOKEN env var for GitHub releases (optional)
+- Write access to repository
 
-### Conventional Commits
+## Output
 
-Changelog is generated from conventional commits:
+- Version bump confirmation
+- Changelog preview
+- Git tag push status
+- GitHub release URL (if created)
 
-```
-feat: new feature → Added section
-fix: bug fix → Fixed section
-docs: documentation → Documentation section
-chore: maintenance → Chores section
-refactor: refactoring → Changed section
-test: tests → no changelog entry
-style: formatting → no changelog entry
-```
+## Implementation
 
-## Examples
-
-### Patch Release
-```
-/ship --version=patch
-```
-
-### Minor Release with Dry Run
-```
-/ship --version=minor --dry-run
-```
-
-### Major Release
-```
-/ship --version=major
-```
-
-### Specific Version
-```
-/ship --version=2.5.0
-```
-
-### Prerelease (Beta)
-```
-/ship --version=minor --prerelease=beta
-```
-
-### Generate Changelog Only
-```
-/ship --changelog-only
-```
-
-## Release Pipeline
-
-1. **Validate** - Check working directory is clean
-2. **Version** - Bump version in package.json
-3. **Changelog** - Generate from conventional commits
-4. **Commit** - Commit version and changelog changes
-5. **Tag** - Create git tag (e.g., `v1.2.3`)
-6. **Push** - Push commits and tag to remote
-7. **Release** - Create GitHub release with changelog
-
-## Output Format
-
-```json
-{
-  "version": "1.2.3",
-  "previousVersion": "1.2.2",
-  "tag": "v1.2.3",
-  "changes": {
-    "added": ["new feature A", "new feature B"],
-    "fixed": ["bug fix C"],
-    "changed": ["refactoring D"]
-  },
-  "commits": 12,
-  "filesChanged": 5,
-  "releaseUrl": "https://github.com/owner/repo/releases/tag/v1.2.3"
-}
-```
-
-## GitHub Integration
-
-Requires `GITHUB_TOKEN` environment variable for release creation.
-
-Token permissions needed:
-- `repo` - Full repository access
-- Or `contents:write` for releases only
-
-## Configuration
-
-Environment variables:
-- `GITHUB_TOKEN` - GitHub personal access token
-- `SHIP_DEFAULT_BRANCH` - Default branch (default: main)
-- `SHIP_CHANGELOG_FILE` - Changelog filename (default: CHANGELOG.md)
-- `SHIP_TAG_PREFIX` - Git tag prefix (default: v)
-
-## Dry Run Mode
-
-Preview changes without applying:
-
-```
-/ship --version=minor --dry-run
-```
-
-Shows:
-- New version number
-- Changelog entries
-- Files that would be modified
-- Commands that would run
-
-## Handler
-
-**Entry:** `handler.ts`
-**Runtime:** Node.js with git and GitHub API
+Use the bundled CLI in `cli.js`.

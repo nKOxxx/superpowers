@@ -1,32 +1,20 @@
-interface Changes {
-    added: string[];
-    fixed: string[];
-    changed: string[];
-    deprecated: string[];
-    removed: string[];
-    security: string[];
-    docs: string[];
-    other: string[];
-}
-interface ReleaseResult {
+export interface ShipOptions {
     version: string;
-    previousVersion: string;
-    tag: string;
-    changes: Changes;
-    commits: number;
-    filesChanged: number;
+    dryRun?: boolean;
+    noPush?: boolean;
+    noRelease?: boolean;
+}
+export interface ShipResult {
+    oldVersion: string;
+    newVersion: string;
+    changelog: string;
+    tagCreated: boolean;
+    pushed: boolean;
+    released: boolean;
     releaseUrl?: string;
 }
-interface SkillContext {
-    args: string[];
-    options: Record<string, string | boolean>;
-    cwd?: string;
-}
-interface SkillResult {
-    success: boolean;
-    message: string;
-    data?: ReleaseResult;
-    error?: string;
-}
-export declare function handler(context: SkillContext): Promise<SkillResult>;
-export {};
+export declare function getCurrentVersion(): string;
+export declare function bumpVersion(currentVersion: string, bumpType: string): string;
+export declare function generateChangelog(newVersion: string): string;
+export declare function ship(options: ShipOptions): ShipResult;
+//# sourceMappingURL=index.d.ts.map

@@ -1,42 +1,29 @@
-type BATScore = 0 | 1 | 2 | 3 | 4 | 5;
-type Recommendation = 'BUILD' | 'CONSIDER' | "DON'T BUILD";
-type Confidence = 'low' | 'medium' | 'high';
-interface DimensionScore {
-    score: BATScore;
-    rationale: string;
+export interface BATScores {
+    brand: number;
+    attention: number;
+    trust: number;
 }
-interface BATAnalysis {
-    brand: DimensionScore;
-    attention: DimensionScore;
-    trust: DimensionScore;
+export interface CEOReviewOptions {
+    feature: string;
+    brand?: number;
+    attention?: number;
+    trust?: number;
+    description?: string;
 }
-interface CEOReviewResult {
-    question: string;
-    bat: BATAnalysis;
+export interface CEOReviewResult {
+    feature: string;
+    description?: string;
+    scores: BATScores;
     totalScore: number;
-    stars: string;
-    recommendation: Recommendation;
-    confidence: Confidence;
-    risks: string[];
+    recommendation: 'BUILD' | 'CONSIDER' | "DON'T BUILD";
+    reasoning: string;
     nextSteps: string[];
 }
-interface SkillContext {
-    args: string[];
-    options: Record<string, string | boolean>;
-    channel?: string;
-    userId?: string;
-}
-interface SkillResult {
-    success: boolean;
-    message: string;
-    data?: CEOReviewResult;
-    error?: string;
-    interactive?: boolean;
-    buttons?: Array<{
-        text: string;
-        callback_data: string;
-    }>;
-}
-export declare function handler(context: SkillContext): Promise<SkillResult>;
-export declare function handleCallback(callbackData: string, currentState: any): SkillResult;
-export {};
+export declare function calculateRecommendation(totalScore: number): 'BUILD' | 'CONSIDER' | "DON'T BUILD";
+export declare function generateReasoning(scores: BATScores, totalScore: number): string;
+export declare function generateNextSteps(recommendation: 'BUILD' | 'CONSIDER' | "DON'T BUILD", feature: string): string[];
+export declare function ceoReview(options: CEOReviewOptions): CEOReviewResult;
+export declare const brandQuestions: string[];
+export declare const attentionQuestions: string[];
+export declare const trustQuestions: string[];
+//# sourceMappingURL=index.d.ts.map

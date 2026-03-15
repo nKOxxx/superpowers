@@ -3,94 +3,63 @@ name: browse
 description: Browser automation for visual testing and QA with Playwright. Use when user needs to test web applications, capture screenshots, validate UI flows, or perform automated browser actions. Triggers on requests like /browse URL, visual testing, screenshot capture, flow testing, or UI automation.
 ---
 
-# Browse Skill
+# Browse - Browser Automation Skill
 
-Browser automation powered by Playwright for screenshots, visual testing, and flow-based interactions.
+Automated browser testing and screenshot capture using Playwright.
+
+## Capabilities
+
+- Screenshot capture (single URL, full page, element-specific)
+- Viewport presets (mobile, tablet, desktop)
+- Custom viewport dimensions
+- Action sequences (click, type, wait, scroll, hover)
+- Base64 screenshot output for Telegram integration
 
 ## Usage
 
-```
-/browse <url> [options]
-```
-
-### Options
-
-- `--viewport=<preset>` - Viewport preset: `mobile`, `tablet`, `desktop` (default: desktop)
-- `--full-page` - Capture full page screenshot
-- `--selector=<css>` - Screenshot specific element
-- `--flow=<json>` - Execute action flow (click, type, wait, scroll, hover)
-- `--wait-for=<selector>` - Wait for element before screenshot
-- `--timeout=<ms>` - Timeout in milliseconds (default: 30000)
-
-### Viewport Presets
-
-| Preset | Width | Height | Device |
-|--------|-------|--------|--------|
-| mobile | 375 | 812 | iPhone X |
-| tablet | 768 | 1024 | iPad |
-| desktop | 1920 | 1080 | Full HD |
-
-### Flow Actions
-
-Flow is a JSON array of actions:
-
-```json
-[
-  { "action": "click", "selector": "#button" },
-  { "action": "type", "selector": "#input", "text": "Hello" },
-  { "action": "wait", "ms": 1000 },
-  { "action": "scroll", "selector": "#section" },
-  { "action": "hover", "selector": "#dropdown" },
-  { "action": "waitForSelector", "selector": ".loaded" }
-]
-```
-
-## Examples
-
-### Basic Screenshot
-```
+```bash
+# Basic screenshot
 /browse https://example.com
-```
 
-### Mobile Viewport
-```
+# With viewport preset
 /browse https://example.com --viewport=mobile
-```
 
-### Full Page Screenshot
-```
+# Full page screenshot
 /browse https://example.com --full-page
+
+# Custom viewport
+/browse https://example.com --width=1920 --height=1080
+
+# With actions
+/browse https://example.com --actions="click:#button,type:#input:text,wait:1000"
 ```
 
-### Element Screenshot
-```
-/browse https://example.com --selector=".hero-section"
-```
+## CLI Arguments
 
-### Flow-based Testing
-```
-/browse https://example.com --flow='[
-  { "action": "click", "selector": "#menu" },
-  { "action": "wait", "ms": 500 },
-  { "action": "click", "selector": "#item-1" }
-]'
-```
+- `url` - Target URL (required)
+- `--viewport` - Preset: mobile | tablet | desktop
+- `--width` / `--height` - Custom dimensions
+- `--full-page` - Capture full scrollable page
+- `--selector` - Screenshot specific element
+- `--actions` - Comma-separated action sequence
+- `--output` - Output path (default: auto-generated)
 
-## Telegram Integration
+## Actions Format
 
-When used via Telegram, the skill provides:
-- Inline buttons for viewport selection
-- Screenshot delivery as image
-- Error messages with helpful context
+Comma-separated actions in format `action:selector:value`:
 
-## Configuration
+- `click:selector` - Click element
+- `type:selector:text` - Type text
+- `wait:ms` - Wait milliseconds
+- `scroll:selector` - Scroll to element
+- `hover:selector` - Hover over element
 
-Environment variables:
-- `PLAYWRIGHT_BROWSERS_PATH` - Custom browser installation path
-- `BROWSE_DEFAULT_TIMEOUT` - Default timeout (default: 30000)
-- `BROWSE_HEADLESS` - Run headless (default: true)
+## Output
 
-## Handler
+- Saves screenshot to file
+- Returns base64 encoded image for Telegram
+- Prints execution summary
 
-**Entry:** `handler.ts`
-**Runtime:** Node.js with Playwright
+## Implementation
+
+Use the bundled CLI in `cli.js` which wraps Playwright operations.

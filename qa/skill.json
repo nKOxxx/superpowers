@@ -1,6 +1,17 @@
 {
   "name": "qa",
-  "description": "Systematic testing as QA Lead - targeted, smoke, and full test modes",
   "version": "1.0.0",
-  "cli": "cli.js"
+  "type": "skill",
+  "entry": "cli.js",
+  "bin": {
+    "qa": "cli.js"
+  },
+  "description": "Systematic testing as QA Lead with targeted, smoke, and full modes",
+  "dependencies": ["commander", "chalk"],
+  "capabilities": [
+    "auto-framework-detection",
+    "git-diff-analysis",
+    "test-mapping",
+    "coverage-reporting"
+  ]
 }

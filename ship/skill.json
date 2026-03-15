@@ -1,6 +1,17 @@
 {
   "name": "ship",
-  "description": "One-command release pipeline - semantic versioning, changelog, git tags, GitHub releases",
   "version": "1.0.0",
-  "cli": "cli.js"
+  "type": "skill",
+  "entry": "cli.js",
+  "bin": {
+    "ship": "cli.js"
+  },
+  "description": "One-command release pipeline with semantic versioning and changelog",
+  "dependencies": ["commander", "chalk", "semver"],
+  "capabilities": [
+    "semantic-versioning",
+    "conventional-commits",
+    "changelog-generation",
+    "github-releases"
+  ]
 }

@@ -3,89 +3,70 @@ name: qa
 description: Systematic testing as QA Lead. Analyzes code changes and runs appropriate tests. Use when user needs code testing, quality assurance, regression testing, or test planning. Triggers on requests like /qa, run tests, check test coverage, QA review, or code quality checks.
 ---
 
-# QA Skill
+# QA - Systematic Testing Skill
 
-Systematic testing as QA Lead. Analyzes code changes and runs appropriate tests.
+Intelligent test execution based on code changes and test frameworks.
+
+## Capabilities
+
+- Auto-detects test framework (vitest, jest, mocha)
+- Three modes: targeted (git diff), smoke, full
+- Coverage reporting support
+- Test file mapping from source changes
 
 ## Usage
 
-```
-/qa [options]
-```
-
-### Options
-
-- `--mode=<type>` - Test mode: `targeted`, `smoke`, `full` (default: targeted)
-- `--files=<pattern>` - Test files matching pattern
-- `--coverage` - Generate coverage report
-- `--watch` - Watch mode for development
-- `--ci` - CI mode (non-interactive)
-
-### Test Modes
-
-| Mode | Description | When to Use |
-|------|-------------|-------------|
-| targeted | Analyze git diff, run relevant tests | Default, fast feedback |
-| smoke | Quick validation of core functionality | Pre-commit, CI gate |
-| full | Complete regression suite | Release candidate |
-
-## Examples
-
-### Default Targeted Testing
-```
+```bash
+# Run tests based on git diff (default)
 /qa
-```
 
-### Smoke Tests
-```
+# Smoke tests only
 /qa --mode=smoke
-```
 
-### Full Regression
-```
+# Full test suite
 /qa --mode=full
-```
 
-### Coverage Report
-```
+# With coverage
 /qa --coverage
+
+# Targeted mode with specific files
+/qa --files=src/utils.ts,src/api.ts
 ```
 
-## Test Detection
+## Modes
 
-Auto-detects test frameworks:
-- **Vitest** - `vitest.config.*` or `vite.config.*`
-- **Jest** - `jest.config.*` or `package.json` jest field
-- **Mocha** - `.mocharc.*` or `test/mocha.opts`
-- **Node Test Runner** - `node:test` with `node --test`
+### targeted (default)
+Analyzes git diff to find changed files, maps to relevant test files, runs only affected tests.
 
-## Targeted Testing Logic
+### smoke
+Quick validation - runs a subset of critical tests (files matching *.smoke.* or *smoke*.test.*).
 
-1. Get changed files from git diff
-2. Map files to related test files
-3. Run only affected tests
-4. Report results with context
+### full
+Complete regression suite - runs all tests.
 
-## Output Format
+## Test Framework Detection
 
-```json
-{
-  "success": true,
-  "mode": "targeted",
-  "testsRun": 15,
-  "testsPassed": 15,
-  "testsFailed": 0,
-  "duration": 2340,
-  "coverage": {
-    "statements": 87.5,
-    "branches": 82.1,
-    "functions": 91.0,
-    "lines": 86.4
-  }
-}
-```
+Auto-detects in order: vitest > jest > mocha
 
-## Handler
+Uses:
+- `vitest` - if vitest.config.* exists
+- `jest` - if jest.config.* exists
+- `npm test` - fallback
 
-**Entry:** `handler.ts`
-**Runtime:** Node.js
+## CLI Arguments
+
+- `--mode` - targeted | smoke | full
+- `--coverage` - Enable coverage reporting
+- `--files` - Comma-separated file list (overrides git diff)
+- `--watch` - Watch mode (if supported)
+
+## Output
+
+- Test execution summary
+- Failed test details
+- Coverage report (if enabled)
+- Recommendations for fixes
+
+## Implementation
+
+Use the bundled CLI in `cli.js`.

@@ -3,142 +3,84 @@ name: plan-ceo-review
 description: Product strategy review using BAT framework (Brand, Attention, Trust) and 10-star methodology. Use when evaluating whether to build a feature, product decisions, prioritization, or build vs buy decisions. Triggers on requests like /plan-ceo-review, should we build X, feature evaluation, product strategy, or build vs buy decisions.
 ---
 
-# Plan CEO Review Skill
+# Plan CEO Review - BAT Framework Skill
 
-BAT framework for product decisions with Brand, Attention, Trust scoring and 10-star methodology.
+Strategic product evaluation using Brand, Attention, Trust scoring.
+
+## Capabilities
+
+- BAT scoring (Brand, Attention, Trust 0-5 each)
+- 10-star methodology thresholds
+- Auto-calculation or manual scoring
+- Build/consider/don't build recommendations
+- Next steps generation
 
 ## Usage
 
-```
-/plan-ceo-review "<product question>"
-```
+```bash
+# Interactive mode - answers questions for scoring
+/plan-ceo-review "Feature Name"
 
-### Product Question Examples
+# With explicit scores
+/plan-ceo-review "Feature Name" --brand=4 --attention=5 --trust=3
 
-- "Should we build a mobile app for our SaaS product?"
-- "Is it worth adding AI features to our CRM?"
-- "Should we expand into the European market?"
+# With description
+/plan-ceo-review "Feature Name: Description of the feature"
+```
 
 ## BAT Framework
 
 ### Brand (0-5)
-Does this align with and strengthen our brand?
-
-| Score | Description |
-|-------|-------------|
-| 0 | Damages brand |
-| 1 | Neutral/irrelevant |
-| 2 | Slightly on-brand |
-| 3 | Reinforces brand |
-| 4 | Extends brand meaningfully |
-| 5 | Defining brand moment |
+Does this strengthen our brand identity?
+- 5 = Iconic, defines the brand
+- 4 = Strongly aligns with brand
+- 3 = Neutral/slightly positive
+- 2 = Weak brand connection
+- 1 = Off-brand
+- 0 = Damages brand
 
 ### Attention (0-5)
-Will this capture and hold user attention?
-
-| Score | Description |
-|-------|-------------|
-| 0 | Ignored completely |
-| 1 | Brief glance |
-| 2 | Mild interest |
-| 3 | Engages users |
-| 4 | Creates buzz/sharing |
-| 5 | Cultural moment |
+Will this capture and retain user attention?
+- 5 = Viral potential, high engagement
+- 4 = Strong user interest
+- 3 = Moderate attention
+- 2 = Low interest
+- 1 = Ignored
+- 0 = Negative attention
 
 ### Trust (0-5)
 Does this build or leverage trust?
-
-| Score | Description |
-|-------|-------------|
-| 0 | Breaks trust |
-| 1 | Suspicious |
-| 2 | Neutral |
-| 3 | Builds some trust |
-| 4 | Significant trust gain |
-| 5 | Trust breakthrough |
+- 5 = Deep trust, essential utility
+- 4 = Significant trust builder
+- 3 = Neutral trust
+- 2 = Slight trust erosion risk
+- 1 = High trust risk
+- 0 = Trust destroyer
 
 ## 10-Star Methodology
 
-Total BAT score determines recommendation:
+Total score = Brand + Attention + Trust (max 15)
 
-| Total | Stars | Recommendation |
-|-------|-------|----------------|
-| 13-15 | ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐ | **BUILD** - Exceptional opportunity |
-| 10-12 | ⭐⭐⭐⭐⭐⭐⭐⭐ | **BUILD** - Strong case |
-| 8-9 | ⭐⭐⭐⭐⭐⭐⭐ | **CONSIDER** - With modifications |
-| 5-7 | ⭐⭐⭐⭐⭐ | **DON'T BUILD** - Unless significant changes |
-| 0-4 | ⭐⭐⭐ | **DON'T BUILD** - Fundamentally flawed |
+- **12-15 stars** = BUILD - Strong strategic fit
+- **8-11 stars** = CONSIDER - Evaluate carefully
+- **0-7 stars** = DON'T BUILD - Poor strategic fit
 
-## Interactive Questionnaire
+## CLI Arguments
 
-When used via Telegram, the skill provides an interactive questionnaire:
+- `feature` - Feature name (and optional description)
+- `--brand` - Brand score (0-5)
+- `--attention` - Attention score (0-5)
+- `--trust` - Trust score (0-5)
+- `--interactive` - Force interactive questioning
 
-1. **Brand Questions:**
-   - Does this align with our core values?
-   - Will customers understand this as "us"?
-   - Could this become a signature feature?
+## Output
 
-2. **Attention Questions:**
-   - Will users actively seek this out?
-   - Is there word-of-mouth potential?
-   - Does it solve a painful problem?
+- BAT scores with justification
+- Total score / 15
+- Recommendation (BUILD/CONSIDER/DON'T BUILD)
+- Strategic reasoning
+- Suggested next steps
 
-3. **Trust Questions:**
-   - Does this deliver on promises?
-   - Is it technically feasible?
-   - Will it work as expected?
+## Implementation
 
-## Output Format
-
-```json
-{
-  "question": "Should we build X?",
-  "bat": {
-    "brand": { "score": 4, "rationale": "Aligns perfectly with..." },
-    "attention": { "score": 3, "rationale": "Moderate interest..." },
-    "trust": { "score": 5, "rationale": "Leverages existing..." }
-  },
-  "totalScore": 12,
-  "stars": "⭐⭐⭐⭐⭐⭐⭐⭐",
-  "recommendation": "BUILD",
-  "confidence": "high",
-  "risks": ["Competition may...", "Technical complexity..."],
-  "nextSteps": ["Validate with 10 customers", "Build MVP"]
-}
-```
-
-## Examples
-
-### Basic Review
-```
-/plan-ceo-review "Should we add video calls to our chat app?"
-```
-
-### Interactive Mode (Telegram)
-```
-/plan-ceo-review "Should we build an AI assistant?"
-```
-Bot responds with inline buttons for scoring each dimension.
-
-## Scoring Guidelines
-
-### When to Score High (4-5)
-- **Brand:** Creates new category, becomes synonymous with company
-- **Attention:** Users can't stop talking about it, media coverage
-- **Trust:** Solves critical problem reliably, exceeds expectations
-
-### When to Score Low (0-2)
-- **Brand:** Confuses positioning, follows competitors me-too
-- **Attention:** Me-too feature, incremental improvement
-- **Trust:** Unproven technology, overpromises, risky
-
-## Configuration
-
-Environment variables:
-- `BAT_DEFAULT_INTERACTIVE` - Default to interactive mode (default: true)
-- `BAT_MIN_CONFIDENCE` - Minimum confidence threshold (default: medium)
-
-## Handler
-
-**Entry:** `handler.ts`
-**Runtime:** Node.js
+Use the bundled CLI in `cli.js`.

@@ -1,6 +1,17 @@
 {
   "name": "browse",
-  "description": "Browser automation with Playwright - capture screenshots, test flows, validate UI",
   "version": "1.0.0",
-  "cli": "cli.js"
+  "type": "skill",
+  "entry": "cli.js",
+  "bin": {
+    "browse": "cli.js"
+  },
+  "description": "Browser automation with Playwright for visual testing and QA",
+  "dependencies": ["playwright", "commander", "chalk"],
+  "capabilities": [
+    "screenshot-capture",
+    "viewport-simulation",
+    "action-sequences",
+    "telegram-base64-output"
+  ]
 }

@@ -1,18 +1,60 @@
 #!/usr/bin/env node
-import { runTests } from './dist/index.js';
-import { program } from 'commander';
+
+import { Command } from 'commander';
+import chalk from 'chalk';
+import { runTests, detectFramework, getChangedFiles, mapToTestFiles, QAOptions } from './dist/index.js';
+
+const program = new Command();
 
 program
   .name('qa')
   .description('Systematic testing as QA Lead')
-  .version('1.0.0')
-  .option('-m, --mode <mode>', 'Test mode: targeted, smoke, full', 'targeted')
-  .option('-c, --coverage', 'Enable coverage reporting', false)
-  .option('-w, --watch', 'Watch mode', false)
-  .option('-f, --framework <fw>', 'Test framework: vitest, jest, mocha')
-  .action(async (opts) => {
-    const result = await runTests(opts);
-    process.exit(result.success ? 0 : 1);
+  .option('--mode <mode>', 'Test mode: targeted, smoke, full', 'targeted')
+  .option('--coverage', 'Enable coverage reporting')
+  .option('--files <files>', 'Comma-separated test files')
+  .option('--watch', 'Watch mode (if supported)')
+  .action(async (options) => {
+    try {
+      console.log(chalk.blue('🧪 QA Testing Mode:'), options.mode);
+      
+      const framework = detectFramework();
+      console.log(chalk.gray('Framework detected:'), framework);
+      
+      if (options.mode === 'targeted' && !options.files) {
+        const changedFiles = getChangedFiles();
+        console.log(chalk.gray('Changed files:'), changedFiles.length);
+        
+        const testFiles = mapToTestFiles(changedFiles);
+        console.log(chalk.gray('Mapped test files:'), testFiles.length);
+        
+        if (testFiles.length > 0) {
+          console.log(chalk.gray('Tests to run:'), testFiles.join(', '));
+        }
+      }
+      
+      const qaOptions: QAOptions = {
+        mode: options.mode,
+        coverage: options.coverage,
+        files: options.files,
+        watch: options.watch
+      };
+      
+      console.log(chalk.blue('\n▶️ Running tests...\n'));
+      
+      const result = runTests(qaOptions);
+      
+      console.log(result.output);
+      console.log(chalk.blue('\n📊 Summary:'));
+      console.log(result.summary);
+      
+      if (result.exitCode !== 0) {
+        process.exit(result.exitCode);
+      }
+      
+    } catch (error) {
+      console.error(chalk.red('❌ Error:'), error.message);
+      process.exit(1);
+    }
   });
 
 program.parse();

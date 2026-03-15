@@ -1,20 +1,20 @@
-interface SkillContext {
-    args: string[];
-    options: Record<string, string | boolean>;
-    channel?: string;
-    userId?: string;
+import { ViewportSize } from 'playwright';
+export interface BrowseOptions {
+    url: string;
+    viewport?: 'mobile' | 'tablet' | 'desktop' | 'custom';
+    width?: number;
+    height?: number;
+    fullPage?: boolean;
+    selector?: string;
+    actions?: string;
+    output?: string;
 }
-interface SkillResult {
-    success: boolean;
-    message: string;
-    data?: {
-        screenshotPath?: string;
-        url?: string;
-        viewport?: string;
-        duration?: number;
-        actionsExecuted?: number;
-    };
-    error?: string;
+export interface BrowseResult {
+    screenshotPath: string;
+    base64Image: string;
+    url: string;
+    viewport: ViewportSize;
+    actionsPerformed: string[];
 }
-export declare function handler(context: SkillContext): Promise<SkillResult>;
-export {};
+export declare function browse(options: BrowseOptions): Promise<BrowseResult>;
+//# sourceMappingURL=index.d.ts.map

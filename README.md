@@ -1,6 +1,15 @@
-# Superpowers for OpenClaw
+# 🦞 Superpowers for OpenClaw
 
-AI-powered development workflows for OpenClaw agents.
+4 TypeScript skills for AI-powered development workflows.
+
+## Skills
+
+| Skill | Description | Command |
+|-------|-------------|---------|
+| `/browse` | Browser automation with Playwright | `browse <url> --viewport=mobile` |
+| `/qa` | Systematic testing as QA Lead | `qa --mode=targeted --coverage` |
+| `/ship` | One-command release pipeline | `ship --version=patch` |
+| `/plan-ceo-review` | BAT framework product strategy | `plan-ceo-review "Feature" --brand=4` |
 
 ## Installation
 
@@ -8,110 +17,121 @@ AI-powered development workflows for OpenClaw agents.
 npm install -g @nko/superpowers
 ```
 
-## Commands
+Or install individual skills:
 
-### `/browse` - Browser Automation
-Visual testing and browser automation using Playwright.
+```bash
+npm install -g @nko/browse-skill
+npm install -g @nko/qa-skill
+npm install -g @nko/ship-skill
+npm install -g @nko/plan-ceo-review-skill
+```
+
+## Usage
+
+### Browse - Browser Automation
 
 ```bash
 # Screenshot a URL
-superpowers browse https://example.com
+browse https://example.com
 
 # Mobile viewport
-superpowers browse https://example.com --viewport=mobile
+browse https://example.com --viewport=mobile
+
+# With actions (click, type, wait)
+browse https://example.com --actions="click:#btn,type:#input:hello,wait:1000"
 
 # Full page screenshot
-superpowers browse https://example.com --full-page
-
-# Custom actions
-superpowers browse https://example.com --actions="click:.btn,wait:1000,screenshot"
+browse https://example.com --full-page
 ```
 
-### `/qa` - Systematic Testing
-Acts as QA Lead to analyze code changes and run appropriate tests.
+### QA - Testing
 
 ```bash
-# Run targeted tests (default)
-superpowers qa
+# Run tests based on git diff (default)
+qa
 
-# Smoke test - quick validation
-superpowers qa --mode=smoke
+# Smoke tests only
+qa --mode=smoke
 
-# Full regression test suite
-superpowers qa --mode=full
-
-# With coverage
-superpowers qa --coverage
+# Full test suite with coverage
+qa --mode=full --coverage
 ```
 
-### `/ship` - Release Pipeline
-One-command release: version bump, changelog generation, git tag, push, and GitHub release.
+Auto-detects: vitest → jest → mocha → npm test
+
+### Ship - Release Pipeline
 
 ```bash
-# Release patch version
-superpowers ship --version=patch
+# Patch release (bug fixes)
+ship --version=patch
 
-# Release minor version
-superpowers ship --version=minor
+# Minor release (features)
+ship --version=minor
 
-# Release major version
-superpowers ship --version=major
+# Major release (breaking changes)
+ship --version=major
 
-# Preview without executing
-superpowers ship --version=patch --dry-run
+# Dry run to preview
+ship --version=minor --dry-run
 ```
 
-**Requires:** `GH_TOKEN` environment variable for GitHub releases.
+Features:
+- Semantic versioning
+- Conventional commit changelog
+- Git tag creation
+- GitHub releases (with GH_TOKEN)
 
-### `/plan-ceo-review` - Product Strategy
-Product strategy evaluation using the BAT framework (Brand, Attention, Trust).
+### Plan CEO Review - BAT Framework
 
 ```bash
-# Basic evaluation
-superpowers ceo-review --feature="mobile app"
+# Interactive mode
+plan-ceo-review "Feature Name"
 
-# Full context
-superpowers ceo-review \
-  --feature="AI code review" \
-  --goal="Reduce review time 50%" \
-  --audience="Dev teams"
+# With explicit scores
+plan-ceo-review "Feature Name" --brand=4 --attention=5 --trust=3
+
+# With description
+plan-ceo-review "Feature: Description here" --brand=5
 ```
 
-## The BAT Framework
+**BAT Framework:**
+- **Brand** (0-5): Does this strengthen our brand?
+- **Attention** (0-5): Will users engage with this?
+- **Trust** (0-5): Does this build user confidence?
 
-Three dimensions scored 0-5 stars:
+**10-Star Methodology:**
+- 12-15 stars → BUILD
+- 8-11 stars → CONSIDER
+- 0-7 stars → DON'T BUILD
 
-- **Brand** - Does this strengthen our brand?
-- **Attention** - Will users actually use this?
-- **Trust** - Does this build user trust?
+## Development
 
-### 10-Star Methodology
+```bash
+# Install dependencies
+npm install
 
-- **12-15 ⭐ BUILD** - Strong signal, proceed with confidence
-- **10-11 ⭐ BUILD** - Good signal, validate assumptions
-- **8-9 ⭐ CONSIDER** - Mixed signal, need more data
-- **0-7 ⭐ DON'T BUILD** - Weak signal, focus elsewhere
+# Build all skills
+npm run build
 
-## Requirements
+# Package for distribution
+npm run package
+```
 
-- Node.js >= 18.0.0
-- Git (for ship and qa commands)
-- Playwright browsers (installed automatically)
-- GH_TOKEN environment variable (for GitHub releases)
+## OpenClaw Integration
 
-## Skills
+Install skills to OpenClaw:
 
-This package provides 4 OpenClaw skills:
-
-1. **browse** - Browser automation with Playwright
-2. **qa** - Systematic testing as QA Lead
-3. **ship** - One-command release pipeline
-4. **plan-ceo-review** - BAT framework for product decisions
-
-## Repository
-
-https://github.com/nKOxxx/superpowers
+```bash
+openclaw skills install browse
+openclaw skills install qa
+openclaw skills install ship
+openclaw skills install plan-ceo-review
+```
 
 ## License
 
 MIT
+
+## Author
+
+nKO - https://github.com/nKOxxx
