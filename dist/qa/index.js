@@ -1,212 +1,204 @@
 import { execSync } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
-export class QASkill {
-    detectFramework(projectPath = process.cwd()) {
-        const packageJsonPath = path.join(projectPath, 'package.json');
-        if (!fs.existsSync(packageJsonPath)) {
-            return 'unknown';
-        }
-        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-        const deps = {
-            ...packageJson.dependencies,
-            ...packageJson.devDependencies,
-        };
-        if (deps.vitest)
-            return 'vitest';
-        if (deps.jest)
-            return 'jest';
-        if (deps.mocha)
-            return 'mocha';
-        if (deps.ava)
-            return 'ava';
-        if (deps['tap'])
-            return 'tap';
-        // Check for config files
-        if (fs.existsSync(path.join(projectPath, 'vitest.config.ts')) ||
-            fs.existsSync(path.join(projectPath, 'vitest.config.js'))) {
-            return 'vitest';
-        }
-        if (fs.existsSync(path.join(projectPath, 'jest.config.ts')) ||
-            fs.existsSync(path.join(projectPath, 'jest.config.js'))) {
-            return 'jest';
-        }
-        if (fs.existsSync(path.join(projectPath, '.mocharc.js')) ||
-            fs.existsSync(path.join(projectPath, '.mocharc.json'))) {
-            return 'mocha';
-        }
-        return 'unknown';
+import { existsSync } from 'fs';
+import ora from 'ora';
+import { loadConfig } from '../utils/config.js';
+import { printHeader, printSuccess, printError, printInfo, printWarning } from '../utils/format.js';
+const TEST_FRAMEWORKS = [
+    {
+        name: 'vitest',
+        configFiles: ['vitest.config.ts', 'vitest.config.js', 'vitest.config.mjs'],
+        testCommand: 'npx vitest run',
+        coverageCommand: 'npx vitest run --coverage'
+    },
+    {
+        name: 'jest',
+        configFiles: ['jest.config.js', 'jest.config.ts', 'package.json'],
+        testCommand: 'npm test',
+        coverageCommand: 'npm run test:coverage'
+    },
+    {
+        name: 'mocha',
+        configFiles: ['.mocharc.js', '.mocharc.json', 'package.json'],
+        testCommand: 'npx mocha',
     }
-    getChangedFiles() {
-        try {
-            const output = execSync('git diff --name-only HEAD~1', { encoding: 'utf-8' });
-            return output.trim().split('\n').filter(f => f.endsWith('.ts') || f.endsWith('.js'));
-        }
-        catch {
-            return [];
-        }
-    }
-    findTestFiles(sourceFiles) {
-        const testFiles = [];
-        for (const file of sourceFiles) {
-            const dir = path.dirname(file);
-            const base = path.basename(file, path.extname(file));
-            // Common test file patterns
-            const patterns = [
-                path.join(dir, `${base}.test.ts`),
-                path.join(dir, `${base}.test.js`),
-                path.join(dir, `${base}.spec.ts`),
-                path.join(dir, `${base}.spec.js`),
-                path.join(dir, '__tests__', `${base}.test.ts`),
-                path.join('test', `${base}.test.ts`),
-                path.join('tests', `${base}.test.ts`),
-            ];
-            for (const pattern of patterns) {
-                if (fs.existsSync(pattern)) {
-                    testFiles.push(pattern);
-                    break;
-                }
-            }
-        }
-        return [...new Set(testFiles)];
-    }
-    buildCommand(framework, options, testFiles) {
-        const coverageFlag = options.coverage ? '--coverage' : '';
-        switch (framework) {
-            case 'vitest': {
-                let cmd = `npx vitest run ${coverageFlag}`;
-                if (testFiles && testFiles.length > 0) {
-                    cmd += ' ' + testFiles.join(' ');
-                }
-                return cmd;
-            }
-            case 'jest': {
-                let cmd = `npx jest ${coverageFlag}`;
-                if (testFiles && testFiles.length > 0) {
-                    cmd += ' ' + testFiles.join(' ');
-                }
-                return cmd;
-            }
-            case 'mocha': {
-                let cmd = 'npx mocha';
-                if (testFiles && testFiles.length > 0) {
-                    cmd += ' ' + testFiles.join(' ');
+];
+function detectTestFramework() {
+    for (const framework of TEST_FRAMEWORKS) {
+        for (const configFile of framework.configFiles) {
+            if (existsSync(configFile)) {
+                if (configFile === 'package.json') {
+                    try {
+                        const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf-8'));
+                        if (pkg.devDependencies?.[framework.name] || pkg.dependencies?.[framework.name]) {
+                            return framework;
+                        }
+                    }
+                    catch {
+                        continue;
+                    }
                 }
                 else {
-                    cmd += ' "test/**/*.test.js"';
+                    return framework;
                 }
-                return cmd;
             }
-            default:
-                throw new Error(`Unsupported test framework: ${framework}`);
         }
     }
-    async runTests(options) {
-        const framework = this.detectFramework();
-        if (framework === 'unknown') {
-            throw new Error('Could not detect test framework. Please ensure vitest, jest, or mocha is installed.');
+    return null;
+}
+function getChangedFiles(diffRange) {
+    try {
+        const output = execSync(`git diff --name-only ${diffRange}`, { encoding: 'utf-8' });
+        return output.trim().split('\n').filter(f => f.length > 0);
+    }
+    catch {
+        return [];
+    }
+}
+function mapToTestFiles(changedFiles) {
+    const testFiles = new Set();
+    for (const file of changedFiles) {
+        // Skip test files themselves
+        if (file.includes('.test.') || file.includes('.spec.')) {
+            testFiles.add(file);
+            continue;
         }
-        let testFiles;
-        // Determine which tests to run based on mode
-        if (options.mode === 'targeted') {
-            const changedFiles = this.getChangedFiles();
-            if (changedFiles.length > 0) {
-                testFiles = this.findTestFiles(changedFiles);
-                console.log(`Detected changes in: ${changedFiles.join(', ')}`);
-                console.log(`Mapped to test files: ${testFiles.join(', ') || 'None found'}`);
+        // Map source files to test files
+        const patterns = [
+            file.replace(/^src\//, 'tests/').replace(/\.ts$/, '.test.ts'),
+            file.replace(/^src\//, 'tests/').replace(/\.tsx$/, '.test.tsx'),
+            file.replace(/^src\//, 'test/').replace(/\.ts$/, '.test.ts'),
+            file.replace(/\.ts$/, '.test.ts'),
+            file.replace(/\.tsx$/, '.test.tsx'),
+            file.replace(/\.js$/, '.test.js'),
+        ];
+        for (const pattern of patterns) {
+            if (existsSync(pattern)) {
+                testFiles.add(pattern);
             }
         }
-        else if (options.mode === 'smoke') {
-            // Run only smoke tests or a subset
-            testFiles = ['test/smoke.test.ts', 'test/smoke.test.js'].filter(f => fs.existsSync(f));
-        }
-        // 'full' mode runs all tests (no filter)
-        const command = this.buildCommand(framework, options, testFiles);
-        console.log(`Running: ${command}`);
-        const startTime = Date.now();
-        let output = '';
-        let success = false;
-        let testsRun = 0;
-        let testsPassed = 0;
-        let testsFailed = 0;
-        try {
-            output = execSync(command, {
-                encoding: 'utf-8',
-                stdio: 'pipe',
-                timeout: 300000, // 5 minute timeout
-            });
-            success = true;
-            // Parse test results
-            const resultMatch = output.match(/(\d+)\s+passed|Tests:\s+(\d+)\s+passed/);
-            if (resultMatch) {
-                testsPassed = parseInt(resultMatch[1] || resultMatch[2], 10);
-                testsRun = testsPassed;
+        // Add component tests for React components
+        if (file.includes('components/') && file.endsWith('.tsx')) {
+            const componentName = file.split('/').pop()?.replace('.tsx', '');
+            if (componentName) {
+                const componentTests = [
+                    `tests/components/${componentName}.test.tsx`,
+                    `src/components/${componentName}.test.tsx`,
+                ];
+                for (const testPath of componentTests) {
+                    if (existsSync(testPath)) {
+                        testFiles.add(testPath);
+                    }
+                }
             }
         }
-        catch (error) {
-            output = error.stdout || error.message;
-            success = false;
-            // Parse failed results
-            const failMatch = output.match(/(\d+)\s+failed|(\d+)\s+passed/);
-            if (failMatch) {
-                testsFailed = parseInt(failMatch[1], 10) || 0;
-                testsPassed = parseInt(failMatch[2], 10) || 0;
-                testsRun = testsPassed + testsFailed;
-            }
-        }
-        const duration = Date.now() - startTime;
+    }
+    return Array.from(testFiles);
+}
+function runTests(command, coverage) {
+    try {
+        const output = execSync(command, {
+            encoding: 'utf-8',
+            stdio: 'pipe'
+        });
+        return { success: true, output };
+    }
+    catch (error) {
         return {
-            success,
-            framework,
-            mode: options.mode,
-            testsRun,
-            testsPassed,
-            testsFailed,
-            duration,
-            output,
+            success: false,
+            output: error instanceof Error ? error.message : String(error)
         };
     }
 }
-// CLI entry point
-if (require.main === module) {
-    async function main() {
-        const args = process.argv.slice(2);
-        const options = {
-            mode: 'targeted',
-        };
-        // Parse arguments
-        for (let i = 0; i < args.length; i++) {
-            const arg = args[i];
-            if (arg === '--mode=targeted' || arg === '-m=targeted') {
-                options.mode = 'targeted';
+export async function qaCommand(options) {
+    printHeader(`QA Mode: ${options.mode.toUpperCase()}`);
+    const config = loadConfig();
+    const spinner = ora('Detecting test framework...').start();
+    try {
+        // Detect test framework
+        const framework = detectTestFramework();
+        if (!framework) {
+            spinner.stop();
+            printError('No test framework detected. Supported: vitest, jest, mocha');
+            process.exit(1);
+        }
+        spinner.text = `Framework detected: ${framework.name}`;
+        let testCommand = framework.testCommand;
+        let testFiles = [];
+        // Determine test mode
+        switch (options.mode) {
+            case 'targeted': {
+                spinner.text = 'Analyzing git diff...';
+                const changedFiles = getChangedFiles(options.diff);
+                if (changedFiles.length === 0) {
+                    spinner.stop();
+                    printWarning('No changed files detected. Running smoke tests.');
+                    testCommand += framework.name === 'vitest' ? ' -t="smoke"' : ' --grep="smoke|basic|critical"';
+                }
+                else {
+                    testFiles = mapToTestFiles(changedFiles);
+                    if (testFiles.length === 0) {
+                        spinner.stop();
+                        printWarning('No test files mapped from changes. Running smoke tests.');
+                        testCommand += framework.name === 'vitest' ? ' -t="smoke"' : ' --grep="smoke|basic|critical"';
+                    }
+                    else {
+                        spinner.stop();
+                        printInfo(`Files changed: ${changedFiles.length}`);
+                        changedFiles.slice(0, 5).forEach(f => console.log(`  - ${f}`));
+                        if (changedFiles.length > 5) {
+                            console.log(`  ... and ${changedFiles.length - 5} more`);
+                        }
+                        printInfo(`Tests selected: ${testFiles.length}`);
+                        testFiles.forEach(f => console.log(`  - ${f}`));
+                        if (framework.name === 'vitest') {
+                            testCommand += ` ${testFiles.join(' ')}`;
+                        }
+                        else if (framework.name === 'jest') {
+                            testCommand += ` ${testFiles.join(' ')}`;
+                        }
+                    }
+                }
+                break;
             }
-            else if (arg === '--mode=smoke') {
-                options.mode = 'smoke';
+            case 'smoke': {
+                spinner.text = 'Running smoke tests...';
+                testCommand += framework.name === 'vitest' ? ' -t="smoke"' : ' --grep="smoke|basic|critical"';
+                break;
             }
-            else if (arg === '--mode=full') {
-                options.mode = 'full';
+            case 'full': {
+                spinner.text = 'Running full test suite...';
+                break;
             }
-            else if (arg === '--coverage' || arg === '-c') {
-                options.coverage = true;
-            }
-            else if (arg.startsWith('--path=')) {
-                options.testPath = arg.split('=')[1];
+            default: {
+                spinner.stop();
+                printError(`Unknown mode: ${options.mode}`);
+                process.exit(1);
             }
         }
-        const skill = new QASkill();
-        try {
-            const result = await skill.runTests(options);
-            console.log(JSON.stringify(result, null, 2));
-            process.exit(result.success ? 0 : 1);
+        // Add coverage if requested
+        if (options.coverage && framework.coverageCommand) {
+            testCommand = framework.coverageCommand;
+            if (testFiles.length > 0 && options.mode === 'targeted') {
+                testCommand += ` ${testFiles.join(' ')}`;
+            }
         }
-        catch (error) {
-            console.error(JSON.stringify({
-                success: false,
-                error: error.message
-            }, null, 2));
+        spinner.text = `Running: ${testCommand}`;
+        const result = runTests(testCommand, options.coverage);
+        spinner.stop();
+        console.log();
+        console.log(result.output);
+        if (result.success) {
+            printSuccess('All tests passed');
+        }
+        else {
+            printError('Tests failed');
             process.exit(1);
         }
     }
-    main();
+    catch (error) {
+        spinner.stop();
+        printError(`QA failed: ${error instanceof Error ? error.message : String(error)}`);
+        process.exit(1);
+    }
 }
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi9zcmMvcWEvaW5kZXgudHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUEsT0FBTyxFQUFFLFFBQVEsRUFBRSxNQUFNLGVBQWUsQ0FBQztBQUN6QyxPQUFPLEtBQUssRUFBRSxNQUFNLElBQUksQ0FBQztBQUN6QixPQUFPLEtBQUssSUFBSSxNQUFNLE1BQU0sQ0FBQztBQXNCN0IsTUFBTSxPQUFPLE9BQU87SUFDVixlQUFlLENBQUMsY0FBc0IsT0FBTyxDQUFDLEdBQUcsRUFBRTtRQUN6RCxNQUFNLGVBQWUsR0FBRyxJQUFJLENBQUMsSUFBSSxDQUFDLFdBQVcsRUFBRSxjQUFjLENBQUMsQ0FBQztRQUUvRCxJQUFJLENBQUMsRUFBRSxDQUFDLFVBQVUsQ0FBQyxlQUFlLENBQUMsRUFBRSxDQUFDO1lBQ3BDLE9BQU8sU0FBUyxDQUFDO1FBQ25CLENBQUM7UUFFRCxNQUFNLFdBQVcsR0FBRyxJQUFJLENBQUMsS0FBSyxDQUFDLEVBQUUsQ0FBQyxZQUFZLENBQUMsZUFBZSxFQUFFLE9BQU8sQ0FBQyxDQUFDLENBQUM7UUFDMUUsTUFBTSxJQUFJLEdBQUc7WUFDWCxHQUFHLFdBQVcsQ0FBQyxZQUFZO1lBQzNCLEdBQUcsV0FBVyxDQUFDLGVBQWU7U0FDL0IsQ0FBQztRQUVGLElBQUksSUFBSSxDQUFDLE1BQU07WUFBRSxPQUFPLFFBQVEsQ0FBQztRQUNqQyxJQUFJLElBQUksQ0FBQyxJQUFJO1lBQUUsT0FBTyxNQUFNLENBQUM7UUFDN0IsSUFBSSxJQUFJLENBQUMsS0FBSztZQUFFLE9BQU8sT0FBTyxDQUFDO1FBQy9CLElBQUksSUFBSSxDQUFDLEdBQUc7WUFBRSxPQUFPLEtBQUssQ0FBQztRQUMzQixJQUFJLElBQUksQ0FBQyxLQUFLLENBQUM7WUFBRSxPQUFPLEtBQUssQ0FBQztRQUU5Qix5QkFBeUI7UUFDekIsSUFBSSxFQUFFLENBQUMsVUFBVSxDQUFDLElBQUksQ0FBQyxJQUFJ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UUFDbEIsQ0FBQztJQUNILENBQUM7SUFFRCxJQUFJLEVBQUUsQ0FBQztBQUNULENBQUMiLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBleGVjU3luYyB9IGZyb20gJ2NoaWxkX3Byb2Nlc3MnO1xuaW1wb3J0ICogYXMgZnMgZnJvbSAnZnMnO1xuaW1wb3J0ICogYXMgcGF0aCBmcm9tICdwYXRoJztcblxuZXhwb3J0IHR5cGUgUUFNb2RlID0gJ3RhcmdldGVkJyB8ICdzbW9rZScgfCAnZnVsbCc7XG5cbmV4cG9ydCBpbnRlcmZhY2UgUUFPcHRpb25zIHtcbiAgbW9kZTogUUFNb2RlO1xuICBjb3ZlcmFnZT86IGJvb2xlYW47XG4gIHRlc3RQYXRoPzogc3RyaW5nO1xufVxuXG5leHBvcnQgaW50ZXJmYWNlIFFBUmVzdWx0IHtcbiAgc3VjY2VzczogYm9vbGVhbjtcbiAgZnJhbWV3b3JrOiBzdHJpbmc7XG4gIG1vZGU6IFFBTW9kZTtcbiAgdGVzdHNSdW46IG51bWJlcjtcbiAgdGVzdHNQYXNzZWQ6IG51bWJlcjtcbiAgdGVzdHNGYWlsZWQ6IG51bWJlcjtcbiAgZHVyYXRpb246IG51bWJlcjtcbiAgb3V0cHV0OiBzdHJpbmc7XG4gIGNvdmVyYWdlPzogc3RyaW5nO1xufVxuXG5leHBvcnQgY2xhc3MgUUFTa2lsbCB7XG4gIHByaXZhdGUgZGV0ZWN0RnJhbWV3b3JrKHByb2plY3RQYXRoOiBzdHJpbmcgPSBwcm9jZXNzLmN3ZCgpKTogc3RyaW5nIHtcbiAgICBjb25zdCBwYWNrYWdlSnNvblBhdGggPSBwYXRoLmpvaW4ocHJvamVjdFBhdGgsICdwYWNrYWdlLmpzb24nKTtcbiAgICBcbiAgICBpZiAoIWZzLmV4aXN0c1N5bmMocGFja2FnZUpzb25QYXRoKSkge1xuICAgICAgcmV0dXJuICd1bmtub3duJztcbiAgICB9XG5cbiAgICBjb25zdCBwYWNrYWdlSnNvbiA9IEpTT04ucGFyc2UoZnMucmVhZEZpbGVTeW5jKHBhY2thZ2VKc29uUGF0aCwgJ3V0Zi04JykpO1xuICAgIGNvbnN0IGRlcHMgPSB7XG4gICAgICAuLi5wYWNrYWdlSnNvbi5kZXBlbmRlbmNpZXMsXG4gICAgICAuLi5wYWNrYWdlSnNvbi5kZXZEZXBlbmRlbmNpZXMsXG4gICAgfTtcblxuICAgIGlmIChkZXBzLnZpdGVzdCkgcmV0dXJuICd2aXRlc3QnO1xuICAgIGlmIChkZXBzLmplc3QpIHJldHVybiAnamVzdCc7XG4gICAgaWYgKGRlcHMubW9jaGEpIHJldHVybiAnbW9jaGEnO1xuICAgIGlmIChkZXBzLmF2YSkgcmV0dXJuICdhdmEnO1xuICAgIGlmIChkZXBzWyd0YXAnXSkgcmV0dXJuICd0YXAnO1xuXG4gICAgLy8gQ2hlY2sgZm9yIGNvbmZpZyBmaWxlc1xuICAgIGlmIChmcy5leGlzdHNTeW5jKHBhdGguam9pbihwcm9qZWN0UGF0aCwgJ3ZpdGVzdC5jb25maWcudHMnKSkgfHxcbiAgICAgICAgZnMuZXhpc3RzU3luYyhwYXRoLmpvaW4ocHJvamVjdFBhdGgsICd2aXRlc3QuY29uZmlnLmpzJykpKSB7XG4gICAgICByZXR1cm4gJ3ZpdGVzdCc7XG4gICAgfVxuICAgIGlmIChmcy5leGlzdHNTeW5jKHBhdGguam9pbihwcm9qZWN0UGF0aCwgJ2plc3QuY29uZmlnLnRzJykpIHx8XG4gICAgICAgIGZzLmV4aXN0c1N5bmMocGF0aC5qb2luKHByb2plY3RQYXRoLCAnamVzdC5jb25maWcuanMnKSkpIHtcbiAgICAgIHJldHVybiAnamVzdCc7XG4gICAgfVxuICAgIGlmIChmcy5leGlzdHNTeW5jKHBhdGguam9pbihwcm9qZWN0UGF0aCwgJy5tb2NoYXJjLmpzJykpIHx8XG4gICAgICAgIGZzLmV4aXN0c1N5bmMocGF0aC5qb2luKHByb2plY3RQYXRoLCAnLm1vY2hhcmMuanNvbicpKSkge1xuICAgICAgcmV0dXJuICdtb2NoYSc7XG4gICAgfVxuXG4gICAgcmV0dXJuICd1bmtub3duJztcbiAgfVxuXG4gIHByaXZhdGUgZ2V0Q2hhbmdlZEZpbGVzKCk6IHN0cmluZ1tdIHtcbiAgICB0cnkge1xuICAgICAgY29uc3Qgb3V0cHV0ID0gZXhlY1N5bmMoJ2dpdCBkaWZmIC0tbmFtZS1vbmx5IEhFQUR+MScsIHsgZW5jb2Rpbmc6ICd1dGYtOCcgfSk7XG4gICAgICByZXR1cm4gb3V0cHV0LnRyaW0oKS5zcGxpdCgnXFxuJykuZmlsdGVyKGYgPT4gZi5lbmRzV2l0aCgnLnRzJykgfHwgZi5lbmRzV2l0aCgnLmpzJykpO1xuICAgIH0gY2F0Y2gge1xuICAgICAgcmV0dXJuIFtdO1xuICAgIH1cbiAgfVxuXG4gIHByaXZhdGUgZmluZFRlc3RGaWxlcyhzb3VyY2VGaWxlczogc3RyaW5nW10pOiBzdHJpbmdbXSB7XG4gICAgY29uc3QgdGVzdEZpbGVzOiBzdHJpbmdbXSA9IFtdO1xuICAgIFxuICAgIGZvciAoY29uc3QgZmlsZSBvZiBzb3VyY2VGaWxlcykge1xuICAgICAgY29uc3QgZGlyID0gcGF0aC5kaXJuYW1lKGZpbGUpO1xuICAgICAgY29uc3QgYmFzZSA9IHBhdGguYmFzZW5hbWUoZmlsZSwgcGF0aC5leHRuYW1lKGZpbGUpKTtcbiAgICAgIFxuICAgICAgLy8gQ29tbW9uIHRlc3QgZmlsZSBwYXR0ZXJuc1xuICAgICAgY29uc3QgcGF0dGVybnMgPSBbXG4gICAgICAgIHBhdGguam9pbihkaXIsIGAke2Jhc2V9LnRlc3QudHNgKSxcbiAgICAgICAgcGF0aC5qb2luKGRpciwgYCR7YmFzZX0udGVzdC5qc2ApLFxuICAgICAgICBwYXRoLmpvaW4oZGlyLCBgJHtiYXNlfS5zcGVjLnRzYCksXG4gICAgICAgIHBhdGguam9pbihkaXIsIGAke2Jhc2V9LnNwZWMuanNgKSxcbiAgICAgICAgcGF0aC5qb2luKGRpciwgJ19fdGVzdHNfXycsIGAke2Jhc2V9LnRlc3QudHNgKSxcbiAgICAgICAgcGF0aC5qb2luKCd0ZXN0JywgYCR7YmFzZX0udGVzdC50c2ApLFxuICAgICAgICBwYXRoLmpvaW4oJ3Rlc3RzJywgYCR7YmFzZX0udGVzdC50c2ApLFxuICAgICAgXTtcblxuICAgICAgZm9yIChjb25zdCBwYXR0ZXJuIG9mIHBhdHRlcm5zKSB7XG4gICAgICAgIGlmIChmcy5leGlzdHNTeW5jKHBhdHRlcm4pKSB7XG4gICAgICAgICAgdGVzdEZpbGVzLnB1c2gocGF0dGVybik7XG4gICAgICAgICAgYnJlYWs7XG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9XG5cbiAgICByZXR1cm4gWy4uLm5ldyBTZXQodGVzdEZpbGVzKV07XG4gIH1cblxuICBwcml2YXRlIGJ1aWxkQ29tbWFuZChmcmFtZXdvcms6IHN0cmluZywgb3B0aW9uczogUUFPcHRpb25zLCB0ZXN0RmlsZXM/OiBzdHJpbmdbXSk6IHN0cmluZyB7XG4gICAgY29uc3QgY292ZXJhZ2VGbGFnID0gb3B0aW9ucy5jb3ZlcmFnZSA/ICctLWNvdmVyYWdlJyA6ICcnO1xuICAgIFxuICAgIHN3aXRjaCAoZnJhbWV3b3JrKSB7XG4gICAgICBjYXNlICd2aXRlc3QnOiB7XG4gICAgICAgIGxldCBjbWQgPSBgbnB4IHZpdGVzdCBydW4gJHtjb3ZlcmFnZUZsYWd9YDtcbiAgICAgICAgaWYgKHRlc3RGaWxlcyAmJiB0ZXN0RmlsZXMubGVuZ3RoID4gMCkge1xuICAgICAgICAgIGNtZCArPSAnICcgKyB0ZXN0RmlsZXMuam9pbignICcpO1xuICAgICAgICB9XG4gICAgICAgIHJldHVybiBjbWQ7XG4gICAgICB9XG4gICAgICBjYXNlICdqZXN0Jzoge1xuICAgICAgICBsZXQgY21kID0gYG5weCBqZXN0ICR7Y292ZXJhZ2VGbGFnfWA7XG4gICAgICAgIGlmICh0ZXN0RmlsZXMgJiYgdGVzdEZpbGVzLmxlbmd0aCA+IDApIHtcbiAgICAgICAgICBjbWQgKz0gJyAnICsgdGVzdEZpbGVzLmpvaW4oJyAnKTtcbiAgICAgICAgfVxuICAgICAgICByZXR1cm4gY21kO1xuICAgICAgfVxuICAgICAgY2FzZSAnbW9jaGEnOiB7XG4gICAgICAgIGxldCBjbWQgPSAnbnB4IG1vY2hhJztcbiAgICAgICAgaWYgKHRlc3RGaWxlcyAmJiB0ZXN0RmlsZXMubGVuZ3RoID4gMCkge1xuICAgICAgICAgIGNtZCArPSAnICcgKyB0ZXN0RmlsZXMuam9pbignICcpO1xuICAgICAgICB9IGVsc2Uge1xuICAgICAgICAgIGNtZCArPSAnIFwidGVzdC8qKi8qLnRlc3QuanNcIic7XG4gICAgICAgIH1cbiAgICAgICAgcmV0dXJuIGNtZDtcbiAgICAgIH1cbiAgICAgIGRlZmF1bHQ6XG4gICAgICAgIHRocm93IG5ldyBFcnJvcihgVW5zdXBwb3J0ZWQgdGVzdCBmcmFtZXdvcms6ICR7ZnJhbWV3b3JrfWApO1xuICAgIH1cbiAgfVxuXG4gIGFzeW5jIHJ1blRlc3RzKG9wdGlvbnM6IFFBT3B0aW9ucyk6IFByb21pc2U8UUFSZXN1bHQ+IHtcbiAgICBjb25zdCBmcmFtZXdvcmsgPSB0aGlzLmRldGVjdEZyYW1ld29yaygpO1xuICAgIFxuICAgIGlmIChmcmFtZXdvcmsgPT09ICd1bmtub3duJykge1xuICAgICAgdGhyb3cgbmV3IEVycm9yKCdDb3VsZCBub3QgZGV0ZWN0IHRlc3QgZnJhbWV3b3JrLiBQbGVhc2UgZW5zdXJlIHZpdGVzdCwgamVzdCwgb3IgbW9jaGEgaXMgaW5zdGFsbGVkLicpO1xuICAgIH1cblxuICAgIGxldCB0ZXN0RmlsZXM6IHN0cmluZ1tdIHwgdW5kZWZpbmVkO1xuXG4gICAgLy8gRGV0ZXJtaW5lIHdoaWNoIHRlc3RzIHRvIHJ1biBiYXNlZCBvbiBtb2RlXG4gICAgaWYgKG9wdGlvbnMubW9kZSA9PT0gJ3RhcmdldGVkJykge1xuICAgICAgY29uc3QgY2hhbmdlZEZpbGVzID0gdGhpcy5nZXRDaGFuZ2VkRmlsZXMoKTtcbiAgICAgIGlmIChjaGFuZ2VkRmlsZXMubGVuZ3RoID4gMCkge1xuICAgICAgICB0ZXN0RmlsZXMgPSB0aGlzLmZpbmRUZXN0RmlsZXMoY2hhbmdlZEZpbGVzKTtcbiAgICAgICAgY29uc29sZS5sb2coYERldGVjdGVkIGNoYW5nZXMgaW46ICR7Y2hhbmdlZEZpbGVzLmpvaW4oJywgJyl9YCk7XG4gICAgICAgIGNvbnNvbGUubG9nKGBNYXBwZWQgdG8gdGVzdCBmaWxlczogJHt0ZXN0RmlsZXMuam9pbignLCAnKSB8fCAnTm9uZSBmb3VuZCd9YCk7XG4gICAgICB9XG4gICAgfSBlbHNlIGlmIChvcHRpb25zLm1vZGUgPT09ICdzbW9rZScpIHtcbiAgICAgIC8vIFJ1biBvbmx5IHNtb2tlIHRlc3RzIG9yIGEgc3Vic2V0XG4gICAgICB0ZXN0RmlsZXMgPSBbJ3Rlc3Qvc21va2UudGVzdC50cycsICd0ZXN0L3Ntb2tlLnRlc3QuanMnXS5maWx0ZXIoZiA9PiBmcy5leGlzdHNTeW5jKGYpKTtcbiAgICB9XG4gICAgLy8gJ2Z1bGwnIG1vZGUgcnVucyBhbGwgdGVzdHMgKG5vIGZpbHRlcilcblxuICAgIGNvbnN0IGNvbW1hbmQgPSB0aGlzLmJ1aWxkQ29tbWFuZChmcmFtZXdvcmssIG9wdGlvbnMsIHRlc3RGaWxlcyk7XG4gICAgXG4gICAgY29uc29sZS5sb2coYFJ1bm5pbmc6ICR7Y29tbWFuZH1gKTtcbiAgICBcbiAgICBjb25zdCBzdGFydFRpbWUgPSBEYXRlLm5vdygpO1xuICAgIGxldCBvdXRwdXQgPSAnJztcbiAgICBsZXQgc3VjY2VzcyA9IGZhbHNlO1xuICAgIGxldCB0ZXN0c1J1biA9IDA7XG4gICAgbGV0IHRlc3RzUGFzc2VkID0gMDtcbiAgICBsZXQgdGVzdHNGYWlsZWQgPSAwO1xuXG4gICAgdHJ5IHtcbiAgICAgIG91dHB1dCA9IGV4ZWNTeW5jKGNvbW1hbmQsIHsgXG4gICAgICAgIGVuY29kaW5nOiAndXRmLTgnLFxuICAgICAgICBzdGRpbzogJ3BpcGUnLFxuICAgICAgICB0aW1lb3V0OiAzMDAwMDAsIC8vIDUgbWludXRlIHRpbWVvdXRcbiAgICAgIH0pO1xuICAgICAgc3VjY2VzcyA9IHRydWU7XG4gICAgICBcbiAgICAgIC8vIFBhcnNlIHRlc3QgcmVzdWx0c1xuICAgICAgY29uc3QgcmVzdWx0TWF0Y2ggPSBvdXRwdXQubWF0Y2goLyhcXGQrKVxccytwYXNzZWR8VGVzdHM6XFxzKyhcXGQrKVxccytwYXNzZWQvKTtcbiAgICAgIGlmIChyZXN1bHRNYXRjaCkge1xuICAgICAgICB0ZXN0c1Bhc3NlZCA9IHBhcnNlSW50KHJlc3VsdE1hdGNoWzFdIHx8IHJlc3VsdE1hdGNoWzJdLCAxMCk7XG4gICAgICAgIHRlc3RzUnVuID0gdGVzdHNQYXNzZWQ7XG4gICAgICB9XG4gICAgfSBjYXRjaCAoZXJyb3I6IGFueSkge1xuICAgICAgb3V0cHV0ID0gZXJyb3Iuc3Rkb3V0IHx8IGVycm9yLm1lc3NhZ2U7XG4gICAgICBzdWNjZXNzID0gZmFsc2U7XG4gICAgICBcbiAgICAgIC8vIFBhcnNlIGZhaWxlZCByZXN1bHRzXG4gICAgICBjb25zdCBmYWlsTWF0Y2ggPSBvdXRwdXQubWF0Y2goLyhcXGQrKVxccytmYWlsZWR8KFxcZCspXFxzK3Bhc3NlZC8pO1xuICAgICAgaWYgKGZhaWxNYXRjaCkge1xuICAgICAgICB0ZXN0c0ZhaWxlZCA9IHBhcnNlSW50KGZhaWxNYXRjaFsxXSwgMTApIHx8IDA7XG4gICAgICAgIHRlc3RzUGFzc2VkID0gcGFyc2VJbnQoZmFpbE1hdGNoWzJdLCAxMCkgfHwgMDtcbiAgICAgICAgdGVzdHNSdW4gPSB0ZXN0c1Bhc3NlZCArIHRlc3RzRmFpbGVkO1xuICAgICAgfVxuICAgIH1cblxuICAgIGNvbnN0IGR1cmF0aW9uID0gRGF0ZS5ub3coKSAtIHN0YXJ0VGltZTtcblxuICAgIHJldHVybiB7XG4gICAgICBzdWNjZXNzLFxuICAgICAgZnJhbWV3b3JrLFxuICAgICAgbW9kZTogb3B0aW9ucy5tb2RlLFxuICAgICAgdGVzdHNSdW4sXG4gICAgICB0ZXN0c1Bhc3NlZCxcbiAgICAgIHRlc3RzRmFpbGVkLFxuICAgICAgZHVyYXRpb24sXG4gICAgICBvdXRwdXQsXG4gICAgfTtcbiAgfVxufVxuXG4vLyBDTEkgZW50cnkgcG9pbnRcbmlmIChyZXF1aXJlLm1haW4gPT09IG1vZHVsZSkge1xuICBhc3luYyBmdW5jdGlvbiBtYWluKCkge1xuICAgIGNvbnN0IGFyZ3MgPSBwcm9jZXNzLmFyZ3Yuc2xpY2UoMik7XG4gICAgXG4gICAgY29uc3Qgb3B0aW9uczogUUFPcHRpb25zID0ge1xuICAgICAgbW9kZTogJ3RhcmdldGVkJyxcbiAgICB9O1xuXG4gICAgLy8gUGFyc2UgYXJndW1lbnRzXG4gICAgZm9yIChsZXQgaSA9IDA7IGkgPCBhcmdzLmxlbmd0aDsgaSsrKSB7XG4gICAgICBjb25zdCBhcmcgPSBhcmdzW2ldO1xuICAgICAgaWYgKGFyZyA9PT0gJy0tbW9kZT10YXJnZXRlZCcgfHwgYXJnID09PSAnLW09dGFyZ2V0ZWQnKSB7XG4gICAgICAgIG9wdGlvbnMubW9kZSA9ICd0YXJnZXRlZCc7XG4gICAgICB9IGVsc2UgaWYgKGFyZyA9PT0gJy0tbW9kZT1zbW9rZScpIHtcbiAgICAgICAgb3B0aW9ucy5tb2RlID0gJ3Ntb2tlJztcbiAgICAgIH0gZWxzZSBpZiAoYXJnID09PSAnLS1tb2RlPWZ1bGwnKSB7XG4gICAgICAgIG9wdGlvbnMubW9kZSA9ICdmdWxsJztcbiAgICAgIH0gZWxzZSBpZiAoYXJnID09PSAnLS1jb3ZlcmFnZScgfHwgYXJnID09PSAnLWMnKSB7XG4gICAgICAgIG9wdGlvbnMuY292ZXJhZ2UgPSB0cnVlO1xuICAgICAgfSBlbHNlIGlmIChhcmcuc3RhcnRzV2l0aCgnLS1wYXRoPScpKSB7XG4gICAgICAgIG9wdGlvbnMudGVzdFBhdGggPSBhcmcuc3BsaXQoJz0nKVsxXTtcbiAgICAgIH1cbiAgICB9XG5cbiAgICBjb25zdCBza2lsbCA9IG5ldyBRQVNraWxsKCk7XG4gICAgdHJ5IHtcbiAgICAgIGNvbnN0IHJlc3VsdCA9IGF3YWl0IHNraWxsLnJ1blRlc3RzKG9wdGlvbnMpO1xuICAgICAgY29uc29sZS5sb2coSlNPTi5zdHJpbmdpZnkocmVzdWx0LCBudWxsLCAyKSk7XG4gICAgICBwcm9jZXNzLmV4aXQocmVzdWx0LnN1Y2Nlc3MgPyAwIDogMSk7XG4gICAgfSBjYXRjaCAoZXJyb3IpIHtcbiAgICAgIGNvbnNvbGUuZXJyb3IoSlNPTi5zdHJpbmdpZnkoeyBcbiAgICAgICAgc3VjY2VzczogZmFsc2UsIFxuICAgICAgICBlcnJvcjogKGVycm9yIGFzIEVycm9yKS5tZXNzYWdlIFxuICAgICAgfSwgbnVsbCwgMikpO1xuICAgICAgcHJvY2Vzcy5leGl0KDEpO1xuICAgIH1cbiAgfVxuXG4gIG1haW4oKTtcbn1cbiJdfQ==
+//# sourceMappingURL=index.js.map

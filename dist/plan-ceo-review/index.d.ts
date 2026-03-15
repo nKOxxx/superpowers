@@ -25,3 +25,4 @@ export declare class PlanCEOReviewSkill {
     review(options: CEORReviewOptions): Promise<CEORReviewResult>;
     formatReview(result: CEORReviewResult): string;
 }
+//# sourceMappingURL=index.d.ts.map

@@ -1,24 +1,8 @@
-export type QAMode = 'targeted' | 'smoke' | 'full';
 export interface QAOptions {
-    mode: QAMode;
-    coverage?: boolean;
-    testPath?: string;
+    mode: string;
+    diff: string;
+    coverage: boolean;
+    parallel: boolean;
 }
-export interface QAResult {
-    success: boolean;
-    framework: string;
-    mode: QAMode;
-    testsRun: number;
-    testsPassed: number;
-    testsFailed: number;
-    duration: number;
-    output: string;
-    coverage?: string;
-}
-export declare class QASkill {
-    private detectFramework;
-    private getChangedFiles;
-    private findTestFiles;
-    private buildCommand;
-    runTests(options: QAOptions): Promise<QAResult>;
-}
+export declare function qaCommand(options: QAOptions): Promise<void>;
+//# sourceMappingURL=index.d.ts.map

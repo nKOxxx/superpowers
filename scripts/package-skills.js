@@ -1,67 +1,80 @@
 #!/usr/bin/env node
+import { execSync } from 'child_process';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, cpSync, rmSync } from 'fs';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
 
-/**
- * Package skills for distribution
- */
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const rootDir = join(__dirname, '..');
+const distDir = join(rootDir, 'dist');
+const distSkillsDir = join(rootDir, 'dist-skills');
 
-const fs = require('fs');
-const path = require('path');
+const skills = [
+  { name: 'browse', description: 'Browser automation for visual testing and QA with Playwright' },
+  { name: 'qa', description: 'Systematic testing as QA Lead' },
+  { name: 'ship', description: 'One-command release pipeline' },
+  { name: 'plan-ceo-review', description: 'Product strategy review using BAT framework' }
+];
 
-const skills = ['browse', 'qa', 'ship', 'plan-ceo-review'];
-const distDir = path.join(__dirname, '..', 'dist-skills');
-
-// Ensure dist directory exists
-if (!fs.existsSync(distDir)) {
-  fs.mkdirSync(distDir, { recursive: true });
+// Create dist-skills directory
+if (!existsSync(distSkillsDir)) {
+  mkdirSync(distSkillsDir, { recursive: true });
 }
 
-// Copy compiled JS files from dist to skill packages
 for (const skill of skills) {
-  const skillDir = path.join(distDir, skill);
+  console.log(`Packaging ${skill.name}...`);
   
-  if (!fs.existsSync(skillDir)) {
-    fs.mkdirSync(skillDir, { recursive: true });
+  const skillDir = join(distSkillsDir, skill.name);
+  const skillDistDir = join(skillDir, 'dist');
+  
+  // Clean up
+  if (existsSync(skillDir)) {
+    rmSync(skillDir, { recursive: true });
   }
-
-  // Copy skill files
-  const srcDir = path.join(__dirname, '..', 'dist');
   
-  // Copy all compiled files
-  if (fs.existsSync(srcDir)) {
-    const files = fs.readdirSync(srcDir);
-    for (const file of files) {
-      const src = path.join(srcDir, file);
-      const dest = path.join(skillDir, file);
-      
-      if (fs.statSync(src).isDirectory()) {
-        // Copy recursively
-        copyDir(src, dest);
-      } else {
-        fs.copyFileSync(src, dest);
-      }
+  // Create structure
+  mkdirSync(skillDir, { recursive: true });
+  mkdirSync(skillDistDir, { recursive: true });
+  
+  // Copy dist files
+  cpSync(distDir, skillDistDir, { recursive: true });
+  
+  // Create skill.json
+  const skillJson = {
+    name: skill.name,
+    description: skill.description,
+    version: '1.0.0',
+    entry: 'dist/cli.js',
+    bin: {
+      superpowers: 'dist/cli.js'
     }
-  }
-
-  console.log(`✓ Packaged ${skill}`);
+  };
+  
+  writeFileSync(join(skillDir, 'skill.json'), JSON.stringify(skillJson, null, 2));
+  
+  // Copy package.json
+  const pkg = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf-8'));
+  const skillPkg = {
+    name: `@nko/superpowers-${skill.name}`,
+    version: '1.0.0',
+    description: skill.description,
+    type: 'module',
+    main: 'dist/cli.js',
+    bin: {
+      superpowers: 'dist/cli.js'
+    },
+    engines: pkg.engines,
+    dependencies: pkg.dependencies
+  };
+  
+  writeFileSync(join(skillDir, 'package.json'), JSON.stringify(skillPkg, null, 2));
+  
+  // Create tarball
+  const tarCmd = `tar -czf "${skill.name}.skill.tar.gz" -C "${distSkillsDir}" "${skill.name}"`;
+  execSync(tarCmd, { cwd: distSkillsDir });
+  
+  console.log(`  ✓ ${skill.name}.skill.tar.gz created`);
 }
 
-console.log(`\n✓ All skills packaged to ${distDir}`);
-
-function copyDir(src: string, dest: string) {
-  if (!fs.existsSync(dest)) {
-    fs.mkdirSync(dest, { recursive: true });
-  }
-  
-  const entries = fs.readdirSync(src, { withFileTypes: true });
-  
-  for (const entry of entries) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
-    
-    if (entry.isDirectory()) {
-      copyDir(srcPath, destPath);
-    } else {
-      fs.copyFileSync(srcPath, destPath);
-    }
-  }
-}
+console.log('\nAll skills packaged successfully!');
+console.log(`Location: ${distSkillsDir}/`);
