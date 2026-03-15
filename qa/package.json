@@ -12,5 +12,8 @@
     "package": "npm run build && tar -czf ../dist-skills/qa.skill.tar.gz -C .. qa/dist qa/cli.js qa/skill.json"
   },
   "keywords": ["openclaw", "testing", "qa", "vitest", "jest", "mocha"],
+  "devDependencies": {
+    "vitest": "^1.0.0"
+  },
   "dependencies": {}
 }
