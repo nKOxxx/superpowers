@@ -1,8 +1,7 @@
 {
   "name": "ship",
   "version": "1.0.0",
-  "description": "One-command release pipeline - version bump, changelog, git tag, GitHub release",
-  "entry": "cli.js",
-  "type": "cli",
-  "config": {}
+  "description": "Release pipeline with semantic versioning and changelog generation",
+  "entry": "dist/ship/index.js",
+  "bin": "ship"
 }
