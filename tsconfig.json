@@ -10,11 +10,16 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "resolveJsonModule": true
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowJs": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "dist-skills"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
