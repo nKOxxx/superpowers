@@ -281,7 +281,9 @@ export async function handler(context: SkillContext): Promise<SkillResult> {
 }
 
 // CLI entry point
-if (require.main === module) {
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+if (import.meta.url === `file://${__filename}`) {
   const args = process.argv.slice(2);
   const context: SkillContext = {
     args,

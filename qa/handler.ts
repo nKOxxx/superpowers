@@ -180,28 +180,15 @@ function mapToTestFiles(files: string[], framework: TestFramework, cwd: string):
 
 // Find smoke test files
 function findSmokeTests(cwd: string): string[] {
-  const patterns = [
-    '**/*.smoke.test.{ts,js}',
-    '**/smoke.test.{ts,js}',
-    '**/smoke.spec.{ts,js}'
-  ];
-  
   const smokeFiles: string[] = [];
   
-  for (const pattern of patterns) {
-    const basePattern = pattern.replace(/\{[^}]+\}/g, '*');
-    const parts = basePattern.split('/');
-    
-    // Simple glob matching
-    try {
-      const { execSync } = require('child_process');
-      const result = execSync(`find . -name "*.smoke.test.*" -o -name "smoke.test.*" -o -name "smoke.spec.*" 2>/dev/null | head -20`, { cwd, encoding: 'utf-8' });
-      if (result) {
-        smokeFiles.push(...result.trim().split('\n').filter(f => f));
-      }
-    } catch {
-      // Ignore
+  try {
+    const result = execSync(`find . -name "*.smoke.test.*" -o -name "smoke.test.*" -o -name "smoke.spec.*" 2>/dev/null | head -20`, { cwd, encoding: 'utf-8' });
+    if (result) {
+      smokeFiles.push(...result.trim().split('\n').filter(f => f));
     }
+  } catch {
+    // Ignore
   }
   
   return smokeFiles;
@@ -485,7 +472,9 @@ export async function handler(context: SkillContext): Promise<SkillResult> {
 }
 
 // CLI entry point
-if (require.main === module) {
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+if (import.meta.url === `file://${__filename}`) {
   const args = process.argv.slice(2);
   const context: SkillContext = {
     args,

@@ -1,14 +1,5 @@
-#!/usr/bin/env node
 type TestMode = 'targeted' | 'smoke' | 'full';
 type TestFramework = 'vitest' | 'jest' | 'mocha' | 'node' | 'unknown';
-interface QAOptions {
-    mode: TestMode;
-    files?: string;
-    coverage: boolean;
-    watch: boolean;
-    ci: boolean;
-    json: boolean;
-}
 interface TestResult {
     success: boolean;
     mode: TestMode;
@@ -27,5 +18,16 @@ interface TestResult {
     filesTested: string[];
     output: string;
 }
-export declare function runQA(options: QAOptions, cwd?: string): Promise<TestResult>;
+interface SkillContext {
+    args: string[];
+    options: Record<string, string | boolean>;
+    cwd?: string;
+}
+interface SkillResult {
+    success: boolean;
+    message: string;
+    data?: TestResult;
+    error?: string;
+}
+export declare function handler(context: SkillContext): Promise<SkillResult>;
 export {};

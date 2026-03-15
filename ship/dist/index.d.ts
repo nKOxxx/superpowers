@@ -1,26 +1,12 @@
-#!/usr/bin/env node
-type VersionType = 'patch' | 'minor' | 'major';
-interface ShipOptions {
-    version: VersionType | string;
-    repo?: string;
-    dryRun: boolean;
-    push: boolean;
-    release: boolean;
-    changelogOnly: boolean;
-    prerelease?: string;
-    skipCleanCheck: boolean;
-}
 interface Changes {
-    feat: string[];
-    fix: string[];
-    docs: string[];
-    style: string[];
-    refactor: string[];
-    perf: string[];
-    test: string[];
-    chore: string[];
-    revert: string[];
+    added: string[];
+    fixed: string[];
+    changed: string[];
+    deprecated: string[];
+    removed: string[];
     security: string[];
+    docs: string[];
+    other: string[];
 }
 interface ReleaseResult {
     version: string;
@@ -30,7 +16,17 @@ interface ReleaseResult {
     commits: number;
     filesChanged: number;
     releaseUrl?: string;
-    dryRun: boolean;
 }
-export declare function ship(options: ShipOptions, cwd?: string): Promise<ReleaseResult>;
+interface SkillContext {
+    args: string[];
+    options: Record<string, string | boolean>;
+    cwd?: string;
+}
+interface SkillResult {
+    success: boolean;
+    message: string;
+    data?: ReleaseResult;
+    error?: string;
+}
+export declare function handler(context: SkillContext): Promise<SkillResult>;
 export {};
