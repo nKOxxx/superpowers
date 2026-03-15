@@ -1,8 +1,11 @@
-export interface PlanCeoReviewOptions {
-    brand?: string;
-    attention?: string;
-    trust?: string;
-    auto?: boolean;
+interface CEOReviewOptions {
+    feature: string;
+    goal?: string;
+    audience?: string;
+    brand?: number;
+    attention?: number;
+    trust?: number;
 }
-export declare function planCeoReviewCommand(feature: string, options: PlanCeoReviewOptions): Promise<void>;
+export declare function run(options: CEOReviewOptions): Promise<void>;
+export {};
 //# sourceMappingURL=index.d.ts.map

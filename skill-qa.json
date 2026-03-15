@@ -1,0 +1,10 @@
+{
+  "name": "qa",
+  "version": "1.0.0",
+  "description": "Systematic testing as QA Lead with git diff analysis",
+  "entry": "dist/qa/index.js",
+  "cli": {
+    "command": "qa",
+    "description": "Systematic testing as QA Lead"
+  }
+}

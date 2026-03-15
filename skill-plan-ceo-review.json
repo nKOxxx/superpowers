@@ -1,0 +1,10 @@
+{
+  "name": "plan-ceo-review",
+  "version": "1.0.0",
+  "description": "Product strategy review using BAT framework",
+  "entry": "dist/plan-ceo-review/index.js",
+  "cli": {
+    "command": "ceo-review",
+    "description": "Product strategy review using BAT framework"
+  }
+}

@@ -3,197 +3,161 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.planCeoReviewCommand = planCeoReviewCommand;
+exports.run = run;
 const chalk_1 = __importDefault(require("chalk"));
-const SCORE_DESCRIPTIONS = {
-    brand: {
-        0: 'Actively damages brand',
-        1: 'No brand alignment',
-        2: 'Weak brand fit',
-        3: 'On-brand but not distinctive',
-        4: 'Strong brand alignment',
-        5: 'Iconic brand moment'
-    },
-    attention: {
-        0: 'Nobody cares',
-        1: 'Very niche appeal',
-        2: 'Limited interest',
-        3: 'Moderate interest',
-        4: 'High demand/signal',
-        5: 'Breakthrough attention'
-    },
-    trust: {
-        0: 'Undermines trust',
-        1: 'Major trust concerns',
-        2: 'Some trust issues',
-        3: 'Acceptable trust level',
-        4: 'Builds trust',
-        5: 'Trust breakthrough'
+function renderStars(score) {
+    const fullStars = Math.floor(score);
+    const emptyStars = 5 - fullStars;
+    return '⭐'.repeat(fullStars) + '○'.repeat(emptyStars);
+}
+function autoScoreBrand(feature) {
+    const feature_lower = feature.toLowerCase();
+    // Revolutionary/category defining
+    if (/revolutionary|breakthrough|ai|machine learning|automation/i.test(feature_lower))
+        return 5;
+    // Strong differentiation
+    if (/api|integration|platform|ecosystem/i.test(feature_lower))
+        return 4;
+    // Good incremental
+    if (/improvement|enhancement|optimization/i.test(feature_lower))
+        return 3;
+    // Table stakes
+    if (/login|auth|settings|profile/i.test(feature_lower))
+        return 2;
+    return 3; // Default
+}
+function autoScoreAttention(feature) {
+    const feature_lower = feature.toLowerCase();
+    // Daily use, core workflow
+    if (/dashboard|feed|inbox|notification|message/i.test(feature_lower))
+        return 5;
+    // Weekly use, important
+    if (/report|analytics|export|import/i.test(feature_lower))
+        return 4;
+    // Monthly, nice to have
+    if (/settings|preferences|backup/i.test(feature_lower))
+        return 3;
+    // Rare use
+    if (/admin|config|advanced/i.test(feature_lower))
+        return 2;
+    return 3; // Default
+}
+function autoScoreTrust(feature) {
+    const feature_lower = feature.toLowerCase();
+    // Security critical
+    if (/security|encryption|privacy|auth|2fa|sso/i.test(feature_lower))
+        return 5;
+    // Reliability critical
+    if (/backup|recovery|uptime|monitoring/i.test(feature_lower))
+        return 4;
+    // Transparency
+    if (/logs|audit|transparency|export data/i.test(feature_lower))
+        return 3;
+    // Error handling
+    if (/validation|error|feedback/i.test(feature_lower))
+        return 2;
+    return 3; // Default
+}
+function getRecommendation(total) {
+    if (total >= 12) {
+        return { text: 'BUILD', icon: '✅', color: 'green' };
     }
-};
-async function planCeoReviewCommand(feature, options) {
-    console.log(chalk_1.default.blue('📊 CEO Review:'), chalk_1.default.cyan(feature));
-    console.log('');
-    // Calculate or parse scores
-    let scores;
-    if (options.auto) {
-        scores = autoCalculateScores(feature);
-        console.log(chalk_1.default.gray('Auto-calculated scores based on feature description'));
+    else if (total >= 10) {
+        return { text: 'BUILD', icon: '✓', color: 'green' };
+    }
+    else if (total >= 8) {
+        return { text: 'CONSIDER', icon: '⚠️', color: 'yellow' };
     }
     else {
-        scores = {
-            brand: parseInt(options.brand || '3', 10),
-            attention: parseInt(options.attention || '3', 10),
-            trust: parseInt(options.trust || '3', 10)
-        };
+        return { text: "DON'T BUILD", icon: '❌', color: 'red' };
     }
-    // Validate scores
-    scores = validateScores(scores);
-    // Calculate total and threshold
+}
+function generateNextSteps(scores, total) {
+    const steps = [];
+    if (total >= 12) {
+        steps.push('Define success metrics (DAU, engagement time)');
+        steps.push('Coordinate with marketing for launch narrative');
+        steps.push('Set 30-day post-launch review date');
+        if (scores.attention < 5)
+            steps.push('Identify hooks to increase usage frequency');
+        if (scores.trust < 4)
+            steps.push('Add trust signals (testimonials, security badges)');
+    }
+    else if (total >= 10) {
+        steps.push('Validate assumptions with user interviews (n=5-10)');
+        steps.push('Build minimal version for testing');
+        steps.push('Set clear success criteria before full build');
+    }
+    else if (total >= 8) {
+        steps.push('Gather more data on user demand');
+        steps.push('Analyze competitor approaches');
+        steps.push('Consider if this fits a future strategy pivot');
+        steps.push('Revisit in 3 months if priorities shift');
+    }
+    else {
+        steps.push('Focus on higher-scoring initiatives');
+        steps.push('Archive idea with reasoning');
+        steps.push('Revisit only if market conditions change');
+    }
+    return steps;
+}
+async function run(options) {
+    console.log(chalk_1.default.cyan('══════════════════════════════════════════════════'));
+    console.log(chalk_1.default.cyan(options.feature));
+    console.log(chalk_1.default.cyan('══════════════════════════════════════════════════\n'));
+    if (options.goal) {
+        console.log(chalk_1.default.gray(`Goal: ${options.goal}`));
+    }
+    if (options.audience) {
+        console.log(chalk_1.default.gray(`Audience: ${options.audience}\n`));
+    }
+    // Calculate scores
+    const scores = {
+        brand: options.brand ?? autoScoreBrand(options.feature),
+        attention: options.attention ?? autoScoreAttention(options.feature),
+        trust: options.trust ?? autoScoreTrust(options.feature)
+    };
     const total = scores.brand + scores.attention + scores.trust;
-    const threshold = 10; // 10-star methodology
-    const passed = total >= threshold;
-    // Display BAT scores
-    console.log(chalk_1.default.blue('🎯 BAT Framework Scores'));
-    console.log(chalk_1.default.gray('─'.repeat(50)));
-    displayScore('Brand', scores.brand, SCORE_DESCRIPTIONS.brand[scores.brand]);
-    displayScore('Attention', scores.attention, SCORE_DESCRIPTIONS.attention[scores.attention]);
-    displayScore('Trust', scores.trust, SCORE_DESCRIPTIONS.trust[scores.trust]);
-    console.log(chalk_1.default.gray('─'.repeat(50)));
-    console.log(`Total Score: ${passed ? chalk_1.default.green(total) : chalk_1.default.yellow(total)}/15`);
-    console.log(`Threshold: ${threshold}/15 (10-star methodology)`);
-    console.log(`Status: ${passed ? chalk_1.default.green('✅ PASS') : chalk_1.default.yellow('⚠️ BELOW THRESHOLD')}`);
-    console.log('');
-    // Generate recommendation
-    const recommendation = generateRecommendation(scores, total, feature);
+    const recommendation = getRecommendation(total);
+    // Display scores
+    console.log(`Brand:     ${renderStars(scores.brand)} (${scores.brand}/5)`);
+    console.log(`Attention: ${renderStars(scores.attention)} (${scores.attention}/5)`);
+    console.log(`Trust:     ${renderStars(scores.trust)} (${scores.trust}/5)`);
+    console.log(chalk_1.default.cyan('\n──────────────────────────────────────────────────'));
+    console.log(chalk_1.default.bold(`Total: ${total}/15 ⭐`));
+    console.log(chalk_1.default.cyan('──────────────────────────────────────────────────\n'));
     // Display recommendation
-    console.log(chalk_1.default.blue('📋 Recommendation'));
-    console.log(chalk_1.default.gray('─'.repeat(50)));
-    const decisionColor = {
-        'build': chalk_1.default.green,
-        'consider': chalk_1.default.yellow,
-        'dont-build': chalk_1.default.red
-    };
-    console.log(`Decision: ${decisionColor[recommendation.decision](recommendation.decision.toUpperCase())}`);
-    console.log(`Confidence: ${recommendation.confidence}%`);
-    console.log('');
-    console.log(chalk_1.default.cyan('Reasoning:'));
-    recommendation.reasoning.forEach(reason => {
-        console.log(chalk_1.default.gray(`  • ${reason}`));
-    });
-    console.log('');
-    console.log(chalk_1.default.cyan('Next Steps:'));
-    recommendation.nextSteps.forEach(step => {
-        console.log(chalk_1.default.gray(`  → ${step}`));
-    });
-    console.log('');
-    console.log(chalk_1.default.blue('💡 BAT Framework Summary'));
-    console.log(chalk_1.default.gray('Build when 2/3 of:'));
-    console.log(chalk_1.default.gray('  • Brand: Aligns with and enhances brand'));
-    console.log(chalk_1.default.gray('  • Attention: Captures meaningful demand/signal'));
-    console.log(chalk_1.default.gray('  • Trust: Builds or maintains user trust'));
-}
-function validateScores(scores) {
-    return {
-        brand: Math.max(0, Math.min(5, scores.brand)),
-        attention: Math.max(0, Math.min(5, scores.attention)),
-        trust: Math.max(0, Math.min(5, scores.trust))
-    };
-}
-function displayScore(name, score, description) {
-    const bar = '█'.repeat(score) + '░'.repeat(5 - score);
-    const color = score >= 4 ? chalk_1.default.green : score >= 3 ? chalk_1.default.yellow : chalk_1.default.red;
-    console.log(`${name.padEnd(10)} ${color(bar)} ${score}/5 - ${chalk_1.default.gray(description)}`);
-}
-function autoCalculateScores(feature) {
-    const lower = feature.toLowerCase();
-    // Brand indicators
-    const brandBoosters = ['premium', 'luxury', 'exclusive', 'brand', 'signature', 'identity', 'vision'];
-    const brandKillers = ['cheap', 'discount', 'sketchy', 'spam', 'annoying'];
-    // Attention indicators  
-    const attentionBoosters = ['viral', 'trending', 'high-demand', 'popular', 'growth', 'traction', 'buzz'];
-    const attentionKillers = ['niche', 'obscure', 'boring', 'me-too', 'copycat'];
-    // Trust indicators
-    const trustBoosters = ['secure', 'verified', 'trusted', 'private', 'encrypted', 'transparent'];
-    const trustKillers = ['risky', 'shady', 'unverified', 'suspicious', 'tracking'];
-    let brand = 3;
-    let attention = 3;
-    let trust = 3;
-    // Calculate brand score
-    brandBoosters.forEach(word => { if (lower.includes(word))
-        brand++; });
-    brandKillers.forEach(word => { if (lower.includes(word))
-        brand--; });
-    // Calculate attention score
-    attentionBoosters.forEach(word => { if (lower.includes(word))
-        attention++; });
-    attentionKillers.forEach(word => { if (lower.includes(word))
-        attention--; });
-    // Calculate trust score
-    trustBoosters.forEach(word => { if (lower.includes(word))
-        trust++; });
-    trustKillers.forEach(word => { if (lower.includes(word))
-        trust--; });
-    return validateScores({ brand, attention, trust });
-}
-function generateRecommendation(scores, total, feature) {
-    const reasoning = [];
-    const nextSteps = [];
-    // Analyze each dimension
+    const recColor = recommendation.color;
+    console.log(chalk_1.default.bold('Recommendation:'), chalk_1.default[recColor](`${recommendation.icon} ${recommendation.text}`));
+    // Generate rationale
+    console.log(chalk_1.default.gray('\nRationale:'));
     if (scores.brand >= 4) {
-        reasoning.push('Strong brand alignment - reinforces brand identity');
+        console.log(chalk_1.default.gray('  • Strong brand differentiation potential'));
     }
     else if (scores.brand <= 2) {
-        reasoning.push('Weak brand fit - may dilute brand perception');
+        console.log(chalk_1.default.gray('  • Limited brand impact - table stakes feature'));
     }
     if (scores.attention >= 4) {
-        reasoning.push('High attention potential - captures meaningful demand');
+        console.log(chalk_1.default.gray('  • High user engagement potential'));
     }
     else if (scores.attention <= 2) {
-        reasoning.push('Limited attention signal - may struggle to gain traction');
+        console.log(chalk_1.default.gray('  • Low usage frequency - consider if worth building'));
     }
     if (scores.trust >= 4) {
-        reasoning.push('Trust-building feature - strengthens user relationships');
+        console.log(chalk_1.default.gray('  • Strong trust-building opportunity'));
     }
     else if (scores.trust <= 2) {
-        reasoning.push('Trust concerns - may create user skepticism');
+        console.log(chalk_1.default.gray('  • Consider trust implications before launch'));
     }
-    // Determine decision
-    let decision;
-    let confidence;
-    const highScores = [scores.brand, scores.attention, scores.trust].filter(s => s >= 4).length;
-    const lowScores = [scores.brand, scores.attention, scores.trust].filter(s => s <= 2).length;
-    if (total >= 12 && highScores >= 2) {
-        decision = 'build';
-        confidence = 85;
-        nextSteps.push('Prioritize in roadmap');
-        nextSteps.push('Define MVP scope');
-        nextSteps.push('Assign engineering resources');
+    if (total >= 10) {
+        console.log(chalk_1.default.gray('  • Meets 10-star threshold for building'));
     }
-    else if (total >= 10 || highScores >= 1) {
-        decision = 'consider';
-        confidence = 65;
-        nextSteps.push('Gather more data on weak dimensions');
-        nextSteps.push('Run user research or surveys');
-        nextSteps.push('Revisit scoring with more insights');
-        if (scores.brand < 3)
-            nextSteps.push('Explore brand alignment improvements');
-        if (scores.attention < 3)
-            nextSteps.push('Validate market demand more deeply');
-        if (scores.trust < 3)
-            nextSteps.push('Address trust concerns in design');
-    }
-    else {
-        decision = 'dont-build';
-        confidence = 75;
-        nextSteps.push('Deprioritize from roadmap');
-        nextSteps.push('Monitor for market changes');
-        nextSteps.push('Consider pivoting concept to address weak dimensions');
-    }
-    // Add general next steps
-    if (decision === 'build' || decision === 'consider') {
-        nextSteps.push('Set success metrics and review timeline');
-    }
-    return { decision, confidence, reasoning, nextSteps };
+    // Next steps
+    console.log(chalk_1.default.gray('\nNext Steps:'));
+    const steps = generateNextSteps(scores, total);
+    steps.forEach((step, i) => {
+        console.log(chalk_1.default.gray(`  ${i + 1}. ${step}`));
+    });
+    console.log(chalk_1.default.cyan('\n══════════════════════════════════════════════════'));
 }
 //# sourceMappingURL=index.js.map

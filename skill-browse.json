@@ -1,0 +1,10 @@
+{
+  "name": "browse",
+  "version": "1.0.0",
+  "description": "Browser automation with Playwright for visual testing",
+  "entry": "dist/browse/index.js",
+  "cli": {
+    "command": "browse",
+    "description": "Browser automation with Playwright"
+  }
+}

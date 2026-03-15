@@ -1,0 +1,10 @@
+{
+  "name": "ship",
+  "version": "1.0.0",
+  "description": "One-command release pipeline with changelog and GitHub releases",
+  "entry": "dist/ship/index.js",
+  "cli": {
+    "command": "ship",
+    "description": "One-command release pipeline"
+  }
+}
