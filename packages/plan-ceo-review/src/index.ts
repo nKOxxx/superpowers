@@ -1,279 +1,368 @@
-import chalk from 'chalk';
+import { writeFileSync } from 'fs';
 
-interface ReviewOptions {
-  brand?: number;
-  attention?: number;
-  trust?: number;
-  auto: boolean;
-  json: boolean;
+export interface CEOReviewOptions {
+  question: string;
+  auto?: boolean;
+  format?: 'markdown' | 'json' | 'text';
+  save?: string;
 }
 
-interface BATScores {
+export interface BATScore {
   brand: number;
   attention: number;
   trust: number;
+  overall: number;
 }
 
-interface ReviewResult {
-  description: string;
+export interface Factor {
   name: string;
-  scores: BATScores;
-  total: number;
-  threshold: number;
-  passed: boolean;
-  recommendation: 'build' | 'consider' | 'dont-build';
-  reasoning: string;
+  impact: 'high' | 'medium' | 'low';
+  positive: boolean;
+  description: string;
+}
+
+export interface DimensionAnalysis {
+  score: number;
+  maxScore: number;
+  factors: Factor[];
+  recommendations: string[];
+}
+
+export interface CEOReviewResult {
+  question: string;
+  bat: BATScore;
+  brand: DimensionAnalysis;
+  attention: DimensionAnalysis;
+  trust: DimensionAnalysis;
+  summary: string;
+  verdict: 'proceed' | 'caution' | 'reconsider';
   nextSteps: string[];
 }
 
-const RECOMMENDATION_THRESHOLDS = {
-  build: 10,      // 2/3 of 15 (max score)
-  consider: 7.5,  // 1/2 of 15
+// BAT Framework scoring weights
+const WEIGHTS = {
+  brand: 0.35,
+  attention: 0.35,
+  trust: 0.30
 };
 
-export async function reviewCommand(description: string, options: ReviewOptions): Promise<void> {
-  // Parse description
-  const { name, desc } = parseDescription(description);
+function analyzeBrand(question: string): DimensionAnalysis {
+  const lowerQ = question.toLowerCase();
+  const factors: Factor[] = [];
+  let score = 50;
   
-  // Calculate or use provided scores
-  let scores: BATScores;
-  
-  if (options.auto || (!options.brand && !options.attention && !options.trust)) {
-    scores = autoCalculateScores(name, desc);
-  } else {
-    scores = {
-      brand: clampScore(options.brand ?? 3),
-      attention: clampScore(options.attention ?? 3),
-      trust: clampScore(options.trust ?? 3),
-    };
+  const brandTerms = ['brand', 'identity', 'values', 'mission', 'vision'];
+  const hasBrandFocus = brandTerms.some(t => lowerQ.includes(t));
+  if (hasBrandFocus) {
+    factors.push({
+      name: 'Brand-Centric Initiative',
+      impact: 'high',
+      positive: true,
+      description: 'Explicit focus on brand elements suggests strong alignment intention'
+    });
+    score += 15;
   }
   
-  // Generate review
-  const result = generateReview(name, desc, scores);
-  
-  // Output
-  if (options.json) {
-    console.log(JSON.stringify(result, null, 2));
-  } else {
-    printReview(result);
-  }
-}
-
-function parseDescription(description: string): { name: string; desc: string } {
-  const parts = description.split(':');
-  if (parts.length >= 2) {
-    return {
-      name: parts[0].trim(),
-      desc: parts.slice(1).join(':').trim(),
-    };
-  }
-  return {
-    name: 'Unnamed Feature',
-    desc: description,
-  };
-}
-
-function clampScore(score: number): number {
-  return Math.max(0, Math.min(5, score));
-}
-
-function autoCalculateScores(name: string, description: string): BATScores {
-  const text = (name + ' ' + description).toLowerCase();
-  
-  // Brand indicators
-  const brandIndicators = [
-    'brand', 'identity', 'recognition', 'market position', 'premium',
-    'reputation', 'authority', 'thought leadership', 'unique',
-  ];
-  let brandScore = 3;
-  for (const indicator of brandIndicators) {
-    if (text.includes(indicator)) brandScore += 0.5;
+  const diffTerms = ['unique', 'different', 'new', 'innovative', 'first', 'only'];
+  const hasDifferentiation = diffTerms.some(t => lowerQ.includes(t));
+  if (hasDifferentiation) {
+    factors.push({
+      name: 'Differentiation Potential',
+      impact: 'high',
+      positive: true,
+      description: 'Language suggests attempt to differentiate from competitors'
+    });
+    score += 10;
   }
   
-  // Attention indicators
-  const attentionIndicators = [
-    'engagement', 'viral', 'growth', 'traffic', 'acquisition',
-    'retention', 'user', 'customer', 'marketing', 'seo',
-    'social', 'share', 'discover', 'notification',
-  ];
-  let attentionScore = 3;
-  for (const indicator of attentionIndicators) {
-    if (text.includes(indicator)) attentionScore += 0.5;
+  const riskTerms = ['cheap', 'quick', 'easy', 'shortcut', 'hack'];
+  const hasRiskLanguage = riskTerms.some(t => lowerQ.includes(t));
+  if (hasRiskLanguage) {
+    factors.push({
+      name: 'Potential Brand Dilution',
+      impact: 'high',
+      positive: false,
+      description: 'Language suggests shortcuts that may harm brand perception'
+    });
+    score -= 20;
   }
   
-  // Trust indicators
-  const trustIndicators = [
-    'security', 'privacy', 'reliable', 'transparent', 'verified',
-    'guarantee', 'compliance', 'audit', 'safe', 'protect',
-    'authentic', 'proven', 'trusted', 'expert',
-  ];
-  let trustScore = 3;
-  for (const indicator of trustIndicators) {
-    if (text.includes(indicator)) trustScore += 0.5;
+  const consistencyTerms = ['consistent', 'maintain', 'build on', 'extend'];
+  const hasConsistency = consistencyTerms.some(t => lowerQ.includes(t));
+  if (hasConsistency) {
+    factors.push({
+      name: 'Brand Consistency',
+      impact: 'medium',
+      positive: true,
+      description: 'Builds on existing brand foundation'
+    });
+    score += 10;
+  }
+  
+  const recommendations: string[] = [];
+  if (!hasBrandFocus) {
+    recommendations.push('Explicitly connect this initiative to core brand values');
+  }
+  if (!hasDifferentiation) {
+    recommendations.push('Identify and emphasize unique aspects vs. competitors');
+  }
+  if (score < 60) {
+    recommendations.push('Conduct brand impact assessment before proceeding');
   }
   
   return {
-    brand: clampScore(brandScore),
-    attention: clampScore(attentionScore),
-    trust: clampScore(trustScore),
+    score: Math.max(0, Math.min(100, score)),
+    maxScore: 100,
+    factors,
+    recommendations
   };
 }
 
-function generateReview(name: string, description: string, scores: BATScores): ReviewResult {
-  const total = scores.brand + scores.attention + scores.trust;
-  const threshold = RECOMMENDATION_THRESHOLDS.build;
-  const passed = total >= threshold;
+function analyzeAttention(question: string): DimensionAnalysis {
+  const lowerQ = question.toLowerCase();
+  const factors: Factor[] = [];
+  let score = 50;
   
-  let recommendation: 'build' | 'consider' | 'dont-build';
-  if (total >= RECOMMENDATION_THRESHOLDS.build) {
-    recommendation = 'build';
-  } else if (total >= RECOMMENDATION_THRESHOLDS.consider) {
-    recommendation = 'consider';
-  } else {
-    recommendation = 'dont-build';
+  const audienceTerms = ['customer', 'user', 'audience', 'market', 'people'];
+  const hasAudienceFocus = audienceTerms.some(t => lowerQ.includes(t));
+  if (hasAudienceFocus) {
+    factors.push({
+      name: 'Audience-Centric',
+      impact: 'high',
+      positive: true,
+      description: 'Explicit focus on target audience needs'
+    });
+    score += 15;
   }
   
-  const reasoning = generateReasoning(scores, total, recommendation);
-  const nextSteps = generateNextSteps(scores, recommendation);
+  const noveltyTerms = ['new', 'launch', 'introduce', 'announce', 'reveal', 'unveil'];
+  const hasNovelty = noveltyTerms.some(t => lowerQ.includes(t));
+  if (hasNovelty) {
+    factors.push({
+      name: 'Newsworthiness',
+      impact: 'high',
+      positive: true,
+      description: 'Has news value and announcement potential'
+    });
+    score += 10;
+  }
+  
+  const clarityTerms = ['simple', 'clear', 'easy', 'understand', 'straightforward'];
+  const hasClarity = clarityTerms.some(t => lowerQ.includes(t));
+  if (hasClarity) {
+    factors.push({
+      name: 'Clear Value Proposition',
+      impact: 'medium',
+      positive: true,
+      description: 'Language suggests easy-to-understand value'
+    });
+    score += 10;
+  }
+  
+  const crowdedTerms = ['market', 'competitor', 'industry', 'space'];
+  const inCrowdedSpace = crowdedTerms.some(t => lowerQ.includes(t));
+  if (inCrowdedSpace) {
+    factors.push({
+      name: 'Attention Competition',
+      impact: 'medium',
+      positive: false,
+      description: 'Operating in space with high attention competition'
+    });
+    score -= 5;
+  }
+  
+  const recommendations: string[] = [];
+  if (!hasAudienceFocus) {
+    recommendations.push('Define clear target audience for this initiative');
+  }
+  if (!hasNovelty) {
+    recommendations.push('Identify the "new" angle or announcement hook');
+  }
+  if (!hasClarity) {
+    recommendations.push('Simplify value proposition to 10 words or less');
+  }
   
   return {
-    description,
-    name,
-    scores,
-    total,
-    threshold,
-    passed,
-    recommendation,
-    reasoning,
-    nextSteps,
+    score: Math.max(0, Math.min(100, score)),
+    maxScore: 100,
+    factors,
+    recommendations
   };
 }
 
-function generateReasoning(scores: BATScores, total: number, recommendation: string): string {
-  const parts: string[] = [];
+function analyzeTrust(question: string): DimensionAnalysis {
+  const lowerQ = question.toLowerCase();
+  const factors: Factor[] = [];
+  let score = 50;
   
-  // Overall assessment
-  if (recommendation === 'build') {
-    parts.push('This feature/product scores well across the BAT framework (2/3 criteria met).');
-  } else if (recommendation === 'consider') {
-    parts.push('This feature/product shows promise but has gaps in the BAT framework (1/3 criteria met).');
-  } else {
-    parts.push('This feature/product does not meet the BAT threshold for immediate investment (0/3 criteria met).');
+  const credibilityTerms = ['proven', 'tested', 'verified', 'expert', 'research', 'data'];
+  const hasCredibility = credibilityTerms.some(t => lowerQ.includes(t));
+  if (hasCredibility) {
+    factors.push({
+      name: 'Evidence-Based Approach',
+      impact: 'high',
+      positive: true,
+      description: 'Backed by data, research, or expertise'
+    });
+    score += 15;
   }
   
-  // Individual dimension analysis
-  parts.push('\nDimension Analysis:');
-  
-  parts.push(`\n${getScoreEmoji(scores.brand)} Brand (${scores.brand}/5):`);
-  if (scores.brand >= 4) {
-    parts.push('Strong brand alignment. This enhances market position and differentiation.');
-  } else if (scores.brand >= 2.5) {
-    parts.push('Moderate brand impact. Consider how to strengthen unique positioning.');
-  } else {
-    parts.push('Weak brand connection. May not contribute to long-term brand equity.');
+  const transparencyTerms = ['transparent', 'honest', 'open', 'clear about'];
+  const hasTransparency = transparencyTerms.some(t => lowerQ.includes(t));
+  if (hasTransparency) {
+    factors.push({
+      name: 'Transparency Commitment',
+      impact: 'medium',
+      positive: true,
+      description: 'Language suggests openness about process'
+    });
+    score += 10;
   }
   
-  parts.push(`\n${getScoreEmoji(scores.attention)} Attention (${scores.attention}/5):`);
-  if (scores.attention >= 4) {
-    parts.push('High attention potential. Strong user engagement and growth opportunities.');
-  } else if (scores.attention >= 2.5) {
-    parts.push('Moderate attention capture. May need marketing amplification.');
-  } else {
-    parts.push('Low attention value. Difficult to acquire and retain users.');
+  const riskTerms = ['risk', 'concern', 'issue', 'problem', 'challenge'];
+  const acknowledgesRisk = riskTerms.some(t => lowerQ.includes(t));
+  if (acknowledgesRisk) {
+    factors.push({
+      name: 'Risk Awareness',
+      impact: 'medium',
+      positive: true,
+      description: 'Acknowledges potential challenges (shows maturity)'
+    });
+    score += 5;
   }
   
-  parts.push(`\n${getScoreEmoji(scores.trust)} Trust (${scores.trust}/5):`);
-  if (scores.trust >= 4) {
-    parts.push('High trust factor. Builds user confidence and reduces friction.');
-  } else if (scores.trust >= 2.5) {
-    parts.push('Moderate trust. Address potential credibility concerns.');
-  } else {
-    parts.push('Trust concerns. Users may hesitate to adopt or engage.');
+  const overpromiseTerms = ['guarantee', 'best', 'perfect', 'revolutionary', 'game-changing', 'always'];
+  const hasOverpromise = overpromiseTerms.some(t => lowerQ.includes(t));
+  if (hasOverpromise) {
+    factors.push({
+      name: 'Potential Overpromise',
+      impact: 'high',
+      positive: false,
+      description: 'Language may set unrealistic expectations'
+    });
+    score -= 15;
   }
   
-  return parts.join(' ');
+  const recommendations: string[] = [];
+  if (!hasCredibility) {
+    recommendations.push('Add supporting evidence or third-party validation');
+  }
+  if (hasOverpromise) {
+    recommendations.push('Review language for overpromising; use more measured claims');
+  }
+  if (!acknowledgesRisk && score < 70) {
+    recommendations.push('Acknowledge limitations to build credibility');
+  }
+  
+  return {
+    score: Math.max(0, Math.min(100, score)),
+    maxScore: 100,
+    factors,
+    recommendations
+  };
 }
 
-function generateNextSteps(scores: BATScores, recommendation: string): string[] {
+function calculateOverallScore(bat: BATScore): number {
+  return Math.round(
+    bat.brand * WEIGHTS.brand +
+    bat.attention * WEIGHTS.attention +
+    bat.trust * WEIGHTS.trust
+  );
+}
+
+function determineVerdict(overallScore: number): 'proceed' | 'caution' | 'reconsider' {
+  if (overallScore >= 75) return 'proceed';
+  if (overallScore >= 50) return 'caution';
+  return 'reconsider';
+}
+
+function generateSummary(result: CEOReviewResult): string {
+  const verdicts = {
+    proceed: 'This initiative scores well across all BAT dimensions and is recommended to proceed.',
+    caution: 'This initiative shows promise but has areas needing attention before full commitment.',
+    reconsider: 'This initiative has significant concerns across multiple dimensions. Consider significant revision or alternative approaches.'
+  };
+  
+  let summary = verdicts[result.verdict];
+  summary += '\n\n';
+  
+  const strengths: string[] = [];
+  const concerns: string[] = [];
+  
+  if (result.brand.score >= 70) strengths.push('Brand alignment');
+  else if (result.brand.score < 50) concerns.push('Brand risks');
+  
+  if (result.attention.score >= 70) strengths.push('Attention capture');
+  else if (result.attention.score < 50) concerns.push('Attention challenges');
+  
+  if (result.trust.score >= 70) strengths.push('Trust building');
+  else if (result.trust.score < 50) concerns.push('Trust gaps');
+  
+  if (strengths.length > 0) {
+    summary += `Strengths: ${strengths.join(', ')}. `;
+  }
+  if (concerns.length > 0) {
+    summary += `Key concerns: ${concerns.join(', ')}.`;
+  }
+  
+  return summary;
+}
+
+function generateNextSteps(result: CEOReviewResult): string[] {
   const steps: string[] = [];
+  steps.push(...result.brand.recommendations);
+  steps.push(...result.attention.recommendations);
+  steps.push(...result.trust.recommendations);
   
-  if (recommendation === 'build') {
-    steps.push('Prioritize this in the roadmap');
-    steps.push('Assign dedicated team/resources');
-    steps.push('Define success metrics and timeline');
-    steps.push('Begin detailed technical and market specification');
-  } else if (recommendation === 'consider') {
-    steps.push('Identify gaps in the weakest BAT dimension');
-    steps.push('Prototype or research to validate assumptions');
-    steps.push('Re-evaluate after addressing key concerns');
-    steps.push('Consider as secondary priority');
-  } else {
-    steps.push('Deprioritize or reject for now');
-    steps.push('Revisit if market conditions change');
-    steps.push('Consider pivoting the concept to address BAT gaps');
-  }
-  
-  // Dimension-specific recommendations
-  if (scores.brand < 3) {
-    steps.push('Workshop: How can this strengthen brand positioning?');
-  }
-  if (scores.attention < 3) {
-    steps.push('Research: What would make this more engaging/discoverable?');
-  }
-  if (scores.trust < 3) {
-    steps.push('Audit: Identify trust blockers and mitigation strategies');
+  switch (result.verdict) {
+    case 'proceed':
+      steps.push('Document BAT rationale for stakeholder communication');
+      steps.push('Set success metrics aligned with BAT dimensions');
+      break;
+    case 'caution':
+      steps.push('Address flagged concerns before full launch');
+      steps.push('Consider phased rollout with feedback loops');
+      break;
+    case 'reconsider':
+      steps.push('Revisit core premise and strategic fit');
+      steps.push('Explore alternative approaches with better BAT profile');
+      break;
   }
   
-  return steps;
+  return [...new Set(steps)];
 }
 
-function getScoreEmoji(score: number): string {
-  if (score >= 4) return '🟢';
-  if (score >= 2.5) return '🟡';
-  return '🔴';
-}
-
-function printReview(result: ReviewResult): void {
-  console.log(chalk.blue.bold('\n═══════════════════════════════════════════'));
-  console.log(chalk.blue.bold('     BAT FRAMEWORK CEO REVIEW'));
-  console.log(chalk.blue.bold('═══════════════════════════════════════════\n'));
+export async function planCEOReview(options: CEOReviewOptions): Promise<CEOReviewResult> {
+  const { question } = options;
   
-  console.log(chalk.white.bold(`📋 ${result.name}\n`));
-  console.log(chalk.gray(result.description));
-  console.log();
+  const brandAnalysis = analyzeBrand(question);
+  const attentionAnalysis = analyzeAttention(question);
+  const trustAnalysis = analyzeTrust(question);
   
-  // Scores
-  console.log(chalk.blue('📊 BAT Scores:'));
-  console.log(`  ${getScoreEmoji(result.scores.brand)} Brand:     ${formatScore(result.scores.brand)}/5`);
-  console.log(`  ${getScoreEmoji(result.scores.attention)} Attention: ${formatScore(result.scores.attention)}/5`);
-  console.log(`  ${getScoreEmoji(result.scores.trust)} Trust:     ${formatScore(result.scores.trust)}/5`);
-  console.log(chalk.gray(`  ───────────────────────`));
-  console.log(`  ${chalk.bold('Total:')}     ${chalk.bold(result.total.toFixed(1))}/15`);
-  console.log(chalk.gray(`  Threshold: ${result.threshold}/15 (2/3 criteria)`));
-  console.log();
+  const bat: BATScore = {
+    brand: brandAnalysis.score,
+    attention: attentionAnalysis.score,
+    trust: trustAnalysis.score,
+    overall: 0
+  };
   
-  // Recommendation
-  const recColor = result.recommendation === 'build' ? 'green' : 
-                   result.recommendation === 'consider' ? 'yellow' : 'red';
-  const recEmoji = result.recommendation === 'build' ? '✅' : 
-                   result.recommendation === 'consider' ? '⚠️' : '❌';
+  bat.overall = calculateOverallScore(bat);
   
-  console.log(chalk[recColor].bold(`${recEmoji} RECOMMENDATION: ${result.recommendation.toUpperCase().replace('-', ' ')}\n`));
+  const verdict = determineVerdict(bat.overall);
   
-  // Reasoning
-  console.log(chalk.blue('🤔 Reasoning:'));
-  console.log(result.reasoning);
-  console.log();
+  const result: CEOReviewResult = {
+    question,
+    bat,
+    brand: brandAnalysis,
+    attention: attentionAnalysis,
+    trust: trustAnalysis,
+    summary: '',
+    verdict,
+    nextSteps: []
+  };
   
-  // Next Steps
-  console.log(chalk.blue('📋 Next Steps:'));
-  result.nextSteps.forEach((step, i) => {
-    console.log(`  ${i + 1}. ${step}`);
-  });
+  result.summary = generateSummary(result);
+  result.nextSteps = generateNextSteps(result);
   
-  console.log(chalk.blue.bold('\n═══════════════════════════════════════════\n'));
-}
-
-function formatScore(score: number): string {
-  return score.toFixed(1).replace('.0', '');
+  return result;
 }
