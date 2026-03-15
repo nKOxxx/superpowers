@@ -4,6 +4,9 @@
   "description": "OpenClaw superpowers - AI-driven development workflows",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "superpowers": "./cli.js"
+  },
   "scripts": {
     "build": "tsc",
     "build:skills": "npm run build && npm run package:skills",
