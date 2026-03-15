@@ -1,12 +1,12 @@
 {
   "name": "qa",
   "version": "1.0.0",
-  "description": "Systematic testing as QA Lead. Analyzes code changes and runs appropriate tests. Use when user needs code testing, quality assurance, regression testing, or test planning.",
+  "description": "Systematic testing - auto-detect framework, run targeted/smoke/full tests",
   "author": "nKO",
   "entry": {
     "type": "node",
     "bin": "node",
-    "args": ["dist/qa/index.js"]
+    "args": ["cli.js"]
   },
   "triggers": [
     "/qa",
@@ -16,8 +16,8 @@
     "quality check"
   ],
   "requires": {
-    "bins": ["node", "npx", "git"],
-    "npm": ["@nko/superpowers"]
+    "bins": ["node", "git"],
+    "npm": []
   },
   "env": {},
   "config": {
@@ -26,10 +26,6 @@
         "type": "string",
         "enum": ["targeted", "smoke", "full"],
         "default": "targeted"
-      },
-      "testCommand": {
-        "type": "string",
-        "default": "npm test"
       },
       "coverageThreshold": {
         "type": "number",

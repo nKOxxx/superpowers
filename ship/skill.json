@@ -1,12 +1,12 @@
 {
   "name": "ship",
   "version": "1.0.0",
-  "description": "One-command release pipeline. Bumps version, generates changelog, creates GitHub release. Use when user wants to release a new version, publish package, or create GitHub release.",
+  "description": "One-command release pipeline with semantic versioning and changelog generation",
   "author": "nKO",
   "entry": {
     "type": "node",
     "bin": "node",
-    "args": ["dist/ship/index.js"]
+    "args": ["cli.js"]
   },
   "triggers": [
     "/ship",
@@ -16,22 +16,22 @@
     "version bump"
   ],
   "requires": {
-    "bins": ["node", "npx", "git"],
-    "npm": ["@nko/superpowers"]
+    "bins": ["node", "git"],
+    "npm": []
   },
   "env": {
-    "GH_TOKEN": {
+    "GITHUB_TOKEN": {
       "description": "GitHub personal access token for creating releases",
+      "required": false
+    },
+    "GH_TOKEN": {
+      "description": "Alternative GitHub token environment variable",
       "required": false
     }
   },
   "config": {
     "schema": {
       "requireCleanWorkingDir": {
-        "type": "boolean",
-        "default": true
-      },
-      "runTestsBeforeRelease": {
         "type": "boolean",
         "default": true
       },
