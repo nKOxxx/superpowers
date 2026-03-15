@@ -1,6 +1,6 @@
 # @nko/superpowers
 
-OpenClaw superpowers - AI-powered workflows for development, testing, and product decisions.
+OpenClaw superpowers - A collection of TypeScript CLI tools for browser automation, QA testing, release management, and product strategy.
 
 ## Installation
 
@@ -8,169 +8,133 @@ OpenClaw superpowers - AI-powered workflows for development, testing, and produc
 npm install -g @nko/superpowers
 ```
 
-## Skills
+Or use directly with npx:
+```bash
+npx @nko/superpowers <command>
+```
+
+## Commands
 
 ### `/browse` - Browser Automation
 
-Playwright-based screenshot capture with viewport presets, action sequences, and full-page support.
+Capture screenshots and automate browser actions with Playwright.
 
 ```bash
-# Screenshot with desktop viewport
+# Screenshot a website
 superpowers browse https://example.com
 
 # Mobile viewport
-superpowers browse https://example.com --viewport mobile
-
-# Custom dimensions
-superpowers browse https://example.com --width 1200 --height 800
+superpowers browse https://example.com --viewport=mobile
 
 # Full page screenshot
 superpowers browse https://example.com --full-page
 
-# Capture specific element
-superpowers browse https://example.com --selector "#header"
+# Custom viewport size
+superpowers browse https://example.com --width=1920 --height=1080
 
-# Action sequence: click, type, wait, scroll, hover, press
-superpowers browse https://example.com \
-  --action "click:#login,type:#username:john,wait:1000,press:Enter"
+# Wait for element and capture
+superpowers browse https://example.com --wait-for=".content"
 
-# Save to file
-superpowers browse https://example.com --output ./screenshot.png
+# Action sequence
+superpowers browse https://example.com --actions="click:.menu,wait:500,screenshot"
 ```
-
-**Options:**
-- `-v, --viewport` - Viewport preset: mobile (375x667), tablet (768x1024), desktop (1920x1080)
-- `-w, --width` - Custom viewport width
-- `-h, --height` - Custom viewport height
-- `-f, --full-page` - Capture full page screenshot
-- `-s, --selector` - Capture specific element only
-- `-o, --output` - Save screenshot to file path
-- `-t, --timeout` - Navigation timeout in ms (default: 30000)
-- `-a, --action` - Action sequence (comma-separated)
-
----
 
 ### `/qa` - Systematic Testing
 
-Auto-detects test framework and runs targeted, smoke, or full regression tests.
+Run tests as a QA Lead with targeted, smoke, or full test modes.
 
 ```bash
 # Run targeted tests (based on git diff)
 superpowers qa
 
-# Run smoke tests
-superpowers qa --mode smoke
+# Smoke tests
+superpowers qa --mode=smoke
 
-# Full regression
-superpowers qa --mode full
+# Full test suite
+superpowers qa --mode=full
 
 # With coverage
 superpowers qa --coverage
 
-# Detect framework only
-superpowers qa --detect
-
-# Show git diff analysis
-superpowers qa --diff
+# Custom diff range
+superpowers qa --diff=HEAD~3
 ```
 
-**Modes:**
-- `targeted` - Analyze git diff, run only relevant tests
-- `smoke` - Quick validation suite
-- `full` - Complete regression
-
-**Options:**
-- `-m, --mode` - Test mode (targeted/smoke/full)
-- `-c, --coverage` - Enable coverage reporting
-- `-v, --verbose` - Verbose output
-- `-u, --update-snapshot` - Update snapshots
-
----
+Auto-detects: vitest, jest, mocha
 
 ### `/ship` - Release Pipeline
 
-Semantic versioning with conventional commit changelog generation and GitHub releases.
+One-command release: version bump, changelog, tag, push, and GitHub release.
 
 ```bash
-# Auto-detect version bump from commits
-superpowers ship
+# Patch release
+superpowers ship --version=patch
 
-# Explicit bump
-superpowers ship patch
-superpowers ship minor
-superpowers ship major
+# Minor release
+superpowers ship --version=minor
 
-# Explicit version
-superpowers ship 1.2.3
+# Major release
+superpowers ship --version=major
 
-# Analyze commits without releasing
-superpowers ship --analyze
+# Specific version
+superpowers ship --version=1.2.3
 
-# Dry run (preview changes)
-superpowers ship --dry-run
+# Dry run (preview only)
+superpowers ship --version=patch --dry-run
 
-# With GitHub release (requires GH_TOKEN env var)
-superpowers ship --repo owner/repo
+# Skip tests
+superpowers ship --version=patch --skip-tests
+
+# Prerelease
+superpowers ship --version=minor --prerelease
 ```
 
-**Options:**
-- `-r, --repo` - GitHub repository (owner/repo)
-- `-b, --branch` - Target branch
-- `--dry-run` - Preview changes without applying
-- `--skip-changelog` - Skip changelog generation
-- `--skip-github` - Skip GitHub release
-- `--skip-tag` - Skip git tag creation
-- `--analyze` - Analyze commits and suggest version bump
+Requires:
+- Clean git working directory
+- `GH_TOKEN` environment variable for GitHub releases
 
----
+### `/plan-ceo-review` - Product Strategy
 
-### `/plan-ceo-review` - BAT Framework
-
-Product strategy review with Brand, Attention, Trust scoring.
+Evaluate features using the BAT (Brand, Attention, Trust) framework.
 
 ```bash
+# Basic evaluation
+superpowers ceo-review --feature="mobile app"
+
+# Full context
+superpowers ceo-review \
+  --feature="AI code review" \
+  --goal="Reduce review time 50%" \
+  --audience="Dev teams" \
+  --competition="GitHub Copilot" \
+  --trust="SOC2 certified"
+
 # Manual scoring
-superpowers plan-ceo-review "Feature: AI-powered summaries" \
-  --brand=4 --attention=5 --trust=3
-
-# Auto-calculate scores
-superpowers plan-ceo-review "Feature: AI-powered summaries" --auto
-
-# With context for auto-scoring
-superpowers plan-ceo-review "Feature: AI-powered summaries" \
-  --auto --context "Uses GPT-4 for document summarization"
-
-# Show scoring criteria
-superpowers plan-ceo-review --criteria
-
-# JSON output
-superpowers plan-ceo-review "Feature name" --json
+superpowers ceo-review \
+  --feature="Dark mode" \
+  --brand=3 \
+  --attention=4 \
+  --trust-score=2
 ```
 
-**BAT Scoring (0-5 each):**
-- **Brand**: Does it strengthen our brand identity?
-- **Attention**: Will it capture and hold user attention?
-- **Trust**: Does it build trust with users?
+#### BAT Framework Scoring
 
-**Thresholds:**
-- 12-15 stars: STRONG SIGNAL → Build
-- 8-11 stars: MIXED → Consider carefully
-- 0-7 stars: WEAK → Don't build
+- **Brand** (0-5): Does this strengthen our brand?
+- **Attention** (0-5): Will users actually use this?
+- **Trust** (0-5): Does this build user trust?
 
----
+#### 10-Star Methodology
 
-## Development
+- **12-15 ⭐**: BUILD - Strong signal, proceed with confidence
+- **10-11 ⭐**: BUILD - Good signal, validate assumptions
+- **8-9 ⭐**: CONSIDER - Mixed signal, need more data
+- **0-7 ⭐**: DON'T BUILD - Weak signal, focus elsewhere
 
-```bash
-# Install dependencies
-npm install
+## Requirements
 
-# Build all skills
-npm run build
-
-# Package skills
-npm run package
-```
+- Node.js >= 18.0.0
+- Git (for /qa and /ship)
+- GH_TOKEN environment variable (for GitHub releases)
 
 ## License
 

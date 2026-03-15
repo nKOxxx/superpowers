@@ -1,176 +1,181 @@
-import { Command } from 'commander';
-import chalk from 'chalk';
-import ora from 'ora';
-import { chromium, Browser, Page, devices } from 'playwright';
+import { chromium, Browser, Page } from 'playwright';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
-interface BrowseOptions {
-  viewport?: string;
+export interface BrowseOptions {
+  url: string;
+  viewport?: 'mobile' | 'tablet' | 'desktop' | { width: number; height: number };
   fullPage?: boolean;
-  selector?: string;
-  actions?: string;
   output?: string;
+  waitFor?: string;
+  actions?: string;
+  timeout?: number;
 }
 
-interface ViewportConfig {
-  width: number;
-  height: number;
-}
-
-const viewports: Record<string, ViewportConfig> = {
+const VIEWPORT_PRESETS = {
   mobile: { width: 375, height: 667 },
   tablet: { width: 768, height: 1024 },
-  desktop: { width: 1920, height: 1080 }
+  desktop: { width: 1280, height: 720 }
 };
 
-interface BrowseAction {
-  type: 'click' | 'type' | 'wait' | 'scroll' | 'hover';
-  selector?: string;
-  text?: string;
-  delay?: number;
-  direction?: 'up' | 'down' | 'left' | 'right';
-  amount?: number;
-}
+export class BrowserSkill {
+  private browser: Browser | null = null;
 
-function parseViewport(viewport: string): ViewportConfig {
-  if (viewport in viewports) {
-    return viewports[viewport];
+  async init(): Promise<void> {
+    this.browser = await chromium.launch({ headless: true });
   }
-  // Parse custom dimensions like "800x600"
-  const match = viewport.match(/^(\d+)x(\d+)$/);
-  if (match) {
-    return { width: parseInt(match[1]), height: parseInt(match[2]) };
-  }
-  return viewports.desktop;
-}
 
-function parseActions(actionsJson: string): BrowseAction[] {
-  try {
-    return JSON.parse(actionsJson) as BrowseAction[];
-  } catch {
-    console.error(chalk.red('Invalid actions JSON format'));
-    return [];
-  }
-}
-
-async function executeAction(page: Page, action: BrowseAction): Promise<void> {
-  switch (action.type) {
-    case 'click':
-      if (action.selector) {
-        await page.click(action.selector);
-      }
-      break;
-    case 'type':
-      if (action.selector && action.text) {
-        await page.fill(action.selector, action.text);
-      }
-      break;
-    case 'wait':
-      await page.waitForTimeout(action.delay || 1000);
-      break;
-    case 'scroll': {
-      const direction = action.direction || 'down';
-      const amount = action.amount || 500;
-      const scrollMap: Record<string, { x: number; y: number }> = {
-        up: { x: 0, y: -amount },
-        down: { x: 0, y: amount },
-        left: { x: -amount, y: 0 },
-        right: { x: amount, y: 0 }
-      };
-      const scroll = scrollMap[direction] || { x: 0, y: amount };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await page.evaluate(({ x, y }: { x: number; y: number }) => {
-        (globalThis as any).scrollBy(x, y);
-      }, scroll);
-      break;
+  async close(): Promise<void> {
+    if (this.browser) {
+      await this.browser.close();
+      this.browser = null;
     }
-    case 'hover':
-      if (action.selector) {
-        await page.hover(action.selector);
-      }
-      break;
   }
-}
 
-export async function captureScreenshot(
-  url: string,
-  options: BrowseOptions
-): Promise<{ screenshot: string; url: string; viewport: ViewportConfig }> {
-  const viewport = options.viewport ? parseViewport(options.viewport) : viewports.desktop;
-  
-  const browser = await chromium.launch({ headless: true });
-  
-  try {
-    const context = await browser.newContext({
-      viewport: { width: viewport.width, height: viewport.height }
+  async screenshot(options: BrowseOptions): Promise<string[]> {
+    if (!this.browser) {
+      await this.init();
+    }
+
+    const screenshots: string[] = [];
+    const page = await this.browser!.newPage();
+
+    try {
+      // Set viewport
+      const viewport = this.resolveViewport(options.viewport);
+      await page.setViewportSize(viewport);
+
+      // Navigate
+      await page.goto(options.url, { 
+        waitUntil: 'networkidle',
+        timeout: options.timeout || 30000 
+      });
+
+      // Wait for element if specified
+      if (options.waitFor) {
+        await page.waitForSelector(options.waitFor, { timeout: 10000 });
+      }
+
+      // Execute actions if provided
+      if (options.actions) {
+        await this.executeActions(page, options.actions, screenshots, options);
+      } else {
+        // Single screenshot
+        const screenshotPath = await this.takeScreenshot(page, options);
+        screenshots.push(screenshotPath);
+      }
+
+      return screenshots;
+    } finally {
+      await page.close();
+    }
+  }
+
+  private resolveViewport(viewport?: BrowseOptions['viewport']): { width: number; height: number } {
+    if (!viewport) return VIEWPORT_PRESETS.desktop;
+    if (typeof viewport === 'string') {
+      return VIEWPORT_PRESETS[viewport] || VIEWPORT_PRESETS.desktop;
+    }
+    return viewport;
+  }
+
+  private async takeScreenshot(page: Page, options: BrowseOptions): Promise<string> {
+    const outputDir = options.output || './screenshots';
+    await fs.mkdir(outputDir, { recursive: true });
+
+    const url = new URL(options.url);
+    const hostname = url.hostname.replace(/[^a-zA-Z0-9]/g, '_');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `${hostname}_${timestamp}.png`;
+    const filepath = path.join(outputDir, filename);
+
+    await page.screenshot({
+      path: filepath,
+      fullPage: options.fullPage || false
     });
-    
-    const page = await context.newPage();
-    
-    // Navigate to URL
-    await page.goto(url, { waitUntil: 'networkidle' });
-    
-    // Execute any actions
-    if (options.actions) {
-      const actions = parseActions(options.actions);
-      for (const action of actions) {
-        await executeAction(page, action);
+
+    return filepath;
+  }
+
+  private async executeActions(
+    page: Page, 
+    actionsStr: string, 
+    screenshots: string[],
+    options: BrowseOptions
+  ): Promise<void> {
+    const actions = actionsStr.split(',').map(a => a.trim());
+
+    for (const action of actions) {
+      const [type, ...params] = action.split(':');
+      
+      switch (type) {
+        case 'click':
+          if (params[0]) {
+            await page.click(params[0]);
+          }
+          break;
+        
+        case 'type':
+          if (params[0] && params[1]) {
+            await page.fill(params[0], params[1]);
+          }
+          break;
+        
+        case 'wait':
+          if (params[0]) {
+            const delay = parseInt(params[0], 10);
+            await page.waitForTimeout(delay);
+          }
+          break;
+        
+        case 'scroll':
+          await page.evaluate('window.scrollBy(0, window.innerHeight)');
+          break;
+        
+        case 'hover':
+          if (params[0]) {
+            await page.hover(params[0]);
+          }
+          break;
+        
+        case 'screenshot':
+          const screenshotPath = await this.takeScreenshot(page, options);
+          screenshots.push(screenshotPath);
+          break;
       }
     }
-    
-    // Capture screenshot
-    let screenshot: Buffer;
-    
-    if (options.selector) {
-      const element = await page.$(options.selector);
-      if (!element) {
-        throw new Error(`Element not found: ${options.selector}`);
+  }
+
+  async captureBase64(options: BrowseOptions): Promise<string> {
+    if (!this.browser) {
+      await this.init();
+    }
+
+    const page = await this.browser!.newPage();
+
+    try {
+      const viewport = this.resolveViewport(options.viewport);
+      await page.setViewportSize(viewport);
+
+      await page.goto(options.url, { 
+        waitUntil: 'networkidle',
+        timeout: options.timeout || 30000 
+      });
+
+      if (options.waitFor) {
+        await page.waitForSelector(options.waitFor, { timeout: 10000 });
       }
-      screenshot = await element.screenshot({ type: 'png' });
-    } else {
-      screenshot = await page.screenshot({
+
+      const screenshot = await page.screenshot({
         fullPage: options.fullPage || false,
         type: 'png'
       });
+
+      return screenshot.toString('base64');
+    } finally {
+      await page.close();
     }
-    
-    return {
-      screenshot: screenshot.toString('base64'),
-      url,
-      viewport
-    };
-  } finally {
-    await browser.close();
   }
 }
 
-export const browseCommand = new Command('browse')
-  .description('Browser automation with Playwright - capture screenshots and test flows')
-  .argument('<url>', 'URL to browse')
-  .option('-v, --viewport <viewport>', 'Viewport preset (mobile, tablet, desktop) or custom WxH', 'desktop')
-  .option('-f, --full-page', 'Capture full page screenshot')
-  .option('-s, --selector <selector>', 'Capture specific element by CSS selector')
-  .option('-a, --actions <json>', 'JSON array of actions to perform before capture')
-  .option('-o, --output <path>', 'Output file path (defaults to stdout as base64)')
-  .action(async (url: string, options: BrowseOptions) => {
-    const spinner = ora('Launching browser...').start();
-    
-    try {
-      spinner.text = `Navigating to ${url}...`;
-      
-      const result = await captureScreenshot(url, options);
-      
-      spinner.succeed(chalk.green(`Screenshot captured: ${result.viewport.width}x${result.viewport.height}`));
-      
-      if (options.output) {
-        const fs = await import('fs');
-        fs.writeFileSync(options.output, result.screenshot, 'base64');
-        console.log(chalk.blue(`Screenshot saved to: ${options.output}`));
-      } else {
-        // Output base64 for Telegram integration
-        console.log(result.screenshot);
-      }
-    } catch (error) {
-      spinner.fail(chalk.red(`Failed: ${error instanceof Error ? error.message : String(error)}`));
-      process.exit(1);
-    }
-  });
+export default BrowserSkill;

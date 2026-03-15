@@ -1,129 +1,207 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
-import { execSync } from 'child_process';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import chalk from 'chalk';
+const { Command } = require('commander');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Simple spinner implementation
+function createSpinner(text) {
+  const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+  let i = 0;
+  let interval;
+  let currentText = text;
+  
+  const spinner = {
+    start: (newText) => {
+      currentText = newText || text;
+      process.stdout.write(`\r${frames[0]} ${currentText}`);
+      interval = setInterval(() => {
+        i = (i + 1) % frames.length;
+        process.stdout.write(`\r${frames[i]} ${currentText}`);
+      }, 80);
+      return spinner;
+    },
+    stop: () => {
+      if (interval) clearInterval(interval);
+      process.stdout.write('\r');
+      return spinner;
+    },
+    succeed: (msg) => {
+      spinner.stop();
+      console.log(`✓ ${msg || currentText}`);
+      return spinner;
+    },
+    fail: (msg) => {
+      spinner.stop();
+      console.log(`✗ ${msg || currentText}`);
+      return spinner;
+    }
+  };
+  
+  Object.defineProperty(spinner, 'text', {
+    set: (val) => {
+      currentText = val;
+    },
+    get: () => currentText
+  });
+  
+  return spinner;
+}
 
 const program = new Command();
 
 program
   .name('superpowers')
-  .description('OpenClaw superpowers - AI-powered workflows for development, testing, and product decisions')
+  .description('OpenClaw superpowers - Browser automation, QA, release pipeline, and product strategy')
   .version('1.0.0');
 
-// Helper to run skill CLI
-function runSkill(skillName, args) {
-  const skillPath = join(__dirname, 'skills', skillName, 'dist', 'cli.js');
-  try {
-    execSync(`node "${skillPath}" ${args.join(' ')}`, {
-      stdio: 'inherit',
-      cwd: process.cwd()
-    });
-  } catch (error) {
-    process.exit(1);
-  }
-}
-
+// Browse command
 program
   .command('browse <url>')
-  .description('Browser automation for visual testing and QA')
-  .option('-v, --viewport <preset>', 'Viewport preset: mobile, tablet, desktop', 'desktop')
-  .option('-w, --width <width>', 'Custom viewport width')
-  .option('-h, --height <height>', 'Custom viewport height')
-  .option('-f, --full-page', 'Capture full page screenshot', false)
-  .option('-s, --selector <selector>', 'Capture specific element only')
-  .option('-o, --output <path>', 'Save screenshot to file path')
-  .option('-t, --timeout <ms>', 'Navigation timeout in ms', '30000')
-  .option('-a, --action <action>', 'Action sequence')
-  .action((url, options) => {
-    const args = [url];
-    if (options.viewport) args.push('--viewport', options.viewport);
-    if (options.width) args.push('--width', options.width);
-    if (options.height) args.push('--height', options.height);
-    if (options.fullPage) args.push('--full-page');
-    if (options.selector) args.push('--selector', options.selector);
-    if (options.output) args.push('--output', options.output);
-    if (options.timeout) args.push('--timeout', options.timeout);
-    if (options.action) args.push('--action', options.action);
-    runSkill('browse', args);
+  .description('Capture screenshots of web pages')
+  .option('-v, --viewport <preset>', 'Viewport preset (mobile, tablet, desktop)', 'desktop')
+  .option('-w, --width <pixels>', 'Custom viewport width')
+  .option('-h, --height <pixels>', 'Custom viewport height')
+  .option('-f, --full-page', 'Capture full page screenshot')
+  .option('-o, --output <dir>', 'Output directory', './screenshots')
+  .option('--wait-for <selector>', 'Wait for element before screenshot')
+  .option('-a, --actions <actions>', 'Comma-separated actions (click:sel,wait:ms,scroll,hover:sel,screenshot)')
+  .option('-t, --timeout <ms>', 'Navigation timeout', '30000')
+  .action(async (url, options) => {
+    const { BrowserSkill } = require('./dist/browse/index.js');
+    const spinner = createSpinner('Launching browser...').start();
+    const skill = new BrowserSkill();
+
+    try {
+      let viewport = options.viewport;
+      if (options.width && options.height) {
+        viewport = { width: parseInt(options.width), height: parseInt(options.height) };
+      }
+
+      spinner.text = 'Capturing screenshot...';
+      const screenshots = await skill.screenshot({
+        url,
+        viewport,
+        fullPage: options.fullPage,
+        output: options.output,
+        waitFor: options.waitFor,
+        actions: options.actions,
+        timeout: parseInt(options.timeout)
+      });
+
+      await skill.close();
+      spinner.succeed(`Screenshot saved: ${screenshots[0]}`);
+    } catch (error) {
+      await skill.close();
+      spinner.fail(error.message);
+      process.exit(1);
+    }
   });
 
+// QA command
 program
   .command('qa')
-  .description('Systematic testing based on code changes')
-  .option('-m, --mode <mode>', 'Test mode: targeted, smoke, full', 'targeted')
-  .option('-c, --coverage', 'Enable coverage reporting', false)
-  .option('-v, --verbose', 'Verbose output', false)
-  .option('-u, --update-snapshot', 'Update snapshots', false)
-  .option('--detect', 'Detect test framework only', false)
-  .option('--diff', 'Show git diff analysis', false)
-  .action((options) => {
-    const args = [];
-    if (options.mode) args.push('--mode', options.mode);
-    if (options.coverage) args.push('--coverage');
-    if (options.verbose) args.push('--verbose');
-    if (options.updateSnapshot) args.push('--update-snapshot');
-    if (options.detect) args.push('--detect');
-    if (options.diff) args.push('--diff');
-    runSkill('qa', args);
+  .description('Run tests as QA Lead')
+  .option('-m, --mode <mode>', 'Test mode (targeted, smoke, full)', 'targeted')
+  .option('-d, --diff <range>', 'Git diff range for targeted mode', 'HEAD~1')
+  .option('-c, --coverage', 'Enable coverage reporting')
+  .option('-p, --parallel', 'Run tests in parallel')
+  .action(async (options) => {
+    const { QASkill } = require('./dist/qa/index.js');
+    const spinner = createSpinner('Detecting test framework...').start();
+    const skill = new QASkill();
+
+    try {
+      const framework = await skill.detectFramework();
+      spinner.text = `Running ${options.mode} tests with ${framework}...`;
+
+      const { results, summary } = await skill.run({
+        mode: options.mode,
+        diff: options.diff,
+        coverage: options.coverage,
+        parallel: options.parallel
+      });
+
+      spinner.stop();
+      console.log(summary);
+
+      const failed = results.filter(r => r.status === 'failed').length;
+      process.exit(failed > 0 ? 1 : 0);
+    } catch (error) {
+      spinner.fail(error.message);
+      process.exit(1);
+    }
   });
 
+// Ship command
 program
-  .command('ship [bump]')
-  .description('One-command release pipeline')
-  .option('-r, --repo <repo>', 'GitHub repository (owner/repo)')
-  .option('-b, --branch <branch>', 'Target branch')
-  .option('--dry-run', 'Preview changes without applying', false)
-  .option('--skip-changelog', 'Skip changelog generation', false)
-  .option('--skip-github', 'Skip GitHub release', false)
-  .option('--skip-tag', 'Skip git tag creation', false)
-  .option('--analyze', 'Analyze commits and suggest version bump', false)
-  .action((bump, options) => {
-    const args = [];
-    if (bump) args.push(bump);
-    if (options.repo) args.push('--repo', options.repo);
-    if (options.branch) args.push('--branch', options.branch);
-    if (options.dryRun) args.push('--dry-run');
-    if (options.skipChangelog) args.push('--skip-changelog');
-    if (options.skipGithub) args.push('--skip-github');
-    if (options.skipTag) args.push('--skip-tag');
-    if (options.analyze) args.push('--analyze');
-    runSkill('ship', args);
+  .command('ship')
+  .description('Release a new version')
+  .requiredOption('--version <type>', 'Version bump (patch, minor, major, or explicit)')
+  .option('-r, --repo <owner/repo>', 'Repository for GitHub release')
+  .option('-d, --dry-run', 'Preview changes without executing')
+  .option('-s, --skip-tests', 'Skip test run before release')
+  .option('-n, --notes <text>', 'Custom release notes')
+  .option('--prerelease', 'Mark as prerelease')
+  .action(async (options) => {
+    const { ShipSkill } = require('./dist/ship/index.js');
+    const spinner = createSpinner('Preparing release...').start();
+    const skill = new ShipSkill();
+
+    try {
+      spinner.text = 'Validating repository...';
+
+      const result = await skill.ship({
+        version: options.version,
+        repo: options.repo,
+        dryRun: options.dryRun,
+        skipTests: options.skipTests,
+        notes: options.notes,
+        prerelease: options.prerelease
+      });
+
+      spinner.stop();
+
+      if (options.dryRun) {
+        console.log('\nDRY RUN - No changes made\n');
+      } else {
+        console.log(`\n✓ Released ${result.tag}\n`);
+        console.log(`Commits: ${result.commits.length}`);
+        console.log(`Pushed: ${result.pushed ? 'Yes' : 'No'}`);
+        console.log(`GitHub Release: ${result.released ? 'Yes' : 'No'}`);
+      }
+    } catch (error) {
+      spinner.fail(error.message);
+      process.exit(1);
+    }
   });
 
+// CEO Review command
 program
-  .command('plan-ceo-review <feature>')
-  .description('Product strategy review with BAT framework')
-  .option('-b, --brand <score>', 'Brand score (0-5)', '3')
-  .option('-a, --attention <score>', 'Attention score (0-5)', '3')
-  .option('-t, --trust <score>', 'Trust score (0-5)', '3')
-  .option('--auto', 'Auto-calculate scores', false)
-  .option('--context <text>', 'Additional context for auto-scoring')
-  .option('--criteria', 'Show BAT scoring criteria', false)
-  .option('--json', 'Output as JSON', false)
-  .action((feature, options) => {
-    const args = [feature];
-    if (options.brand) args.push('--brand', options.brand);
-    if (options.attention) args.push('--attention', options.attention);
-    if (options.trust) args.push('--trust', options.trust);
-    if (options.auto) args.push('--auto');
-    if (options.context) args.push('--context', options.context);
-    if (options.criteria) args.push('--criteria');
-    if (options.json) args.push('--json');
-    runSkill('plan-ceo-review', args);
-  });
+  .command('ceo-review')
+  .description('Product strategy review using BAT framework')
+  .requiredOption('-f, --feature <name>', 'Feature name')
+  .option('-g, --goal <text>', 'Business goal')
+  .option('-a, --audience <text>', 'Target audience')
+  .option('-c, --competition <text>', 'Competitors')
+  .option('-t, --trust <text>', 'Trust assets')
+  .option('--brand <score>', 'Brand score (0-5)', parseFloat)
+  .option('--attention <score>', 'Attention score (0-5)', parseFloat)
+  .option('--trust-score <score>', 'Trust score (0-5)', parseFloat)
+  .action(async (options) => {
+    const { PlanCEOReviewSkill } = require('./dist/plan-ceo-review/index.js');
+    const skill = new PlanCEOReviewSkill();
 
-// Add alias
-program
-  .command('review <feature>')
-  .description('Alias for plan-ceo-review')
-  .action((feature) => {
-    runSkill('plan-ceo-review', [feature]);
+    const result = skill.review({
+      feature: options.feature,
+      goal: options.goal,
+      audience: options.audience,
+      competition: options.competition,
+      trust: options.trust,
+      brand: options.brand,
+      attention: options.attention,
+      trustScore: options.trustScore
+    });
+
+    console.log(skill.formatOutput(result));
   });
 
 program.parse();
