@@ -1,9 +1,0 @@
-{
-  "name": "ship",
-  "description": "One-command release pipeline",
-  "version": "1.0.0",
-  "entry": "dist/cli.js",
-  "bin": {
-    "superpowers": "dist/cli.js"
-  }
-}
