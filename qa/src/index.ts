@@ -126,7 +126,7 @@ function buildVitestCommand(options: QAOptions): string {
       cmd += ` ${testFiles.join(' ')}`;
     }
   } else if (options.mode === 'smoke') {
-    cmd += ' --grep="smoke"';
+    cmd += ' -t="smoke"';
   }
   
   if (options.coverage) {

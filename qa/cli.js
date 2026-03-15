@@ -2,7 +2,7 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { runTests, detectFramework, getChangedFiles, mapToTestFiles, QAOptions } from './dist/index.js';
+import { runTests, detectFramework, getChangedFiles, mapToTestFiles } from './dist/index.js';
 
 const program = new Command();
 
@@ -32,7 +32,7 @@ program
         }
       }
       
-      const qaOptions: QAOptions = {
+      const qaOptions = {
         mode: options.mode,
         coverage: options.coverage,
         files: options.files,

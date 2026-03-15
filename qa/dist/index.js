@@ -101,7 +101,7 @@ function buildVitestCommand(options) {
         }
     }
     else if (options.mode === 'smoke') {
-        cmd += ' --grep="smoke"';
+        cmd += ' -t="smoke"';
     }
     if (options.coverage) {
         cmd += ' --coverage';

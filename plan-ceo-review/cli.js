@@ -18,7 +18,7 @@ program
     try {
       // Parse feature and description
       let feature = featureArg;
-      let description: string | undefined;
+      let description;
       
       if (featureArg.includes(':')) {
         const parts = featureArg.split(':', 2);
@@ -45,7 +45,6 @@ program
           for (const q of brandQuestions) {
             console.log(chalk.gray('  •'), q);
           }
-          // In real interactive mode, would prompt user
           brand = 3;
           console.log(chalk.gray('Using default:'), brand);
         }
@@ -100,7 +99,7 @@ program
         console.log(chalk.gray('  •'), step);
       }
       
-      console.log(); // Empty line at end
+      console.log();
       
     } catch (error) {
       console.error(chalk.red('❌ Error:'), error.message);
@@ -108,7 +107,7 @@ program
     }
   });
 
-function renderScore(score: number): string {
+function renderScore(score) {
   const stars = '★'.repeat(score) + '☆'.repeat(5 - score);
   const color = score >= 4 ? chalk.green : score >= 3 ? chalk.yellow : chalk.red;
   return color(`${score}/5 ${stars}`);
