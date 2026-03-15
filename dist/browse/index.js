@@ -1,109 +1,158 @@
 import { chromium } from 'playwright';
-import * as fs from 'fs';
-import * as path from 'path';
 import chalk from 'chalk';
-const viewports = {
+const viewportPresets = {
     mobile: { width: 375, height: 667 },
     tablet: { width: 768, height: 1024 },
-    desktop: { width: 1280, height: 720 },
-    wide: { width: 1920, height: 1080 },
+    desktop: { width: 1920, height: 1080 }
 };
-function parseActions(actionsStr) {
-    return actionsStr.split(',').map(action => {
-        const [type, ...params] = action.split(':');
-        return { type: type.trim(), params: params.join(':').split('|') };
-    });
+export function parseViewport(viewport) {
+    if (viewport in viewportPresets) {
+        return viewportPresets[viewport];
+    }
+    // Parse custom dimensions like "1200x800"
+    const match = viewport.match(/^(\d+)x(\d+)$/);
+    if (match) {
+        return { width: parseInt(match[1], 10), height: parseInt(match[2], 10) };
+    }
+    return viewportPresets.desktop;
 }
-function generateFilename(url, viewport) {
-    const urlObj = new URL(url);
-    const hostname = urlObj.hostname.replace(/[^a-zA-Z0-9]/g, '-');
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    return `${hostname}_${viewport}_${timestamp}.png`;
+export function parseActions(actionsStr) {
+    if (!actionsStr)
+        return [];
+    const actions = [];
+    const parts = actionsStr.split(',');
+    for (const part of parts) {
+        const [type, ...rest] = part.trim().split(':');
+        switch (type) {
+            case 'click':
+                actions.push({ type: 'click', target: rest[0] });
+                break;
+            case 'type':
+                actions.push({ type: 'type', target: rest[0], value: rest[1] || '' });
+                break;
+            case 'wait':
+                actions.push({ type: 'wait', duration: parseInt(rest[0], 10) || 1000 });
+                break;
+            case 'scroll':
+                actions.push({ type: 'scroll', target: rest[0] });
+                break;
+            case 'hover':
+                actions.push({ type: 'hover', target: rest[0] });
+                break;
+        }
+    }
+    return actions;
 }
-export async function run(url, options) {
-    console.log(chalk.cyan('══════════════════════════════════════════════════'));
-    console.log(chalk.cyan('Browser Automation'));
-    console.log(chalk.cyan('══════════════════════════════════════════════════\n'));
-    // Determine viewport
-    let viewport;
-    if (options.width && options.height) {
-        viewport = { width: options.width, height: options.height };
+export async function executeActions(page, actions) {
+    for (const action of actions) {
+        switch (action.type) {
+            case 'click':
+                if (action.target) {
+                    await page.click(action.target);
+                    console.log(chalk.gray(`  Clicked: ${action.target}`));
+                }
+                break;
+            case 'type':
+                if (action.target && action.value !== undefined) {
+                    await page.fill(action.target, action.value);
+                    console.log(chalk.gray(`  Typed in: ${action.target}`));
+                }
+                break;
+            case 'wait':
+                await page.waitForTimeout(action.duration || 1000);
+                console.log(chalk.gray(`  Waited: ${action.duration}ms`));
+                break;
+            case 'scroll':
+                if (action.target) {
+                    await page.locator(action.target).scrollIntoViewIfNeeded();
+                    console.log(chalk.gray(`  Scrolled to: ${action.target}`));
+                }
+                else {
+                    await page.evaluate(() => {
+                        const w = globalThis;
+                        const d = w.document;
+                        w.scrollTo(0, d.body.scrollHeight);
+                    });
+                    console.log(chalk.gray('  Scrolled to bottom'));
+                }
+                break;
+            case 'hover':
+                if (action.target) {
+                    await page.hover(action.target);
+                    console.log(chalk.gray(`  Hovered: ${action.target}`));
+                }
+                break;
+        }
+    }
+}
+export async function browse(options) {
+    const startTime = Date.now();
+    let viewportSize;
+    if (typeof options.viewport === 'string') {
+        viewportSize = parseViewport(options.viewport);
+    }
+    else if (options.viewport) {
+        viewportSize = options.viewport;
     }
     else {
-        viewport = viewports[options.viewport] || viewports.desktop;
+        viewportSize = viewportPresets.desktop;
     }
-    console.log(chalk.gray(`URL: ${url}`));
-    console.log(chalk.gray(`Viewport: ${viewport.width}x${viewport.height} (${options.viewport})`));
-    console.log(chalk.gray(`Full page: ${options.fullPage ? 'yes' : 'no'}\n`));
-    let browser;
+    console.log(chalk.blue(`🌐 Navigating to: ${options.url}`));
+    console.log(chalk.gray(`   Viewport: ${viewportSize.width}x${viewportSize.height}`));
+    const browser = await chromium.launch({ headless: true });
     try {
-        // Launch browser
-        browser = await chromium.launch({ headless: true });
-        const context = await browser.newContext({ viewport });
+        const context = await browser.newContext({
+            viewport: viewportSize,
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        });
         const page = await context.newPage();
-        // Navigate
-        console.log(chalk.blue('ℹ Navigating...'));
-        await page.goto(url, { timeout: options.timeout, waitUntil: 'networkidle' });
-        console.log(chalk.green('✓ Page loaded\n'));
+        // Navigate to URL
+        await page.goto(options.url, { waitUntil: 'networkidle' });
+        const title = await page.title();
+        console.log(chalk.gray(`   Page title: ${title}`));
         // Execute actions if provided
-        if (options.actions) {
-            const actions = parseActions(options.actions);
-            console.log(chalk.blue('ℹ Executing actions...'));
-            for (const action of actions) {
-                switch (action.type) {
-                    case 'click':
-                        await page.click(action.params[0]);
-                        console.log(chalk.gray(`  Clicked: ${action.params[0]}`));
-                        break;
-                    case 'type':
-                        await page.fill(action.params[0], action.params[1] || '');
-                        console.log(chalk.gray(`  Typed into: ${action.params[0]}`));
-                        break;
-                    case 'wait':
-                        await page.waitForTimeout(parseInt(action.params[0]) || 1000);
-                        console.log(chalk.gray(`  Waited: ${action.params[0]}ms`));
-                        break;
-                    case 'scroll':
-                        await page.evaluate('window.scrollBy(0, window.innerHeight)');
-                        console.log(chalk.gray('  Scrolled down'));
-                        break;
-                    case 'hover':
-                        await page.hover(action.params[0]);
-                        console.log(chalk.gray(`  Hovered: ${action.params[0]}`));
-                        break;
-                }
-            }
-            console.log(chalk.green('✓ Actions completed\n'));
-        }
-        // Wait for element if specified
-        if (options.waitFor) {
-            console.log(chalk.blue(`ℹ Waiting for element: ${options.waitFor}...`));
-            await page.waitForSelector(options.waitFor, { timeout: options.timeout });
-            console.log(chalk.green('✓ Element found\n'));
-        }
-        // Ensure output directory exists
-        if (!fs.existsSync(options.output)) {
-            fs.mkdirSync(options.output, { recursive: true });
+        if (options.actions && options.actions.length > 0) {
+            console.log(chalk.blue(`🎬 Executing ${options.actions.length} action(s)...`));
+            await executeActions(page, options.actions);
         }
         // Take screenshot
-        const filename = generateFilename(url, options.viewport);
-        const filepath = path.join(options.output, filename);
-        console.log(chalk.blue('ℹ Capturing screenshot...'));
-        await page.screenshot({
-            path: filepath,
-            fullPage: options.fullPage
-        });
-        console.log(chalk.green(`✓ Screenshot saved: ${filepath}\n`));
-        console.log(chalk.cyan('══════════════════════════════════════════════════'));
-    }
-    catch (error) {
-        console.error(chalk.red(`\n✗ Error: ${error.message}`));
-        throw error;
+        let screenshot;
+        if (options.selector) {
+            // Screenshot specific element
+            const element = page.locator(options.selector).first();
+            await element.waitFor({ state: 'visible' });
+            screenshot = await element.screenshot();
+            console.log(chalk.gray(`   Captured element: ${options.selector}`));
+        }
+        else if (options.fullPage) {
+            screenshot = await page.screenshot({ fullPage: true });
+            console.log(chalk.gray('   Captured full page'));
+        }
+        else {
+            screenshot = await page.screenshot();
+            console.log(chalk.gray('   Captured viewport'));
+        }
+        const duration = Date.now() - startTime;
+        console.log(chalk.green(`✅ Screenshot captured in ${duration}ms`));
+        // Save to file if requested
+        if (options.output === 'file' && options.outputPath) {
+            const fs = await import('fs');
+            fs.writeFileSync(options.outputPath, screenshot);
+            console.log(chalk.gray(`   Saved to: ${options.outputPath}`));
+        }
+        return {
+            screenshot,
+            url: options.url,
+            viewport: viewportSize,
+            title,
+            duration
+        };
     }
     finally {
-        if (browser) {
-            await browser.close();
-        }
+        await browser.close();
     }
+}
+export function screenshotToBase64(screenshot) {
+    return screenshot.toString('base64');
 }
 //# sourceMappingURL=index.js.map

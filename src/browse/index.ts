@@ -96,7 +96,11 @@ export async function executeActions(page: Page, actions: Action[]): Promise<voi
           await page.locator(action.target).scrollIntoViewIfNeeded();
           console.log(chalk.gray(`  Scrolled to: ${action.target}`));
         } else {
-          await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+          await page.evaluate(() => {
+            const w = globalThis as any;
+            const d = w.document as any;
+            w.scrollTo(0, d.body.scrollHeight);
+          });
           console.log(chalk.gray('  Scrolled to bottom'));
         }
         break;

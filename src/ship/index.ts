@@ -1,279 +1,245 @@
-import { execSync } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
+import { simpleGit, type SimpleGit } from 'simple-git';
+import { Octokit } from '@octokit/rest';
+import { readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
 import chalk from 'chalk';
-import https from 'https';
 
-interface ShipOptions {
-  version: string;
-  repo?: string;
-  dryRun: boolean;
-  skipTests: boolean;
-  notes?: string;
-  prerelease: boolean;
+export type VersionBump = 'patch' | 'minor' | 'major';
+
+export interface ShipOptions {
+  version: VersionBump | string;
+  dryRun?: boolean;
+  skipChangelog?: boolean;
+  skipGit?: boolean;
+  skipGithub?: boolean;
 }
 
-function getCurrentVersion(): string {
-  try {
-    const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
-    return packageJson.version || '0.0.0';
-  } catch {
-    return '0.0.0';
-  }
+export interface ChangelogEntry {
+  type: string;
+  scope?: string;
+  message: string;
+  hash: string;
 }
 
-function bumpVersion(current: string, bumpType: string): string {
-  const [major, minor, patch] = current.split('.').map(Number);
+export function bumpVersion(currentVersion: string, bump: VersionBump): string {
+  const [major, minor, patch] = currentVersion.replace(/^v/, '').split('.').map(Number);
   
-  if (bumpType === 'major') {
-    return `${major + 1}.0.0`;
-  } else if (bumpType === 'minor') {
-    return `${major}.${minor + 1}.0`;
-  } else if (bumpType === 'patch') {
-    return `${major}.${minor}.${patch + 1}`;
-  } else if (/^\d+\.\d+\.\d+$/.test(bumpType)) {
-    return bumpType; // Explicit version
+  switch (bump) {
+    case 'major':
+      return `${major + 1}.0.0`;
+    case 'minor':
+      return `${major}.${minor + 1}.0`;
+    case 'patch':
+    default:
+      return `${major}.${minor}.${patch + 1}`;
   }
+}
+
+export function parseConventionalCommits(commits: string[]): ChangelogEntry[] {
+  const entries: ChangelogEntry[] = [];
+  const conventionalPattern = /^(feat|fix|docs|style|refactor|perf|test|chore|build|ci|revert)(\(.+\))?!?:\s*(.+)$/i;
   
-  return `${major}.${minor}.${patch + 1}`;
-}
-
-function updateVersion(newVersion: string): void {
-  const packageJsonPath = 'package.json';
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-  packageJson.version = newVersion;
-  fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
-}
-
-function getCommitsSinceLastTag(): Array<{ type: string; message: string; hash: string }> {
-  try {
-    const lastTag = execSync('git describe --tags --abbrev=0 2>/dev/null || echo ""', { encoding: 'utf-8' }).trim();
-    const range = lastTag ? `${lastTag}..HEAD` : 'HEAD~20';
-    
-    const output = execSync(`git log ${range} --pretty=format:"%h|%s"`, { encoding: 'utf-8' });
-    
-    return output.trim().split('\n').map(line => {
-      const [hash, ...messageParts] = line.split('|');
-      const message = messageParts.join('|');
-      
-      let type = 'other';
-      if (message.startsWith('feat:') || message.startsWith('feature:')) type = 'feat';
-      else if (message.startsWith('fix:') || message.startsWith('bugfix:')) type = 'fix';
-      else if (message.startsWith('chore:')) type = 'chore';
-      else if (message.startsWith('docs:')) type = 'docs';
-      else if (message.startsWith('refactor:')) type = 'refactor';
-      else if (message.startsWith('test:')) type = 'test';
-      
-      return { type, message, hash };
-    });
-  } catch {
-    return [];
-  }
-}
-
-function generateChangelog(commits: Array<{ type: string; message: string; hash: string }>, version: string): string {
-  const sections: Record<string, string[]> = {
-    feat: [],
-    fix: [],
-    chore: [],
-    docs: [],
-    refactor: [],
-    test: [],
-    other: []
-  };
-
   for (const commit of commits) {
-    const cleanMessage = commit.message.replace(/^(feat|fix|chore|docs|refactor|test):\s*/, '');
-    sections[commit.type].push(`- ${cleanMessage} (${commit.hash})`);
+    const match = commit.match(conventionalPattern);
+    if (match) {
+      entries.push({
+        type: match[1].toLowerCase(),
+        scope: match[2]?.slice(1, -1), // Remove parentheses
+        message: match[3],
+        hash: commit.split(' ')[0] || ''
+      });
+    }
   }
+  
+  return entries;
+}
 
-  const date = new Date().toISOString().split('T')[0];
-  let changelog = `## [${version}] - ${date}\n\n`;
-
-  if (sections.feat.length > 0) {
-    changelog += '### Features\n' + sections.feat.join('\n') + '\n\n';
+export function generateChangelog(entries: ChangelogEntry[], version: string): string {
+  const now = new Date().toISOString().split('T')[0];
+  let changelog = `## [${version}] - ${now}\n\n`;
+  
+  const typeLabels: Record<string, string> = {
+    feat: '### ✨ Features\n',
+    fix: '### 🐛 Bug Fixes\n',
+    docs: '### 📚 Documentation\n',
+    style: '### 💎 Styles\n',
+    refactor: '### ♻️ Refactoring\n',
+    perf: '### ⚡ Performance\n',
+    test: '### ✅ Tests\n',
+    chore: '### 🔧 Chores\n',
+    build: '### 📦 Build\n',
+    ci: '### 🔄 CI/CD\n',
+    revert: '### ⏪ Reverts\n'
+  };
+  
+  // Group by type
+  const grouped: Record<string, ChangelogEntry[]> = {};
+  for (const entry of entries) {
+    if (!grouped[entry.type]) grouped[entry.type] = [];
+    grouped[entry.type].push(entry);
   }
-  if (sections.fix.length > 0) {
-    changelog += '### Bug Fixes\n' + sections.fix.join('\n') + '\n\n';
+  
+  // Output in order
+  for (const [type, label] of Object.entries(typeLabels)) {
+    if (grouped[type]?.length) {
+      changelog += label;
+      for (const entry of grouped[type]) {
+        const scope = entry.scope ? `**${entry.scope}:** ` : '';
+        changelog += `- ${scope}${entry.message}\n`;
+      }
+      changelog += '\n';
+    }
   }
-  if (sections.chore.length > 0) {
-    changelog += '### Chores\n' + sections.chore.join('\n') + '\n\n';
-  }
-  if (sections.docs.length > 0) {
-    changelog += '### Documentation\n' + sections.docs.join('\n') + '\n\n';
-  }
-  if (sections.refactor.length > 0) {
-    changelog += '### Refactoring\n' + sections.refactor.join('\n') + '\n\n';
-  }
-  if (sections.other.length > 0) {
-    changelog += '### Other Changes\n' + sections.other.join('\n') + '\n\n';
-  }
-
+  
   return changelog;
 }
 
-function updateChangelogFile(newEntry: string): void {
-  const changelogPath = 'CHANGELOG.md';
+export async function ship(options: ShipOptions, cwd: string = process.cwd()): Promise<void> {
+  const git: SimpleGit = simpleGit(cwd);
   
-  if (fs.existsSync(changelogPath)) {
-    const existing = fs.readFileSync(changelogPath, 'utf-8');
-    const header = existing.startsWith('# Changelog') ? '' : '# Changelog\n\n';
-    fs.writeFileSync(changelogPath, header + newEntry + existing.replace(/^# Changelog\n\n/, ''));
-  } else {
-    fs.writeFileSync(changelogPath, '# Changelog\n\n' + newEntry);
+  // Check if we're in a git repo
+  const isRepo = await git.checkIsRepo();
+  if (!isRepo) {
+    throw new Error('Not a git repository');
   }
-}
-
-function createGitHubRelease(repo: string, version: string, notes: string, prerelease: boolean, token: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const [owner, repoName] = repo.split('/');
-    const data = JSON.stringify({
-      tag_name: `v${version}`,
-      name: `v${version}`,
-      body: notes,
-      prerelease: prerelease
-    });
-
-    const options = {
-      hostname: 'api.github.com',
-      path: `/repos/${owner}/${repoName}/releases`,
-      method: 'POST',
-      headers: {
-        'Authorization': `token ${token}`,
-        'User-Agent': 'superpowers-cli',
-        'Content-Type': 'application/json',
-        'Content-Length': data.length
-      }
-    };
-
-    const req = https.request(options, (res) => {
-      if (res.statusCode === 201) {
-        resolve();
-      } else {
-        let body = '';
-        res.on('data', chunk => body += chunk);
-        res.on('end', () => reject(new Error(`GitHub API error: ${res.statusCode} - ${body}`)));
-      }
-    });
-
-    req.on('error', reject);
-    req.write(data);
-    req.end();
-  });
-}
-
-function getRepoInfo(): string | null {
+  
+  // Check for uncommitted changes
+  const status = await git.status();
+  if (status.files.length > 0 && !options.dryRun) {
+    throw new Error('You have uncommitted changes. Please commit or stash them first.');
+  }
+  
+  // Read current version from package.json
+  const packageJsonPath = join(cwd, 'package.json');
+  let packageJson: { version: string; name?: string };
   try {
-    const remote = execSync('git remote get-url origin', { encoding: 'utf-8' }).trim();
-    const match = remote.match(/github\.com[:/]([^/]+)\/([^/]+)(\.git)?$/);
-    if (match) {
-      return `${match[1]}/${match[2].replace(/\.git$/, '')}`;
-    }
+    packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
   } catch {
-    // Ignore
+    throw new Error('Could not read package.json');
   }
-  return null;
-}
-
-export async function run(options: ShipOptions): Promise<void> {
-  console.log(chalk.cyan('══════════════════════════════════════════════════'));
-  console.log(chalk.cyan('Release Pipeline'));
-  console.log(chalk.cyan('══════════════════════════════════════════════════\n'));
-
-  const currentVersion = getCurrentVersion();
-  const newVersion = bumpVersion(currentVersion, options.version);
-
-  console.log(chalk.gray(`Current version: ${currentVersion}`));
-  console.log(chalk.gray(`New version: ${newVersion}`));
-
+  
+  const currentVersion = packageJson.version;
+  
+  // Determine new version
+  let newVersion: string;
+  if (['patch', 'minor', 'major'].includes(options.version)) {
+    newVersion = bumpVersion(currentVersion, options.version as VersionBump);
+  } else {
+    newVersion = options.version.replace(/^v/, '');
+  }
+  
+  console.log(chalk.blue('🚢 Release Pipeline'));
+  console.log(chalk.gray(`   Current: v${currentVersion}`));
+  console.log(chalk.gray(`   New:     v${newVersion}`));
+  
   if (options.dryRun) {
-    console.log(chalk.yellow('\n⚠ DRY RUN - No changes will be made\n'));
+    console.log(chalk.yellow('\n🧪 DRY RUN - No changes will be made\n'));
   }
-
-  // Check git status
-  try {
-    const status = execSync('git status --porcelain', { encoding: 'utf-8' }).trim();
-    if (status && !options.dryRun) {
-      console.log(chalk.red('\n✗ Working directory is not clean'));
-      console.log(chalk.gray('Commit or stash changes first'));
-      process.exit(1);
-    }
-  } catch {
-    console.log(chalk.yellow('\n⚠ Not a git repository or git not available'));
-  }
-
-  // Run tests
-  if (!options.skipTests && !options.dryRun) {
-    console.log(chalk.blue('\nℹ Running tests...'));
-    try {
-      execSync('npm test', { stdio: 'inherit' });
-      console.log(chalk.green('✓ Tests passed'));
-    } catch {
-      console.log(chalk.red('\n✗ Tests failed'));
-      process.exit(1);
-    }
-  } else if (options.skipTests) {
-    console.log(chalk.yellow('\n⚠ Skipping tests'));
-  }
-
-  // Get commits for changelog
-  const commits = getCommitsSinceLastTag();
-  const changelogEntry = generateChangelog(commits, newVersion);
-
-  if (!options.dryRun) {
-    // Update version
-    console.log(chalk.blue('\nℹ Updating version...'));
-    updateVersion(newVersion);
-    console.log(chalk.green(`✓ Version updated to ${newVersion}`));
-
-    // Update changelog
-    console.log(chalk.blue('\nℹ Updating changelog...'));
-    updateChangelogFile(changelogEntry);
-    console.log(chalk.green('✓ Changelog updated'));
-
-    // Create commit
-    console.log(chalk.blue('\nℹ Creating release commit...'));
-    execSync('git add package.json CHANGELOG.md');
-    execSync(`git commit -m "chore(release): v${newVersion}"`);
-    console.log(chalk.green('✓ Commit created'));
-
-    // Create tag
-    console.log(chalk.blue('\nℹ Creating git tag...'));
-    execSync(`git tag v${newVersion}`);
-    console.log(chalk.green(`✓ Tag v${newVersion} created`));
-
-    // Push
-    console.log(chalk.blue('\nℹ Pushing to remote...'));
-    execSync('git push origin HEAD');
-    execSync('git push origin --tags');
-    console.log(chalk.green('✓ Pushed to remote'));
-
-    // Create GitHub release
-    const repo = options.repo || getRepoInfo();
-    const token = process.env.GH_TOKEN;
-
-    if (repo && token) {
-      console.log(chalk.blue('\nℹ Creating GitHub release...'));
-      try {
-        const releaseNotes = options.notes || changelogEntry;
-        await createGitHubRelease(repo, newVersion, releaseNotes, options.prerelease, token);
-        console.log(chalk.green('✓ GitHub release created'));
-      } catch (err: any) {
-        console.log(chalk.yellow(`\n⚠ Failed to create GitHub release: ${err.message}`));
-      }
-    } else if (!token) {
-      console.log(chalk.yellow('\n⚠ GH_TOKEN not set, skipping GitHub release'));
-    } else if (!repo) {
-      console.log(chalk.yellow('\n⚠ Could not detect repository, skipping GitHub release'));
-    }
+  
+  // Get commits since last tag
+  const tags = await git.tags();
+  const latestTag = tags.latest;
+  
+  let commits: string[] = [];
+  if (latestTag) {
+    const log = await git.log({ from: latestTag, to: 'HEAD' });
+    commits = log.all.map(c => `${c.hash.substring(0, 7)} ${c.message}`);
   } else {
-    console.log(chalk.blue('\nℹ Would update version to:'), newVersion);
-    console.log(chalk.blue('ℹ Would update CHANGELOG.md'));
-    console.log(chalk.blue('ℹ Would create commit and tag'));
-    console.log(chalk.blue('ℹ Would push to remote'));
+    const log = await git.log();
+    commits = log.all.map(c => `${c.hash.substring(0, 7)} ${c.message}`);
   }
-
-  console.log(chalk.cyan('\n══════════════════════════════════════════════════'));
-  console.log(chalk.green(`✓ Released ${newVersion}`));
-  console.log(chalk.cyan('══════════════════════════════════════════════════'));
+  
+  console.log(chalk.gray(`   Commits since last tag: ${commits.length}`));
+  
+  // Generate changelog
+  if (!options.skipChangelog) {
+    const entries = parseConventionalCommits(commits);
+    const changelogContent = generateChangelog(entries, newVersion);
+    
+    console.log(chalk.blue('\n📝 Changelog Preview:'));
+    console.log(chalk.gray('─'.repeat(50)));
+    console.log(changelogContent);
+    console.log(chalk.gray('─'.repeat(50)));
+    
+    if (!options.dryRun) {
+      // Update CHANGELOG.md
+      const changelogPath = join(cwd, 'CHANGELOG.md');
+      let existingChangelog = '';
+      try {
+        existingChangelog = readFileSync(changelogPath, 'utf8');
+      } catch { /* no existing changelog */ }
+      
+      const newChangelog = `# Changelog\n\n${changelogContent}${existingChangelog.replace('# Changelog\n\n', '')}`;
+      writeFileSync(changelogPath, newChangelog);
+      console.log(chalk.green('✅ Updated CHANGELOG.md'));
+    }
+  }
+  
+  // Update package.json version
+  if (!options.dryRun) {
+    packageJson.version = newVersion;
+    writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
+    console.log(chalk.green('✅ Updated package.json'));
+  }
+  
+  // Git operations
+  if (!options.skipGit && !options.dryRun) {
+    await git.add(['package.json', 'CHANGELOG.md']);
+    await git.commit(`chore(release): v${newVersion}`);
+    console.log(chalk.green('✅ Committed version bump'));
+    
+    const tagName = `v${newVersion}`;
+    await git.addTag(tagName);
+    console.log(chalk.green(`✅ Created tag: ${tagName}`));
+    
+    // Push
+    console.log(chalk.blue('\n📤 Pushing to remote...'));
+    await git.push();
+    await git.pushTags();
+    console.log(chalk.green('✅ Pushed to remote'));
+    
+    // GitHub release
+    if (!options.skipGithub) {
+      const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+      if (token) {
+        try {
+          const octokit = new Octokit({ auth: token });
+          
+          // Get remote URL to extract owner/repo
+          const remotes = await git.getRemotes(true);
+          const origin = remotes.find(r => r.name === 'origin');
+          
+          if (origin) {
+            const match = origin.refs.fetch.match(/github\.com[:/]([^/]+)\/([^/]+?)(\.git)?$/);
+            if (match) {
+              const [, owner, repo] = match;
+              
+              const entries = parseConventionalCommits(commits);
+              const body = generateChangelog(entries, newVersion);
+              
+              await octokit.repos.createRelease({
+                owner,
+                repo,
+                tag_name: `v${newVersion}`,
+                name: `Release v${newVersion}`,
+                body,
+                draft: false,
+                prerelease: false
+              });
+              
+              console.log(chalk.green(`✅ Created GitHub release: v${newVersion}`));
+            }
+          }
+        } catch (err) {
+          console.warn(chalk.yellow('⚠️  Could not create GitHub release:'), err);
+        }
+      } else {
+        console.log(chalk.yellow('⚠️  No GH_TOKEN found, skipping GitHub release'));
+      }
+    }
+  }
+  
+  console.log(chalk.green(`\n🎉 Release v${newVersion} complete!`));
 }
+
+export { chalk };

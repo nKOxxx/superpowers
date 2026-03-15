@@ -1,17 +1,8 @@
 {
   "name": "ship",
-  "description": "One-command release pipeline with semantic versioning and changelog generation",
   "version": "1.0.0",
-  "author": "nKO",
-  "entry": "index.js",
-  "cli": "cli.js",
-  "dependencies": ["chalk"],
-  "capabilities": [
-    "semantic-versioning",
-    "changelog-generation",
-    "git-tagging",
-    "github-release",
-    "dry-run-mode",
-    "conventional-commits"
-  ]
+  "description": "One-command release pipeline",
+  "command": "ship",
+  "entry": "dist/ship/cli.js",
+  "runtime": "node"
 }

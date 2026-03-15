@@ -1,175 +1,205 @@
 import chalk from 'chalk';
 
-interface CEOReviewOptions {
-  feature: string;
-  goal?: string;
-  audience?: string;
-  brand?: number;
-  attention?: number;
-  trust?: number;
-}
-
-interface BATScores {
+export interface BATScore {
   brand: number;
   attention: number;
   trust: number;
 }
 
-function renderStars(score: number): string {
-  const fullStars = Math.floor(score);
-  const emptyStars = 5 - fullStars;
-  return '⭐'.repeat(fullStars) + '○'.repeat(emptyStars);
+export interface CEOReviewOptions {
+  featureName: string;
+  description?: string;
+  brand?: number;
+  attention?: number;
+  trust?: number;
+  autoScore?: boolean;
 }
 
-function autoScoreBrand(feature: string): number {
-  const feature_lower = feature.toLowerCase();
-  
-  // Revolutionary/category defining
-  if (/revolutionary|breakthrough|ai|machine learning|automation/i.test(feature_lower)) return 5;
-  // Strong differentiation
-  if (/api|integration|platform|ecosystem/i.test(feature_lower)) return 4;
-  // Good incremental
-  if (/improvement|enhancement|optimization/i.test(feature_lower)) return 3;
-  // Table stakes
-  if (/login|auth|settings|profile/i.test(feature_lower)) return 2;
-  
-  return 3; // Default
+export interface CEOReviewResult {
+  featureName: string;
+  description?: string;
+  scores: BATScore;
+  total: number;
+  decision: 'build' | 'consider' | 'dont-build';
+  nextSteps: string[];
 }
 
-function autoScoreAttention(feature: string): number {
-  const feature_lower = feature.toLowerCase();
-  
-  // Daily use, core workflow
-  if (/dashboard|feed|inbox|notification|message/i.test(feature_lower)) return 5;
-  // Weekly use, important
-  if (/report|analytics|export|import/i.test(feature_lower)) return 4;
-  // Monthly, nice to have
-  if (/settings|preferences|backup/i.test(feature_lower)) return 3;
-  // Rare use
-  if (/admin|config|advanced/i.test(feature_lower)) return 2;
-  
-  return 3; // Default
+export function calculateDecision(total: number): 'build' | 'consider' | 'dont-build' {
+  if (total >= 12) return 'build';
+  if (total >= 8) return 'consider';
+  return 'dont-build';
 }
 
-function autoScoreTrust(feature: string): number {
-  const feature_lower = feature.toLowerCase();
-  
-  // Security critical
-  if (/security|encryption|privacy|auth|2fa|sso/i.test(feature_lower)) return 5;
-  // Reliability critical
-  if (/backup|recovery|uptime|monitoring/i.test(feature_lower)) return 4;
-  // Transparency
-  if (/logs|audit|transparency|export data/i.test(feature_lower)) return 3;
-  // Error handling
-  if (/validation|error|feedback/i.test(feature_lower)) return 2;
-  
-  return 3; // Default
-}
-
-function getRecommendation(total: number): { text: string; icon: string; color: string } {
-  if (total >= 12) {
-    return { text: 'BUILD', icon: '✅', color: 'green' };
-  } else if (total >= 10) {
-    return { text: 'BUILD', icon: '✓', color: 'green' };
-  } else if (total >= 8) {
-    return { text: 'CONSIDER', icon: '⚠️', color: 'yellow' };
-  } else {
-    return { text: "DON'T BUILD", icon: '❌', color: 'red' };
+export function getDecisionLabel(decision: 'build' | 'consider' | 'dont-build'): string {
+  switch (decision) {
+    case 'build':
+      return chalk.green.bold('🚀 BUILD');
+    case 'consider':
+      return chalk.yellow.bold('🤔 CONSIDER');
+    case 'dont-build':
+      return chalk.red.bold('❌ DON\'T BUILD');
   }
 }
 
-function generateNextSteps(scores: BATScores, total: number): string[] {
+export function getDecisionDescription(decision: 'build' | 'consider' | 'dont-build'): string {
+  switch (decision) {
+    case 'build':
+      return 'This feature scores highly on all three dimensions. It strengthens your brand, captures attention, and builds trust. Prioritize this.';
+    case 'consider':
+      return 'This feature has potential but needs refinement. Review the scores to see which dimensions need improvement before building.';
+    case 'dont-build':
+      return 'This feature scores low on critical dimensions. Either redesign significantly or deprioritize in favor of higher-impact work.';
+  }
+}
+
+export function generateNextSteps(result: CEOReviewResult): string[] {
   const steps: string[] = [];
-
-  if (total >= 12) {
-    steps.push('Define success metrics (DAU, engagement time)');
-    steps.push('Coordinate with marketing for launch narrative');
-    steps.push('Set 30-day post-launch review date');
-    if (scores.attention < 5) steps.push('Identify hooks to increase usage frequency');
-    if (scores.trust < 4) steps.push('Add trust signals (testimonials, security badges)');
-  } else if (total >= 10) {
-    steps.push('Validate assumptions with user interviews (n=5-10)');
-    steps.push('Build minimal version for testing');
-    steps.push('Set clear success criteria before full build');
-  } else if (total >= 8) {
-    steps.push('Gather more data on user demand');
-    steps.push('Analyze competitor approaches');
-    steps.push('Consider if this fits a future strategy pivot');
-    steps.push('Revisit in 3 months if priorities shift');
+  
+  if (result.decision === 'build') {
+    steps.push('Add to roadmap with high priority');
+    steps.push('Define success metrics for launch');
+    steps.push('Allocate resources and set timeline');
+  } else if (result.decision === 'consider') {
+    if (result.scores.brand < 4) {
+      steps.push('Brand: Consider how this aligns with your core identity');
+      steps.push('Brand: Explore ways to make this more distinctive to your brand');
+    }
+    if (result.scores.attention < 4) {
+      steps.push('Attention: Research user demand more deeply');
+      steps.push('Attention: Consider a smaller MVP to test engagement');
+    }
+    if (result.scores.trust < 4) {
+      steps.push('Trust: Identify and mitigate potential trust concerns');
+      steps.push('Trust: Consider phased rollout with feedback loops');
+    }
+    steps.push('Re-evaluate with improved proposal in 2-4 weeks');
   } else {
-    steps.push('Focus on higher-scoring initiatives');
-    steps.push('Archive idea with reasoning');
-    steps.push('Revisit only if market conditions change');
+    steps.push('Deprioritize this feature');
+    steps.push('Document why it was rejected (for future reference)');
+    steps.push('If critical, require complete redesign proposal');
+    steps.push('Focus team on higher-scoring opportunities');
   }
-
+  
   return steps;
 }
 
-export async function run(options: CEOReviewOptions): Promise<void> {
-  console.log(chalk.cyan('══════════════════════════════════════════════════'));
-  console.log(chalk.cyan(options.feature));
-  console.log(chalk.cyan('══════════════════════════════════════════════════\n'));
-
-  if (options.goal) {
-    console.log(chalk.gray(`Goal: ${options.goal}`));
-  }
-  if (options.audience) {
-    console.log(chalk.gray(`Audience: ${options.audience}\n`));
-  }
-
-  // Calculate scores
-  const scores: BATScores = {
-    brand: options.brand ?? autoScoreBrand(options.feature),
-    attention: options.attention ?? autoScoreAttention(options.feature),
-    trust: options.trust ?? autoScoreTrust(options.feature)
-  };
-
-  const total = scores.brand + scores.attention + scores.trust;
-  const recommendation = getRecommendation(total);
-
-  // Display scores
-  console.log(`Brand:     ${renderStars(scores.brand)} (${scores.brand}/5)`);
-  console.log(`Attention: ${renderStars(scores.attention)} (${scores.attention}/5)`);
-  console.log(`Trust:     ${renderStars(scores.trust)} (${scores.trust}/5)`);
+export function autoScore(featureName: string, description?: string): BATScore {
+  const text = `${featureName} ${description || ''}`.toLowerCase();
   
-  console.log(chalk.cyan('\n──────────────────────────────────────────────────'));
-  console.log(chalk.bold(`Total: ${total}/15 ⭐`));
-  console.log(chalk.cyan('──────────────────────────────────────────────────\n'));
-
-  // Display recommendation
-  const recColor = recommendation.color as 'green' | 'yellow' | 'red';
-  console.log(chalk.bold('Recommendation:'), chalk[recColor](`${recommendation.icon} ${recommendation.text}`));
-
-  // Generate rationale
-  console.log(chalk.gray('\nRationale:'));
-  if (scores.brand >= 4) {
-    console.log(chalk.gray('  • Strong brand differentiation potential'));
-  } else if (scores.brand <= 2) {
-    console.log(chalk.gray('  • Limited brand impact - table stakes feature'));
-  }
-
-  if (scores.attention >= 4) {
-    console.log(chalk.gray('  • High user engagement potential'));
-  } else if (scores.attention <= 2) {
-    console.log(chalk.gray('  • Low usage frequency - consider if worth building'));
-  }
-
-  if (scores.trust >= 4) {
-    console.log(chalk.gray('  • Strong trust-building opportunity'));
-  } else if (scores.trust <= 2) {
-    console.log(chalk.gray('  • Consider trust implications before launch'));
-  }
-
-  if (total >= 10) {
-    console.log(chalk.gray('  • Meets 10-star threshold for building'));
-  }
-
-  // Next steps
-  console.log(chalk.gray('\nNext Steps:'));
-  const steps = generateNextSteps(scores, total);
-  steps.forEach((step, i) => {
-    console.log(chalk.gray(`  ${i + 1}. ${step}`));
-  });
-
-  console.log(chalk.cyan('\n══════════════════════════════════════════════════'));
+  // Brand indicators
+  const brandKeywords = ['brand', 'identity', 'premium', 'unique', 'exclusive', 'signature', 'iconic', 'differentiator'];
+  const brandScore = Math.min(5, 2 + brandKeywords.filter(k => text.includes(k)).length);
+  
+  // Attention indicators  
+  const attentionKeywords = ['viral', 'share', 'engage', 'grow', 'trend', 'demand', 'popular', 'attention', 'acquisition'];
+  const attentionScore = Math.min(5, 2 + attentionKeywords.filter(k => text.includes(k)).length);
+  
+  // Trust indicators
+  const trustKeywords = ['secure', 'private', 'transparent', 'verified', 'trust', 'reliable', 'safe', 'authentic', 'proven'];
+  const trustScore = Math.min(5, 2 + trustKeywords.filter(k => text.includes(k)).length);
+  
+  return {
+    brand: brandScore,
+    attention: attentionScore,
+    trust: trustScore
+  };
 }
+
+export function getScoreLabel(score: number): string {
+  if (score >= 5) return chalk.green('Exceptional');
+  if (score >= 4) return chalk.green('Strong');
+  if (score >= 3) return chalk.yellow('Moderate');
+  if (score >= 2) return chalk.red('Weak');
+  return chalk.red('Critical');
+}
+
+export function renderScoreBar(score: number, max: number = 5): string {
+  const filled = '█'.repeat(score);
+  const empty = '░'.repeat(max - score);
+  const color = score >= 4 ? chalk.green : score >= 3 ? chalk.yellow : chalk.red;
+  return color(`${filled}${empty} ${score}/${max}`);
+}
+
+export function planCEOReview(options: CEOReviewOptions): CEOReviewResult {
+  console.log(chalk.blue.bold('\n📊 CEO Review - BAT Framework\n'));
+  console.log(chalk.white.bold(`Feature: ${options.featureName}`));
+  if (options.description) {
+    console.log(chalk.gray(`Description: ${options.description}`));
+  }
+  console.log();
+  
+  let scores: BATScore;
+  
+  if (options.autoScore || (options.brand === undefined && options.attention === undefined && options.trust === undefined)) {
+    // Auto-score based on keywords
+    scores = autoScore(options.featureName, options.description);
+    console.log(chalk.yellow('🤖 Auto-scoring based on feature description...\n'));
+  } else {
+    scores = {
+      brand: options.brand ?? 3,
+      attention: options.attention ?? 3,
+      trust: options.trust ?? 3
+    };
+  }
+  
+  const total = scores.brand + scores.attention + scores.trust;
+  const decision = calculateDecision(total);
+  
+  // Render scores
+  console.log(chalk.white.bold('BAT Scores:'));
+  console.log(chalk.gray('─'.repeat(50)));
+  
+  console.log(`  ${chalk.cyan('Brand:')}      ${renderScoreBar(scores.brand)}`);
+  console.log(`             ${chalk.gray('Does this strengthen our brand?')}`);
+  console.log(`             ${getScoreLabel(scores.brand)}`);
+  console.log();
+  
+  console.log(`  ${chalk.cyan('Attention:')}  ${renderScoreBar(scores.attention)}`);
+  console.log(`             ${chalk.gray('Will users engage with this?')}`);
+  console.log(`             ${getScoreLabel(scores.attention)}`);
+  console.log();
+  
+  console.log(`  ${chalk.cyan('Trust:')}      ${renderScoreBar(scores.trust)}`);
+  console.log(`             ${chalk.gray('Does this build user confidence?')}`);
+  console.log(`             ${getScoreLabel(scores.trust)}`);
+  
+  console.log(chalk.gray('─'.repeat(50)));
+  console.log(`  ${chalk.cyan('Total:')}      ${renderScoreBar(total, 15)}`);
+  console.log();
+  
+  // Render decision
+  console.log(chalk.white.bold('Decision:'));
+  console.log(`  ${getDecisionLabel(decision)}`);
+  console.log(`  ${chalk.gray(getDecisionDescription(decision))}`);
+  console.log();
+  
+  // Generate next steps
+  const nextSteps = generateNextSteps({
+    featureName: options.featureName,
+    description: options.description,
+    scores,
+    total,
+    decision,
+    nextSteps: []
+  });
+  
+  console.log(chalk.white.bold('Next Steps:'));
+  nextSteps.forEach((step, i) => {
+    console.log(`  ${i + 1}. ${step}`);
+  });
+  
+  console.log(chalk.gray('\n─'.repeat(50)));
+  console.log(chalk.gray('10-Star Methodology: 12-15 = BUILD | 8-11 = CONSIDER | 0-7 = DON\'T BUILD'));
+  console.log();
+  
+  return {
+    featureName: options.featureName,
+    description: options.description,
+    scores,
+    total,
+    decision,
+    nextSteps
+  };
+}
+
+export { chalk };

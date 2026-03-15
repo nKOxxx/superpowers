@@ -1,16 +1,8 @@
 {
   "name": "plan-ceo-review",
-  "description": "Product strategy review using BAT framework (Brand, Attention, Trust) and 10-star methodology",
   "version": "1.0.0",
-  "author": "nKO",
-  "entry": "index.js",
-  "cli": "cli.js",
-  "dependencies": ["chalk"],
-  "capabilities": [
-    "bat-framework",
-    "10-star-methodology",
-    "product-strategy",
-    "scoring-system",
-    "build-recommendations"
-  ]
+  "description": "BAT framework for product strategy decisions",
+  "command": "plan-ceo-review",
+  "entry": "dist/plan-ceo-review/cli.js",
+  "runtime": "node"
 }
