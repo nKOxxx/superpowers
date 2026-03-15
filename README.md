@@ -1,184 +1,65 @@
-# OpenClaw Superpowers
+# 🦞 Superpowers for OpenClaw
 
-AI-powered workflows for development, testing, and product decisions.
+A 4-pack of TypeScript skills for OpenClaw - browser automation, testing, releases, and product strategy.
 
 ## Skills
 
-### 🔍 `/browse` - Browser Automation
-
-Powered by Playwright for screenshots, visual testing, and flow-based interactions.
-
+### `/browse` - Browser Automation
+Visual testing and QA with Playwright.
 ```bash
-# Basic screenshot
-/browse https://example.com
-
-# Mobile viewport
-/browse https://example.com --viewport=mobile
-
-# Full page screenshot
-/browse https://example.com --full-page
-
-# Flow-based testing
-/browse https://example.com --flow='[
-  { "action": "click", "selector": "#menu" },
-  { "action": "wait", "ms": 500 },
-  { "action": "click", "selector": "#item-1" }
-]'
+/browse https://example.com --viewport mobile --full-page
+/browse https://example.com --selector "#hero" --actions '[{"type":"click","selector":"#menu"}]'
 ```
 
-**Features:**
-- Screenshots (single, full-page, element-specific)
-- Viewport presets (mobile, tablet, desktop)
-- Flow-based testing with actions: click, type, wait, scroll, hover
-- Telegram integration with inline buttons
-
----
-
-### 🧪 `/qa` - Systematic Testing
-
-QA Lead mode with targeted, smoke, and full regression testing.
-
+### `/qa` - Systematic Testing
+Analyzes code changes and runs appropriate tests.
 ```bash
-# Targeted mode (default) - analyze git diff, run relevant tests
-/qa
-
-# Smoke tests - quick validation
-/qa --mode=smoke
-
-# Full regression with coverage
-/qa --mode=full --coverage
+/qa --mode targeted      # Auto-detect changes (default)
+/qa --mode smoke         # Quick validation
+/qa --mode full          # Complete regression
 ```
 
-**Features:**
-- Targeted mode: analyze git diff, run relevant tests
-- Smoke mode: quick validation
-- Full mode: complete regression suite
-- Auto-detect vitest/jest/mocha
-- Parse test results and report failures
-
----
-
-### 🚀 `/ship` - One-Command Release
-
-Semantic versioning, changelog generation, and GitHub releases.
-
+### `/ship` - Release Pipeline
+One-command versioning, changelog, and GitHub releases.
 ```bash
-# Patch release
-/ship --version=patch
-
-# Minor release with dry run
-/ship --version=minor --dry-run
-
-# Major release
-/ship --version=major
-
-# Beta prerelease
-/ship --version=minor --prerelease=beta
+/ship --version patch    # Bug fixes
+/ship --version minor    # New features
+/ship --version major    # Breaking changes
+/ship --dry-run          # Preview only
 ```
 
-**Features:**
-- Semantic versioning (patch, minor, major)
-- Conventional commit changelog generation
-- Git tag + push
-- GitHub release creation
-- Dry-run mode
-
----
-
-### 📊 `/plan-ceo-review` - BAT Framework
-
-Product strategy review with Brand, Attention, Trust scoring.
-
+### `/plan-ceo-review` - BAT Framework
+Product strategy review using Brand, Attention, Trust scoring.
 ```bash
-# Basic review
-/plan-ceo-review "Should we build a mobile app?"
-
-# Interactive mode (Telegram)
-/plan-ceo-review "Should we add AI features?"
+/plan-ceo-review "Add AI voice assistant"
+/plan-ceo-review "Build a referral program"
 ```
-
-**Features:**
-- Brand, Attention, Trust scoring (0-5 each)
-- 10-star methodology thresholds
-- Build/consider/don't build recommendations
-- Interactive questionnaire via Telegram
-
----
 
 ## Installation
 
 ```bash
-cd /Users/ares/.openclaw/workspace/superpowers
-
-# Install dependencies for all skills
-for dir in browse qa ship plan-ceo-review; do
-  cd $dir && npm install && cd ..
-done
+# Clone and install
+git clone https://github.com/nKOxxx/superpowers.git
+cd superpowers
+npm install
 
 # Build all skills
-for dir in browse qa ship plan-ceo-review; do
-  cd $dir && npm run build && cd ..
-done
+npm run build
 ```
 
-## Configuration
+## Requirements
 
-### Environment Variables
+- Node.js 18+
+- Playwright (for /browse)
+- Git + GitHub CLI (for /ship)
+- Vitest/Jest/Mocha project (for /qa)
 
-```bash
-# Browse
-export BROWSE_DEFAULT_TIMEOUT=30000
-export BROWSE_HEADLESS=true
+## Architecture
 
-# QA
-export QA_DEFAULT_MODE=targeted
-export QA_TIMEOUT=60000
-
-# Ship
-export GITHUB_TOKEN=ghp_xxxxxxxxxxxx
-export SHIP_DEFAULT_BRANCH=main
-export SHIP_CHANGELOG_FILE=CHANGELOG.md
-
-# Plan CEO Review
-export BAT_DEFAULT_INTERACTIVE=true
-```
-
-## OpenClaw Integration
-
-Each skill follows the OpenClaw format:
-
-```
-skills/
-├── browse/
-│   ├── SKILL.md        # Documentation
-│   ├── handler.ts      # Entry point
-│   └── package.json    # Dependencies
-├── qa/
-│   └── ...
-├── ship/
-│   └── ...
-└── plan-ceo-review/
-    └── ...
-```
-
-## Development
-
-```bash
-# Run skill directly
-node browse/dist/handler.js https://example.com
-
-# With options
-node browse/dist/handler.js https://example.com --viewport=mobile --full-page
-
-# QA skill
-node qa/dist/handler.js --mode=smoke
-
-# Ship skill
-node ship/dist/handler.js --version=patch --dry-run
-
-# Plan CEO Review
-node plan-ceo-review/dist/handler.js "Should we build X?"
-```
+Each skill is self-contained with:
+- `SKILL.md` - Documentation
+- `src/index.ts` - Implementation
+- `dist/` - Compiled output
 
 ## License
 
