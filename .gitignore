@@ -1,6 +1,5 @@
 node_modules/
 dist/
-dist-skills/
 *.log
 .DS_Store
 .env
