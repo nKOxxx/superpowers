@@ -1,0 +1,8 @@
+{
+  "name": "ship",
+  "version": "1.0.0",
+  "description": "One-command release pipeline - version bump, changelog, git tag, GitHub release",
+  "entry": "cli.js",
+  "type": "cli",
+  "config": {}
+}

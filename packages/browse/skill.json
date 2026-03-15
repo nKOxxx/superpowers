@@ -1,0 +1,8 @@
+{
+  "name": "browse",
+  "version": "1.0.0",
+  "description": "Browser automation for visual testing and QA with Playwright",
+  "entry": "cli.js",
+  "type": "cli",
+  "config": {}
+}
