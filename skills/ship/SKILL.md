@@ -1,7 +1,6 @@
 ---
 name: ship
 description: One-command release pipeline. Bumps version, generates changelog, creates GitHub release. Use when user wants to release a new version, publish package, or create GitHub release. Triggers on requests like /ship, release new version, publish, create release, or version bump.
-user-invocable: true
 metadata:
   openclaw:
     requires:

@@ -1,7 +1,6 @@
 ---
 name: browse
 description: Browser automation for visual testing and QA with Playwright. Use when user needs to test web applications, capture screenshots, validate UI flows, or perform automated browser actions. Triggers on requests like /browse URL, visual testing, screenshot capture, flow testing, or UI automation.
-user-invocable: true
 metadata:
   openclaw:
     requires:

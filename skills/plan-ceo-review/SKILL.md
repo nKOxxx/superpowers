@@ -1,7 +1,6 @@
 ---
 name: plan-ceo-review
 description: Product strategy review using BAT framework (Brand, Attention, Trust) and 10-star methodology. Use when evaluating whether to build a feature, product decisions, prioritization, or build vs buy decisions. Triggers on requests like /plan-ceo-review, should we build X, feature evaluation, product strategy, or build vs buy decisions.
-user-invocable: true
 metadata:
   openclaw:
     requires:

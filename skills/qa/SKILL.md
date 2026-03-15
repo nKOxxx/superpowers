@@ -1,7 +1,6 @@
 ---
 name: qa
 description: Systematic testing as QA Lead. Analyzes code changes and runs appropriate tests. Use when user needs code testing, quality assurance, regression testing, or test planning. Triggers on requests like /qa, run tests, check test coverage, QA review, or code quality checks.
-user-invocable: true
 metadata:
   openclaw:
     requires:
