@@ -26,5 +26,8 @@ Thumbs.db
 *.swo
 
 # Package outputs
-dist-skills/
+dist-skills/*/
+dist-skills/*.skill
 *.tgz
+# But keep the packaged .skill.tar.gz files
+!dist-skills/*.skill.tar.gz
