@@ -1,9 +1,10 @@
 {
   "name": "qa",
   "version": "1.0.0",
-  "description": "Systematic testing based on code changes - targeted, smoke, and full regression modes",
+  "description": "Systematic testing as QA Lead with auto-detection and targeted testing",
   "entry": "dist/index.js",
+  "type": "node",
   "bin": {
-    "superpowers-qa": "dist/cli.js"
+    "qa": "dist/cli.js"
   }
 }

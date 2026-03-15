@@ -1,18 +1,25 @@
 {
-  "name": "superpowers-plan-ceo-review",
+  "name": "plan-ceo-review",
   "version": "1.0.0",
+  "description": "BAT framework for product strategy decisions with 10-star methodology",
   "type": "module",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "package": "mkdir -p ../../dist-skills && tar -czf ../../dist-skills/plan-ceo-review.skill.tar.gz skill.json package.json dist/",
+    "clean": "rm -rf dist",
+    "test": "echo 'No tests yet'"
   },
   "dependencies": {
     "chalk": "^5.3.0",
-    "ora": "^8.0.0"
+    "ora": "^8.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

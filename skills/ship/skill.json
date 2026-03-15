@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "One-command release pipeline with semantic versioning and GitHub releases",
   "entry": "dist/index.js",
+  "type": "node",
   "bin": {
-    "superpowers-ship": "dist/cli.js"
+    "ship": "dist/cli.js"
   }
 }

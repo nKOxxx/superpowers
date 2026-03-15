@@ -1,9 +1,17 @@
 {
   "name": "plan-ceo-review",
   "version": "1.0.0",
-  "description": "Product strategy review with BAT (Brand, Attention, Trust) framework",
+  "description": "BAT framework for product strategy decisions with 10-star methodology",
   "entry": "dist/index.js",
+  "type": "node",
   "bin": {
-    "superpowers-plan-ceo-review": "dist/cli.js"
+    "ceo-review": "dist/cli.js"
+  },
+  "config": {
+    "thresholds": {
+      "build": { "minStars": 10, "minCategories": 2 },
+      "consider": { "minStars": 7, "minCategories": 2 },
+      "skip": { "minStars": 0 }
+    }
   }
 }
