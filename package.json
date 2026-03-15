@@ -14,7 +14,14 @@
     "ship": "node dist/ship/cli.js",
     "plan-ceo-review": "node dist/plan-ceo-review/cli.js"
   },
-  "keywords": ["openclaw", "skills", "ai", "automation", "testing", "release"],
+  "keywords": [
+    "openclaw",
+    "skills",
+    "ai",
+    "automation",
+    "testing",
+    "release"
+  ],
   "author": "nKO",
   "license": "MIT",
   "repository": {
@@ -23,13 +30,15 @@
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.0"
   },
   "dependencies": {
     "@octokit/rest": "^20.0.2",
     "chalk": "^5.3.0",
     "commander": "^11.1.0",
     "playwright": "^1.40.0",
+    "semver": "^7.7.4",
     "simple-git": "^3.21.0"
   },
   "engines": {
