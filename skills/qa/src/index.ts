@@ -1,306 +1,265 @@
-/**
- * QA skill - Systematic testing as QA Lead
- */
-import { Logger, exec, findUpFile, readJsonFile } from '@nko/superpowers-shared';
-import * as fs from 'fs';
-import * as path from 'path';
+import { execSync } from 'child_process';
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
+import type { 
+  QaOptions, 
+  QaResult, 
+  TestFramework, 
+  GitDiff, 
+  TestFile,
+  CoverageReport 
+} from './types.js';
 
-const logger = new Logger({ prefix: 'qa' });
+export * from './types.js';
 
-export type TestFramework = 'vitest' | 'jest' | 'mocha' | 'unknown';
-export type TestMode = 'targeted' | 'smoke' | 'full';
-
-export interface QAOptions {
-  mode?: TestMode;
-  coverage?: boolean;
-  framework?: TestFramework;
-  ci?: boolean;
-  watch?: boolean;
-}
-
-interface PackageJson {
-  scripts?: Record<string, string>;
-  devDependencies?: Record<string, string>;
-  dependencies?: Record<string, string>;
-}
-
-function parseArgs(): QAOptions {
-  const args = process.argv.slice(2);
-  const options: QAOptions = { mode: 'targeted' };
-
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    switch (arg) {
-      case '--mode':
-      case '-m':
-        options.mode = args[++i] as TestMode;
-        break;
-      case '--coverage':
-      case '-c':
-        options.coverage = true;
-        break;
-      case '--framework':
-      case '-f':
-        options.framework = args[++i] as TestFramework;
-        break;
-      case '--ci':
-        options.ci = true;
-        break;
-      case '--watch':
-        options.watch = true;
-        break;
-    }
-  }
-
-  return options;
-}
-
-function detectFramework(projectRoot: string): TestFramework {
-  const packageJsonPath = path.join(projectRoot, 'package.json');
+export function detectFramework(cwd: string = process.cwd()): TestFramework {
+  const packageJsonPath = join(cwd, 'package.json');
   
-  if (!fs.existsSync(packageJsonPath)) {
+  if (!existsSync(packageJsonPath)) {
     return 'unknown';
   }
-
-  const packageJson = readJsonFile<PackageJson>(packageJsonPath);
-  if (!packageJson) return 'unknown';
-
-  const allDeps = {
-    ...packageJson.devDependencies,
+  
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+  const deps = {
     ...packageJson.dependencies,
+    ...packageJson.devDependencies
   };
-
-  if (allDeps.vitest) return 'vitest';
-  if (allDeps.jest) return 'jest';
-  if (allDeps.mocha) return 'mocha';
-
-  if (fs.existsSync(path.join(projectRoot, 'vitest.config.ts')) ||
-      fs.existsSync(path.join(projectRoot, 'vitest.config.js'))) {
-    return 'vitest';
-  }
-
-  if (fs.existsSync(path.join(projectRoot, 'jest.config.ts')) ||
-      fs.existsSync(path.join(projectRoot, 'jest.config.js'))) {
-    return 'jest';
-  }
-
-  if (fs.existsSync(path.join(projectRoot, '.mocharc.json'))) {
-    return 'mocha';
-  }
-
+  
+  if (deps.vitest) return 'vitest';
+  if (deps.jest) return 'jest';
+  if (deps.mocha) return 'mocha';
+  
+  // Check for config files
+  if (existsSync(join(cwd, 'vitest.config.js')) || 
+      existsSync(join(cwd, 'vitest.config.ts'))) return 'vitest';
+  if (existsSync(join(cwd, 'jest.config.js')) || 
+      existsSync(join(cwd, 'jest.config.ts'))) return 'jest';
+  if (existsSync(join(cwd, '.mocharc.js')) || 
+      existsSync(join(cwd, '.mocharc.json'))) return 'mocha';
+  
   return 'unknown';
 }
 
-async function getGitDiff(projectRoot: string): Promise<{ files: string[]; isClean: boolean }> {
-  const { stdout, exitCode } = await exec('git diff --name-only HEAD', { cwd: projectRoot });
-  
-  if (exitCode !== 0) {
-    return { files: [], isClean: true };
+export function getGitDiff(cwd: string = process.cwd()): GitDiff {
+  try {
+    const output = execSync('git diff --name-only HEAD', { cwd, encoding: 'utf-8' }).trim();
+    const files = output ? output.split('\n') : [];
+    
+    const statusOutput = execSync('git status --porcelain', { cwd, encoding: 'utf-8' }).trim();
+    const staged: string[] = statusOutput
+      .split('\n')
+      .filter((line: string) => line.startsWith('A ') || line.startsWith('M ') || line.startsWith('D '))
+      .map((line: string) => line.slice(3));
+    
+    const allFiles = [...new Set([...files, ...staged])];
+    
+    return {
+      files: allFiles,
+      added: allFiles.filter(f => {
+        const status = execSync(`git status --porcelain "${f}"`, { cwd, encoding: 'utf-8' }).trim();
+        return status.startsWith('A');
+      }),
+      modified: allFiles.filter(f => {
+        const status = execSync(`git status --porcelain "${f}"`, { cwd, encoding: 'utf-8' }).trim();
+        return status.startsWith('M') || status.startsWith(' M');
+      }),
+      deleted: allFiles.filter(f => {
+        const status = execSync(`git status --porcelain "${f}"`, { cwd, encoding: 'utf-8' }).trim();
+        return status.startsWith('D');
+      })
+    };
+  } catch (error) {
+    return { files: [], added: [], modified: [], deleted: [] };
   }
-
-  const files = stdout.trim().split('\n').filter(f => f.length > 0);
-  
-  const { stdout: stagedStdout } = await exec('git diff --cached --name-only', { cwd: projectRoot });
-  const stagedFiles = stagedStdout.trim().split('\n').filter(f => f.length > 0);
-  
-  const allFiles = [...new Set([...files, ...stagedFiles])];
-  
-  return {
-    files: allFiles,
-    isClean: allFiles.length === 0,
-  };
 }
 
-function mapSourceToTestFiles(sourceFiles: string[]): string[] {
-  const testFiles: string[] = [];
+export function findRelatedTests(
+  sourceFiles: string[], 
+  cwd: string = process.cwd()
+): TestFile[] {
+  const testFiles: TestFile[] = [];
+  const framework = detectFramework(cwd);
   
-  for (const file of sourceFiles) {
-    if (/\.(test|spec)\.(ts|js|tsx|jsx|mjs|cjs)$/.test(file)) {
-      testFiles.push(file);
-      continue;
+  for (const sourceFile of sourceFiles) {
+    // Look for corresponding test files
+    const extensions = ['.test.ts', '.test.js', '.spec.ts', '.spec.js'];
+    const baseName = sourceFile.replace(/\.(ts|js|tsx|jsx)$/, '');
+    
+    for (const ext of extensions) {
+      const testPath = join(cwd, baseName + ext);
+      if (existsSync(testPath)) {
+        testFiles.push({
+          path: testPath,
+          framework,
+          relatedSourceFiles: [sourceFile]
+        });
+      }
     }
-
-    const dir = path.dirname(file);
-    const basename = path.basename(file, path.extname(file));
-    const ext = path.extname(file);
-
-    const patterns = [
-      path.join(dir, `${basename}.test${ext}`),
-      path.join(dir, `${basename}.spec${ext}`),
-      path.join(dir, '__tests__', `${basename}.test${ext}`),
-      path.join(dir, '__tests__', `${basename}.spec${ext}`),
-      path.join(dir, 'test', `${basename}.test${ext}`),
-      path.join(dir, 'tests', `${basename}.test${ext}`),
-    ];
-
-    testFiles.push(...patterns);
+    
+    // Check for __tests__ directory pattern
+    const dir = sourceFile.substring(0, sourceFile.lastIndexOf('/'));
+    const fileName = sourceFile.substring(sourceFile.lastIndexOf('/') + 1).replace(/\.(ts|js|tsx|jsx)$/, '');
+    const testDirPath = join(cwd, dir, '__tests__', `${fileName}.test.ts`);
+    
+    if (existsSync(testDirPath)) {
+      testFiles.push({
+        path: testDirPath,
+        framework,
+        relatedSourceFiles: [sourceFile]
+      });
+    }
   }
-
-  return [...new Set(testFiles)];
+  
+  // Remove duplicates
+  const unique = new Map<string, TestFile>();
+  for (const tf of testFiles) {
+    if (!unique.has(tf.path)) {
+      unique.set(tf.path, tf);
+    } else {
+      const existing = unique.get(tf.path)!;
+      existing.relatedSourceFiles = [...new Set([...existing.relatedSourceFiles, ...tf.relatedSourceFiles])];
+    }
+  }
+  
+  return Array.from(unique.values());
 }
 
-function getTestCommand(framework: TestFramework, options: QAOptions, testFiles?: string[]): string {
-  const coverageFlag = options.coverage ? ' --coverage' : '';
-  const ciFlag = options.ci ? ' --ci' : '';
-  const watchFlag = options.watch && !options.ci ? ' --watch' : '';
-
+function buildTestCommand(framework: TestFramework, options: QaOptions, testFiles?: string[]): string {
+  const coverage = options.coverage ? '--coverage' : '';
+  const verbose = options.verbose ? '--verbose' : '';
+  const updateSnapshot = options.updateSnapshot ? '-u' : '';
+  
   switch (framework) {
     case 'vitest':
-      if (testFiles && testFiles.length > 0) {
-        return `vitest run ${testFiles.join(' ')}${coverageFlag}${ciFlag}`;
-      }
-      return `vitest run${coverageFlag}${ciFlag}`;
-
+      const vitestFiles = testFiles ? testFiles.join(' ') : '';
+      return `npx vitest run ${vitestFiles} ${coverage} ${verbose} ${updateSnapshot}`.trim();
     case 'jest':
-      if (testFiles && testFiles.length > 0) {
-        return `jest ${testFiles.join(' ')}${coverageFlag}${ciFlag}${watchFlag}`;
-      }
-      return `jest${coverageFlag}${ciFlag}${watchFlag}`;
-
+      const jestPattern = testFiles ? `--testPathPattern="${testFiles.join('|')}"` : '';
+      return `npx jest ${jestPattern} ${coverage} ${verbose} ${updateSnapshot}`.trim();
     case 'mocha':
-      if (testFiles && testFiles.length > 0) {
-        return `mocha ${testFiles.join(' ')}${ciFlag}`;
-      }
-      return `mocha${ciFlag}`;
-
+      const mochaFiles = testFiles ? testFiles.join(' ') : '';
+      return `npx mocha ${mochaFiles} ${verbose}`.trim();
     default:
-      throw new Error('No test framework detected. Please specify with --framework');
+      throw new Error('Unknown test framework');
   }
 }
 
-async function runTests(
-  projectRoot: string,
-  framework: TestFramework,
-  options: QAOptions
-): Promise<{ success: boolean; output: string }> {
-  let testFiles: string[] | undefined;
-
-  if (options.mode === 'targeted') {
-    const diff = await getGitDiff(projectRoot);
+function parseTestOutput(output: string, framework: TestFramework): Partial<QaResult> {
+  const result: Partial<QaResult> = {
+    testsRun: 0,
+    testsPassed: 0,
+    testsFailed: 0,
+    testsSkipped: 0
+  };
+  
+  if (framework === 'vitest') {
+    // Parse Vitest output
+    const testsMatch = output.match(/(\d+)\s+passed/);
+    const failedMatch = output.match(/(\d+)\s+failed/);
+    const skippedMatch = output.match(/(\d+)\s+skipped/);
     
-    if (diff.isClean) {
-      logger.warn('No changes detected. Running full test suite.');
-    } else {
-      logger.info(`Detected ${diff.files.length} changed file(s)`);
-      
-      const sourceFiles = diff.files.filter(f => 
-        /\.(ts|js|tsx|jsx|mjs|cjs)$/.test(f) && 
-        !f.includes('node_modules/') &&
-        !/\.(test|spec)\./.test(f)
-      );
-
-      if (sourceFiles.length > 0) {
-        testFiles = mapSourceToTestFiles(sourceFiles);
-        logger.info(`Mapped to ${testFiles.length} potential test file(s)`);
-        
-        const existingTestFiles = testFiles.filter(f => 
-          fs.existsSync(path.join(projectRoot, f))
-        );
-        
-        if (existingTestFiles.length > 0) {
-          testFiles = existingTestFiles;
-          logger.info(`Found ${testFiles.length} existing test file(s) to run`);
-        } else {
-          logger.warn('No matching test files found, running full suite');
-          testFiles = undefined;
-        }
-      }
-    }
+    if (testsMatch) result.testsPassed = parseInt(testsMatch[1], 10);
+    if (failedMatch) result.testsFailed = parseInt(failedMatch[1], 10);
+    if (skippedMatch) result.testsSkipped = parseInt(skippedMatch[1], 10);
+    result.testsRun = (result.testsPassed || 0) + (result.testsFailed || 0) + (result.testsSkipped || 0);
+  } else if (framework === 'jest') {
+    // Parse Jest output
+    const testsMatch = output.match(/Tests:\s+(\d+)\s+passed/);
+    const failedMatch = output.match(/(\d+)\s+failed/);
+    const skippedMatch = output.match(/(\d+)\s+pending|skipped/);
+    
+    if (testsMatch) result.testsPassed = parseInt(testsMatch[1], 10);
+    if (failedMatch) result.testsFailed = parseInt(failedMatch[1], 10);
+    if (skippedMatch) result.testsSkipped = parseInt(skippedMatch[1], 10);
+    result.testsRun = (result.testsPassed || 0) + (result.testsFailed || 0) + (result.testsSkipped || 0);
   }
-
-  const command = getTestCommand(framework, options, testFiles);
-  logger.info(`Running: ${command}`);
-
-  const spinner = logger.spinner('Running tests...');
-  const result = await exec(command, { cwd: projectRoot });
-
-  if (result.exitCode === 0) {
-    spinner.succeed('Tests passed');
-    return { success: true, output: result.stdout };
-  } else {
-    spinner.fail('Tests failed');
-    return { success: false, output: result.stdout + result.stderr };
-  }
+  
+  return result;
 }
 
-async function runSmokeTests(
-  projectRoot: string,
-  framework: TestFramework,
-  options: QAOptions
-): Promise<{ success: boolean; output: string }> {
-  logger.info('Running smoke tests...');
-  
-  const { stdout } = await exec(
-    'find . -type f -name "*.test.*" -o -name "*.spec.*" | grep -i smoke || true',
-    { cwd: projectRoot }
-  );
-
-  const smokeFiles = stdout.trim().split('\n').filter(f => f.length > 0);
-
-  if (smokeFiles.length === 0) {
-    logger.warn('No smoke tests found. Running full test suite.');
-    return runTests(projectRoot, framework, { ...options, mode: 'full' });
-  }
-
-  return runTests(projectRoot, framework, { ...options, mode: 'full' });
-}
-
-export async function main(): Promise<void> {
-  const options = parseArgs();
-  
-  const projectRootFile = findUpFile(process.cwd(), 'package.json');
-  if (!projectRootFile) {
-    console.error('Error: No package.json found in current directory or parent directories');
-    process.exit(1);
-  }
-  
-  const root = path.dirname(projectRootFile);
-  logger.info(`Project root: ${root}`);
-
-  const framework = options.framework || detectFramework(root);
+export async function runQa(options: QaOptions, cwd: string = process.cwd()): Promise<QaResult> {
+  const startTime = Date.now();
+  const framework = detectFramework(cwd);
   
   if (framework === 'unknown') {
-    console.error('Error: Could not detect test framework. Please specify with --framework=(vitest|jest|mocha)');
-    process.exit(1);
+    return {
+      success: false,
+      framework,
+      mode: options.mode,
+      testsRun: 0,
+      testsPassed: 0,
+      testsFailed: 0,
+      testsSkipped: 0,
+      duration: 0,
+      error: 'No test framework detected. Please install vitest, jest, or mocha.'
+    };
   }
-
-  logger.info(`Test framework: ${framework}`);
-  logger.info(`Test mode: ${options.mode || 'targeted'}`);
-
-  if (options.coverage) {
-    logger.info('Coverage: enabled');
-  }
-
+  
   try {
-    let result: { success: boolean; output: string };
-
-    switch (options.mode) {
-      case 'smoke':
-        result = await runSmokeTests(root, framework, options);
-        break;
-      case 'full':
-        result = await runTests(root, framework, { ...options, mode: 'full' });
-        break;
-      case 'targeted':
-      default:
-        result = await runTests(root, framework, options);
+    let testFiles: string[] | undefined;
+    
+    if (options.mode === 'targeted') {
+      const diff = getGitDiff(cwd);
+      const related = findRelatedTests(diff.files, cwd);
+      testFiles = related.map(t => t.path);
+      
+      if (testFiles.length === 0) {
+        return {
+          success: true,
+          framework,
+          mode: 'targeted',
+          testsRun: 0,
+          testsPassed: 0,
+          testsFailed: 0,
+          testsSkipped: 0,
+          duration: Date.now() - startTime,
+          error: 'No related tests found for changed files'
+        };
+      }
+    } else if (options.mode === 'smoke') {
+      // Run a quick smoke test - just the first test file or files matching smoke pattern
+      const { globSync } = await import('glob');
+      const smokeFiles = globSync('**/*.{smoke,e2e}.test.{ts,js}', { cwd });
+      if (smokeFiles.length > 0) {
+        testFiles = smokeFiles;
+      }
     }
-
-    if (result.success) {
-      console.log('\n✓ All tests passed');
-      process.exit(0);
-    } else {
-      console.error('\n' + result.output);
-      console.error('\n✗ Tests failed');
-      process.exit(1);
-    }
+    // 'full' mode runs all tests, so no testFiles filter
+    
+    const command = buildTestCommand(framework, options, testFiles);
+    
+    const output = execSync(command, { 
+      cwd, 
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    
+    const parsed = parseTestOutput(output, framework);
+    
+    return {
+      success: true,
+      framework,
+      mode: options.mode,
+      testsRun: parsed.testsRun || 0,
+      testsPassed: parsed.testsPassed || 0,
+      testsFailed: parsed.testsFailed || 0,
+      testsSkipped: parsed.testsSkipped || 0,
+      duration: Date.now() - startTime
+    };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(`QA failed: ${message}`);
-    process.exit(1);
+    const errorOutput = error instanceof Error ? error.message : String(error);
+    const parsed = parseTestOutput(errorOutput, framework);
+    
+    return {
+      success: false,
+      framework,
+      mode: options.mode,
+      testsRun: parsed.testsRun || 0,
+      testsPassed: parsed.testsPassed || 0,
+      testsFailed: parsed.testsFailed || 0,
+      testsSkipped: parsed.testsSkipped || 0,
+      duration: Date.now() - startTime,
+      error: errorOutput
+    };
   }
-}
-
-if (require.main === module) {
-  main();
 }

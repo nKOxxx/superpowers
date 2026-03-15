@@ -1,12 +1,9 @@
 {
   "name": "qa",
   "version": "1.0.0",
-  "description": "Systematic testing as QA Lead with targeted, smoke, and full test modes",
-  "entry": "dist/skills/qa.js",
-  "bin": "cli.js",
-  "capabilities": ["testing", "qa", "coverage", "regression"],
-  "requires": {
-    "node": ">=18.0.0",
-    "npm": ["@nko/superpowers"]
+  "description": "Systematic testing based on code changes - targeted, smoke, and full regression modes",
+  "entry": "dist/index.js",
+  "bin": {
+    "superpowers-qa": "dist/cli.js"
   }
 }

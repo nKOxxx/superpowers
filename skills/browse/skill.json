@@ -2,11 +2,8 @@
   "name": "browse",
   "version": "1.0.0",
   "description": "Browser automation for visual testing and QA with Playwright",
-  "entry": "dist/skills/browse.js",
-  "bin": "cli.js",
-  "capabilities": ["screenshot", "browser-automation", "visual-testing"],
-  "requires": {
-    "node": ">=18.0.0",
-    "npm": ["@nko/superpowers"]
+  "entry": "dist/index.js",
+  "bin": {
+    "superpowers-browse": "dist/cli.js"
   }
 }

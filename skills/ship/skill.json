@@ -1,13 +1,9 @@
 {
   "name": "ship",
   "version": "1.0.0",
-  "description": "One-command release pipeline with version bump, changelog, and GitHub releases",
-  "entry": "dist/skills/ship.js",
-  "bin": "cli.js",
-  "capabilities": ["release", "versioning", "changelog", "github"],
-  "requires": {
-    "node": ">=18.0.0",
-    "npm": ["@nko/superpowers"]
-  },
-  "env": ["GH_TOKEN"]
+  "description": "One-command release pipeline with semantic versioning and GitHub releases",
+  "entry": "dist/index.js",
+  "bin": {
+    "superpowers-ship": "dist/cli.js"
+  }
 }
