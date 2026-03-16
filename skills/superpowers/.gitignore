@@ -1,0 +1,49 @@
+# .gitignore for OpenClaw Superpowers
+
+# Dependencies
+node_modules/
+.pnpm-store/
+*.lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+
+# Screenshots (from browse skill)
+screenshots/
+*.png
+!assets/*.png
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Temporary files
+tmp/
+temp/
+.cache/

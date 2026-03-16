@@ -1,0 +1,41 @@
+{
+  "name": "@openclaw/superpowers",
+  "version": "1.0.0",
+  "description": "OpenClaw Superpowers - Opinionated workflow skills for AI agents",
+  "private": false,
+  "type": "module",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.1.1",
+    "turbo": "^1.11.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nKOxxx/superpowers.git"
+  },
+  "keywords": [
+    "openclaw",
+    "ai",
+    "automation",
+    "testing",
+    "release",
+    "product-strategy"
+  ],
+  "author": "nKOxxx",
+  "license": "MIT"
+}

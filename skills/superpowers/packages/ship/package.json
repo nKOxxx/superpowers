@@ -1,0 +1,41 @@
+{
+  "name": "@openclaw/superpowers-ship",
+  "version": "1.0.0",
+  "description": "One-command release pipeline - version bump, changelog, GitHub release",
+  "type": "module",
+  "bin": {
+    "ship": "./dist/cli.js",
+    "superpowers-ship": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@openclaw/superpowers-shared": "workspace:*",
+    "commander": "^11.1.0",
+    "chalk": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  },
+  "keywords": [
+    "openclaw",
+    "superpowers",
+    "release",
+    "ship",
+    "version",
+    "changelog"
+  ],
+  "license": "MIT"
+}
