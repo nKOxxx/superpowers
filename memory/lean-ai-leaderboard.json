@@ -1,0 +1,63 @@
+{
+  "lastUpdated": "2026-02-28",
+  "source": "leanaileaderboard.com",
+  "summary": {
+    "totalCompanies": 45,
+    "avgRevenuePerEmployee": "$3.2M",
+    "avgTeamSize": 28,
+    "medianRevenue": "$20M",
+    "profitableCount": 35
+  },
+  "top20": [
+    {"rank": 1, "name": "Telegram", "revenue": "$1B", "employees": 30, "revPerEmp": "$33.3M", "category": "Messaging", "founded": 2013},
+    {"rank": 2, "name": "Midjourney", "revenue": "$500M", "employees": 40, "revPerEmp": "$12.5M", "category": "Image Gen", "founded": 2022},
+    {"rank": 3, "name": "SurgeAI", "revenue": "$1B", "employees": 110, "revPerEmp": "$9.1M", "category": "AI Training Data", "founded": 2020},
+    {"rank": 4, "name": "Anysphere (Cursor)", "revenue": "$100M", "employees": 20, "revPerEmp": "$5.0M", "category": "AI Code Editor", "founded": 2022},
+    {"rank": 5, "name": "OpenArt", "revenue": "$70M", "employees": 20, "revPerEmp": "$3.5M", "category": "Image/Video", "founded": 2022},
+    {"rank": 6, "name": "Base44", "revenue": "$3.5M", "employees": 1, "revPerEmp": "$3.5M", "category": "AI Code Gen", "founded": 2025},
+    {"rank": 7, "name": "Cal AI", "revenue": "$12M", "employees": 4, "revPerEmp": "$3.0M", "category": "AI Calorie Tracker", "founded": 2024},
+    {"rank": 8, "name": "Mercor", "revenue": "$75M", "employees": 30, "revPerEmp": "$2.5M", "category": "Talent Marketplace", "founded": 2023},
+    {"rank": 9, "name": "Chai Research", "revenue": "$30M", "employees": 12, "revPerEmp": "$2.5M", "category": "Social AI", "founded": 2021},
+    {"rank": 10, "name": "Fal.ai", "revenue": "$95M", "employees": 40, "revPerEmp": "$2.375M", "category": "Generative Media", "founded": 2021},
+    {"rank": 11, "name": "Eleven Labs", "revenue": "$100M", "employees": 50, "revPerEmp": "$2.0M", "category": "AI Voice", "founded": 2022},
+    {"rank": 12, "name": "Stackblitz (Bolt.new)", "revenue": "$40M", "employees": 20, "revPerEmp": "$2.0M", "category": "AI Code Editor", "founded": 2017},
+    {"rank": 13, "name": "Gamma", "revenue": "$100M", "employees": 52, "revPerEmp": "$1.92M", "category": "AI Presentations", "founded": 2020},
+    {"rank": 14, "name": "Lovable", "revenue": "$75M", "employees": 40, "revPerEmp": "$1.875M", "category": "AI Code Gen", "founded": 2023},
+    {"rank": 15, "name": "Retell AI", "revenue": "$36M", "employees": 21, "revPerEmp": "$1.71M", "category": "AI Voice", "founded": 2023},
+    {"rank": 16, "name": "Genspark", "revenue": "$50M", "employees": 30, "revPerEmp": "$1.67M", "category": "AI Super Agent", "founded": 2023},
+    {"rank": 17, "name": "Markable AI", "revenue": "$40M", "employees": 25, "revPerEmp": "$1.6M", "category": "AI Creator Marketing", "founded": 2023},
+    {"rank": 18, "name": "Aragon AI", "revenue": "$12M", "employees": 8, "revPerEmp": "$1.5M", "category": "AI Avatar", "founded": 2022},
+    {"rank": 19, "name": "Solvely.ai", "revenue": "$6M", "employees": 4, "revPerEmp": "$1.5M", "category": "AI Homework", "founded": 2023},
+    {"rank": 20, "name": "Oleve", "revenue": "$6M", "employees": 4, "revPerEmp": "$1.5M", "category": "Consumer Portfolio", "founded": 2024}
+  ],
+  "categories": {
+    "AI Code Gen/Editor": 5,
+    "AI Voice": 4,
+    "Image/Video Gen": 4,
+    "AI Training/Data": 2,
+    "Messaging/Communication": 2,
+    "Productivity": 3,
+    "Marketing/Ads": 2,
+    "Other": 23
+  },
+  "teamSizeDistribution": {
+    "1-person": 1,
+    "2-4 people": 7,
+    "5-10 people": 8,
+    "11-20 people": 10,
+    "21-50 people": 19
+  },
+  "keyTrends": [
+    "Code generation tools dominate top revenue/employee",
+    "Voice AI under-monetized relative to text",
+    "1-person companies achieving $3M+ ARR",
+    "Most profitable without VC funding",
+    "Remote-first is default"
+  ],
+  "companiesToWatch": [
+    "Base44 — proving 1-person $3M ARR is real",
+    "Cal AI — 4 people, $12M ARR, health vertical",
+    "Cursor — fastest growing dev tool",
+    "ElevenLabs — voice infra, $66M/employee valuation"
+  ]
+}
