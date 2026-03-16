@@ -1,116 +1,129 @@
+#!/usr/bin/env node
 import { Command } from 'commander';
-import chalk from 'chalk';
-import ora from 'ora';
-import { chromium, Browser, Page, BrowserContext } from 'playwright';
-import { readFileSync } from 'fs';
-
-interface ViewportPreset { width: number; height: number; }
-const VIEWPORT_PRESETS: Record<string, ViewportPreset> = {
-  mobile: { width: 375, height: 667 },
-  tablet: { width: 768, height: 1024 },
-  desktop: { width: 1920, height: 1080 }
-};
-
-interface ActionStep {
-  type: 'click' | 'type' | 'wait' | 'scroll' | 'hover';
-  selector?: string; text?: string; delay?: number; x?: number; y?: number;
-}
-
-interface FlowConfig { url: string; viewport?: string; actions: ActionStep[]; }
-
-interface ScreenshotOptions {
-  url: string; viewport?: string; fullPage?: boolean; selector?: string; flow?: string;
-}
-
-async function captureScreenshot(options: ScreenshotOptions): Promise<string> {
-  const spinner = ora('Launching browser...').start();
-  let browser: Browser | null = null;
-  let context: BrowserContext | null = null;
-  let page: Page | null = null;
-  try {
-    browser = await chromium.launch({ headless: true });
-    const viewport = VIEWPORT_PRESETS[options.viewport || 'desktop'] || VIEWPORT_PRESETS.desktop;
-    context = await browser.newContext({ viewport, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' });
-    page = await context.newPage();
-    spinner.text = `Navigating to ${options.url}...`;
-    await page.goto(options.url, { waitUntil: 'networkidle', timeout: 30000 });
-    if (options.flow) {
-      spinner.text = 'Executing flow...';
-      const flowConfig: FlowConfig = JSON.parse(readFileSync(options.flow, 'utf-8'));
-      for (const action of flowConfig.actions) await executeAction(page, action);
-    }
-    spinner.text = 'Capturing screenshot...';
-    let screenshotBuffer: Buffer;
-    if (options.selector) {
-      const element = await page.locator(options.selector).first();
-      screenshotBuffer = await element.screenshot({ type: 'png' });
-    } else {
-      screenshotBuffer = await page.screenshot({ fullPage: options.fullPage || false, type: 'png' });
-    }
-    const base64Image = screenshotBuffer.toString('base64');
-    spinner.succeed(chalk.green('Screenshot captured!'));
-    return base64Image;
-  } catch (error) {
-    spinner.fail(chalk.red(`Failed: ${error instanceof Error ? error.message : 'Unknown error'}`));
-    throw error;
-  } finally {
-    if (page) await page.close();
-    if (context) await context.close();
-    if (browser) await browser.close();
-  }
-}
-
-async function executeAction(page: Page, action: ActionStep): Promise<void> {
-  switch (action.type) {
-    case 'click':
-      if (action.selector) await page.click(action.selector);
-      else if (action.x !== undefined && action.y !== undefined) await page.mouse.click(action.x, action.y);
-      break;
-    case 'type':
-      if (action.selector && action.text !== undefined) await page.fill(action.selector, action.text);
-      break;
-    case 'wait': await page.waitForTimeout(action.delay || 1000); break;
-    case 'scroll':
-      if (action.x !== undefined && action.y !== undefined) {
-        // @ts-ignore - Runs in browser context via page.evaluate()
-        await page.evaluate(({ x, y }) => window.scrollTo(x, y), { x: action.x, y: action.y });
-      } else {
-        // @ts-ignore - Runs in browser context via page.evaluate()
-        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-      }
-      break;
-    case 'hover': if (action.selector) await page.hover(action.selector); break;
-  }
-}
-
-function validateUrl(url: string): string {
-  if (!url.startsWith('http://') && !url.startsWith('https://')) return `https://${url}`;
-  return url;
-}
+import { takeScreenshot, testUrl, clickElement, typeText, runFlow, closeBrowser } from './browser.js';
+import { readJson } from '../shared/utils.js';
+import { FlowOptions } from '../shared/types.js';
+import { fileURLToPath } from 'url';
 
 const program = new Command();
-program.name('browse').description('Browser automation with Playwright').version('1.0.0');
 
-program.argument('<url>', 'URL to capture').option('-v, --viewport <preset>', 'Viewport (mobile, tablet, desktop)', 'desktop')
-  .option('-f, --full-page', 'Full page screenshot').option('-s, --selector <selector>', 'Element selector')
-  .option('--flow <path>', 'Flow config JSON').action(async (url: string, options) => {
-    try {
-      const base64Image = await captureScreenshot({ url: validateUrl(url), viewport: options.viewport, fullPage: options.fullPage, selector: options.selector, flow: options.flow });
-      console.log(`\n${chalk.cyan('=== BASE64 ===')}\n${base64Image}\n${chalk.cyan('=== END ===')}\n`);
-    } catch { process.exit(1); }
+program
+  .name('browse')
+  .description('Browser automation with Playwright - screenshots, UI testing, flow validation')
+  .version('1.0.0');
+
+program
+  .command('screenshot <url>')
+  .description('Take a screenshot of a webpage')
+  .option('-v, --viewport <preset>', 'Viewport preset: desktop, mobile, tablet', 'desktop')
+  .option('-W, --width <number>', 'Custom viewport width')
+  .option('-H, --height <number>', 'Custom viewport height')
+  .option('-o, --output <dir>', 'Output directory', './screenshots')
+  .option('-f, --filename <name>', 'Custom filename')
+  .option('--full-page', 'Capture full page')
+  .option('--wait-for <selector>', 'Wait for element before screenshot')
+  .option('--wait-time <ms>', 'Wait time before screenshot', parseInt)
+  .option('--hide <selectors...>', 'Hide elements (e.g., cookie banners)')
+  .option('--dark-mode', 'Enable dark mode')
+  .action(async (url, options) => {
+    const viewport = options.width && options.height 
+      ? { width: parseInt(options.width), height: parseInt(options.height) }
+      : options.viewport;
+    
+    await takeScreenshot({
+      url,
+      viewport,
+      fullPage: options.fullPage,
+      waitFor: options.waitFor,
+      waitTime: options.waitTime,
+      hideSelectors: options.hide,
+      darkMode: options.darkMode,
+      outputDir: options.output,
+      filename: options.filename
+    });
+    await closeBrowser();
   });
 
-program.command('flow').description('Execute flow test').argument('<config>', 'Config path').action(async (configPath: string) => {
-  try {
-    const flowConfig: FlowConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
-    const base64Image = await captureScreenshot({ url: validateUrl(flowConfig.url), viewport: flowConfig.viewport, flow: configPath });
-    console.log(`\n${chalk.cyan('=== BASE64 ===')}\n${base64Image}\n${chalk.cyan('=== END ===')}\n`);
-  } catch { process.exit(1); }
-});
+program
+  .command('test-url <url>')
+  .description('Test a URL for availability and content')
+  .option('--expect-status <code>', 'Expected HTTP status', parseInt, 200)
+  .option('--expect-text <text>', 'Text that should appear on page')
+  .option('--expect-selector <selector>', 'CSS selector that should exist')
+  .option('-t, --timeout <ms>', 'Page load timeout', parseInt, 30000)
+  .option('--dark-mode', 'Enable dark mode')
+  .action(async (url, options) => {
+    const result = await testUrl({
+      url,
+      expectStatus: options.expectStatus,
+      expectText: options.expectText,
+      expectSelector: options.expectSelector,
+      timeout: options.timeout,
+      darkMode: options.darkMode
+    });
+    await closeBrowser();
+    process.exit(result.success ? 0 : 1);
+  });
 
-program.command('presets').description('Show viewport presets').action(() => {
-  console.log(chalk.cyan('Viewport Presets:'));
-  for (const [name, dim] of Object.entries(VIEWPORT_PRESETS)) console.log(`  ${chalk.yellow(name)} ${dim.width}x${dim.height}`);
-});
+program
+  .command('click <url>')
+  .description('Click an element on a webpage')
+  .option('-s, --selector <selector>', 'Element selector to click', '#submit-btn')
+  .option('--screenshot', 'Take screenshot after click')
+  .option('--wait-for-navigation', 'Wait for navigation after click')
+  .option('-v, --viewport <preset>', 'Viewport preset', 'desktop')
+  .action(async (url, options) => {
+    await clickElement({
+      url,
+      selector: options.selector,
+      screenshot: options.screenshot,
+      waitForNavigation: options.waitForNavigation,
+      viewport: options.viewport
+    });
+    await closeBrowser();
+  });
 
-program.parse();
+program
+  .command('type <url>')
+  .description('Type text into an input field')
+  .option('-s, --selector <selector>', 'Input field selector', '#email')
+  .option('-t, --text <text>', 'Text to type', 'user@example.com')
+  .option('--clear', 'Clear field before typing')
+  .option('--submit', 'Submit form after typing')
+  .option('--delay <ms>', 'Delay between keystrokes', parseInt)
+  .option('--screenshot', 'Take screenshot after typing')
+  .action(async (url, options) => {
+    await typeText({
+      url,
+      selector: options.selector,
+      text: options.text,
+      clear: options.clear,
+      submit: options.submit,
+      delay: options.delay,
+      screenshot: options.screenshot
+    });
+    await closeBrowser();
+  });
+
+program
+  .command('flow <flow-file>')
+  .description('Run a multi-step browser flow from a JSON file')
+  .action(async (flowFile) => {
+    const flow = await readJson<FlowOptions>(flowFile);
+    if (!flow) {
+      console.error(`Failed to load flow file: ${flowFile}`);
+      process.exit(1);
+    }
+    
+    const result = await runFlow(flow);
+    await closeBrowser();
+    process.exit(result.success ? 0 : 1);
+  });
+
+// Handle direct invocation
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMainModule) {
+  program.parse();
+}
+
+export { program };
