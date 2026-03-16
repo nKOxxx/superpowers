@@ -66,14 +66,12 @@ superpowers ship patch --dry-run
 
 ## Options
 
-- `--version=<type>` - Version bump type (required)
+- `--bump=<type>` - Version bump type (patch, minor, major, or explicit). Default: patch
 - `--dry-run` - Preview changes without executing. Default: false
-- `--skip-tests` - Skip test run before release. Default: false
-- `--skip-changelog` - Skip changelog update. Default: false
-- `--skip-git` - Skip git operations. Default: false
-- `--skip-github` - Skip GitHub release. Default: false
-- `--prerelease` - Mark as prerelease. Default: false
-- `--notes=<text>` - Custom release notes
+- `--skip-tag` - Skip git tag creation. Default: false
+- `--skip-push` - Skip git push. Default: false
+- `--skip-release` - Skip GitHub release. Default: false
+- `--no-changelog` - Skip changelog generation. Default: false
 
 ## Requirements
 

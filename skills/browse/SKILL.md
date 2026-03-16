@@ -48,7 +48,7 @@ superpowers browse https://example.com --full-page
 ### Custom actions
 
 ```bash
-superpowers browse https://example.com --actions="click:.btn,wait:1000,type:#input|hello"
+superpowers browse https://example.com --actions='[{"type":"click","selector":".btn"},{"type":"wait","duration":1000}]'
 ```
 
 ## Options
@@ -58,7 +58,7 @@ superpowers browse https://example.com --actions="click:.btn,wait:1000,type:#inp
 - `--output=<path>` - Save screenshot to file path
 - `--wait=<ms>` - Wait time in ms after page load. Default: 1000
 - `--selector=<selector>` - CSS selector to capture specific element
-- `--actions=<actions>` - Comma-separated actions
+- `--actions=<json>` - JSON array of actions to perform
 
 ## Viewport Presets
 
@@ -67,33 +67,25 @@ superpowers browse https://example.com --actions="click:.btn,wait:1000,type:#inp
 - `desktop`: 1280x720 @ 1x
 - `wide`: 1920x1080 @ 1x
 
-## Action Syntax
+## Action Format
 
-Actions are comma-separated with colon-separated parameters:
+Actions are JSON objects with a `type` field:
 
-- `click:<selector>` - Click element
-- `type:<selector>|<text>` - Type text into element
-- `wait:<ms>` - Wait milliseconds
-- `scroll` - Scroll down one viewport
-- `hover:<selector>` - Hover over element
-- `navigate:<url>` - Navigate to URL
-- `screenshot` - Take screenshot at this point
-
-Example: `click:.menu,wait:500,hover:.dropdown-item,screenshot`
-
-## Flow Mode
-
-For complex multi-step flows:
-
-```bash
-superpowers flow https://example.com --actions='[{"type":"click","selector":".btn"},{"type":"wait","delay":1000}]'
+```json
+[
+  { "type": "click", "selector": ".button" },
+  { "type": "type", "selector": "#input", "text": "hello" },
+  { "type": "wait", "duration": 1000 },
+  { "type": "scroll" },
+  { "type": "hover", "selector": ".dropdown" }
+]
 ```
 
 ## Output
 
 - Base64 output to stdout by default
 - File output with `--output` flag
-- Screenshot data available for OpenClay canvas display
+- Screenshot data available for OpenClaw canvas display
 
 ## Requirements
 

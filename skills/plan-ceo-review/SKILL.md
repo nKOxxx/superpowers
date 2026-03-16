@@ -60,19 +60,16 @@ superpowers ceo-review \
 ### JSON output
 
 ```bash
-superpowers ceo-review "Dark mode" "User preference" --json --output=review.json
+superpowers ceo-review "Dark mode" "User preference" --json
 ```
 
 ## Options
 
-- `--audience=<text>` - Target audience
-- `--competition=<text>` - Competitors
-- `--trust=<text>` - Trust assets you have
 - `--brand=<score>` - Manual brand score (0-5)
 - `--attention=<score>` - Manual attention score (0-5)
-- `--trust-score=<score>` - Manual trust score (0-5)
+- `--trust=<score>` - Manual trust score (0-5)
+- `--auto` - Auto-calculate scores based on description. Default: true
 - `--json` - Output as JSON
-- `--output=<path>` - Save to file
 
 ## Output Example
 
@@ -131,7 +128,7 @@ superpowers ceo-review "Dark mode" "User preference" --json --output=review.json
 ## Understanding the Framework
 
 ```bash
-superpowers ceo-review framework
+superpowers ceo-review --help
 ```
 
 Displays detailed explanation of BAT methodology and 10-star scoring.

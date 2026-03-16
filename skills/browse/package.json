@@ -1,26 +1,23 @@
 {
-  "name": "@superpowers/browse",
+  "name": "browse",
   "version": "1.0.0",
-  "description": "Browser automation and visual testing with Playwright",
+  "description": "Browser automation for visual testing and QA with Playwright",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "browse": "./cli.js"
+  },
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/index.ts",
-    "clean": "rm -rf dist",
-    "package": "mkdir -p ../../dist-skills && cp -r ../browse ../../dist-skills/"
+    "package": "npm run build && mkdir -p ../../dist-skills && tar -czf ../../dist-skills/browse.skill.tar.gz dist cli.js skill.json SKILL.md"
   },
+  "keywords": ["openclaw", "browser", "screenshot", "playwright", "automation"],
   "dependencies": {
-    "playwright": "^1.40.0",
-    "commander": "^14.0.3",
     "chalk": "^5.6.2",
-    "ora": "^9.3.0"
+    "playwright": "^1.42.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "typescript": "^5.3.3"
-  },
-  "engines": {
-    "node": ">=18.0.0"
   }
 }

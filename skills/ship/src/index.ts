@@ -1,343 +1,377 @@
-import { Command } from 'commander';
 import { execSync } from 'child_process';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { resolve } from 'path';
 import chalk from 'chalk';
-import ora from 'ora';
+import semver from 'semver';
 
 interface ShipOptions {
-  dryRun?: boolean;
-  skipTests?: boolean;
-  skipChangelog?: boolean;
-  skipGit?: boolean;
-  skipGithub?: boolean;
-  prerelease?: boolean;
-  notes?: string;
-  json?: boolean;
-}
-
-interface ReleaseInfo {
   version: string;
-  previousVersion: string;
-  changelog: string;
-  commits: CommitInfo[];
+  dryRun: boolean;
+  skipTag: boolean;
+  skipPush: boolean;
+  skipRelease: boolean;
+  changelog: boolean;
 }
 
-interface CommitInfo {
-  type: string;
+interface Commit {
+  hash: string;
   message: string;
+  type: string;
   scope?: string;
-  breaking: boolean;
+  subject: string;
 }
 
-const program = new Command();
+const conventionalTypes: Record<string, { emoji: string; section: string }> = {
+  feat: { emoji: '✨', section: 'Features' },
+  fix: { emoji: '🐛', section: 'Bug Fixes' },
+  docs: { emoji: '📚', section: 'Documentation' },
+  style: { emoji: '💄', section: 'Styles' },
+  refactor: { emoji: '♻️', section: 'Code Refactoring' },
+  perf: { emoji: '⚡', section: 'Performance Improvements' },
+  test: { emoji: '✅', section: 'Tests' },
+  build: { emoji: '📦', section: 'Build System' },
+  ci: { emoji: '🔧', section: 'CI/CD' },
+  chore: { emoji: '🔨', section: 'Chores' },
+};
 
-program
-  .name('ship')
-  .description('One-command release pipeline')
-  .argument('<version>', 'Version type (patch, minor, major) or explicit version (x.y.z)')
-  .option('--dry-run', 'Preview changes without executing', false)
-  .option('--skip-tests', 'Skip test run before release', false)
-  .option('--skip-changelog', 'Skip changelog update', false)
-  .option('--skip-git', 'Skip git operations', false)
-  .option('--skip-github', 'Skip GitHub release', false)
-  .option('--prerelease', 'Mark as prerelease', false)
-  .option('--notes <text>', 'Custom release notes')
-  .option('-j, --json', 'Output results as JSON', false)
-  .action(async (versionArg: string, options: ShipOptions) => {
-    const results: Record<string, boolean | string> = {};
-    
-    try {
-      // Step 1: Validate
-      const validateSpinner = ora('Validating repository...').start();
-      
-      if (!existsSync('package.json')) {
-        validateSpinner.fail('No package.json found');
-        throw new Error('package.json not found');
-      }
-      
-      const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
-      const currentVersion = pkg.version;
-      
-      // Check git status
-      const gitStatus = execSync('git status --porcelain', { encoding: 'utf-8' });
-      if (gitStatus.trim() && !options.dryRun) {
-        validateSpinner.fail('Working directory not clean');
-        throw new Error('Working directory has uncommitted changes');
-      }
-      
-      validateSpinner.succeed('Repository validated');
-      
-      // Calculate new version
-      const newVersion = calculateVersion(currentVersion, versionArg);
-      results.previousVersion = currentVersion;
-      results.version = newVersion;
-      
-      console.log(chalk.cyan(`\n📦 ${pkg.name} ${chalk.bold(currentVersion)} → ${chalk.bold.green(newVersion)}\n`));
-      
-      if (options.dryRun) {
-        console.log(chalk.yellow('🔍 DRY RUN - No changes will be made\n'));
-      }
-      
-      // Step 2: Run tests
-      if (!options.skipTests) {
-        const testSpinner = ora('Running tests...').start();
-        
-        try {
-          if (!options.dryRun) {
-            execSync('npm test', { stdio: 'pipe' });
-          }
-          testSpinner.succeed('Tests passed');
-          results.tests = true;
-        } catch {
-          testSpinner.fail('Tests failed');
-          throw new Error('Tests failed - release aborted');
-        }
-      }
-      
-      // Step 3: Update version
-      const versionSpinner = ora(`Updating version to ${newVersion}...`).start();
-      
-      if (!options.dryRun) {
-        pkg.version = newVersion;
-        writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-      }
-      
-      versionSpinner.succeed(`Version updated to ${newVersion}`);
-      results.versionBump = true;
-      
-      // Step 4: Generate changelog
-      let changelog = '';
-      if (!options.skipChangelog) {
-        const changelogSpinner = ora('Generating changelog...').start();
-        
-        const commits = getCommitsSinceLastTag();
-        changelog = generateChangelog(commits, newVersion);
-        
-        if (!options.dryRun && existsSync('CHANGELOG.md')) {
-          const existingChangelog = readFileSync('CHANGELOG.md', 'utf-8');
-          writeFileSync('CHANGELOG.md', changelog + '\n\n' + existingChangelog);
-        } else if (!options.dryRun) {
-          writeFileSync('CHANGELOG.md', changelog);
-        }
-        
-        changelogSpinner.succeed('Changelog generated');
-        results.changelog = true;
-      }
-      
-      // Step 5: Git commit and tag
-      if (!options.skipGit) {
-        const gitSpinner = ora('Creating git commit and tag...').start();
-        
-        if (!options.dryRun) {
-          execSync('git add package.json CHANGELOG.md', { stdio: 'pipe' });
-          execSync(`git commit -m "chore(release): v${newVersion}"`, { stdio: 'pipe' });
-          execSync(`git tag v${newVersion}`, { stdio: 'pipe' });
-          execSync('git push origin HEAD', { stdio: 'pipe' });
-          execSync('git push origin --tags', { stdio: 'pipe' });
-        }
-        
-        gitSpinner.succeed('Git commit and tag created');
-        results.git = true;
-      }
-      
-      // Step 6: GitHub release
-      if (!options.skipGithub && process.env.GH_TOKEN) {
-        const githubSpinner = ora('Creating GitHub release...').start();
-        
-        if (!options.dryRun) {
-          const releaseNotes = options.notes || changelog || `Release v${newVersion}`;
-          const prereleaseFlag = options.prerelease ? '--prerelease' : '';
-          
-          execSync(
-            `gh release create v${newVersion} ${prereleaseFlag} --title "v${newVersion}" --notes "${releaseNotes}"`,
-            { stdio: 'pipe', env: { ...process.env, GH_TOKEN: process.env.GH_TOKEN } }
-          );
-        }
-        
-        githubSpinner.succeed('GitHub release created');
-        results.github = true;
-      }
-      
-      // Step 7: Telegram notification
-      if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
-        const telegramSpinner = ora('Sending Telegram notification...').start();
-        
-        if (!options.dryRun) {
-          const message = encodeURIComponent(
-            `🚀 *Release Shipped*\n\n` +
-            `📦 ${pkg.name} *v${newVersion}*\n` +
-            `✅ Successfully released to production`
-          );
-          
-          execSync(
-            `curl -s -X POST "https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage" ` +
-            `-d "chat_id=${process.env.TELEGRAM_CHAT_ID}" ` +
-            `-d "text=${message}" ` +
-            `-d "parse_mode=Markdown"`,
-            { stdio: 'pipe' }
-          );
-        }
-        
-        telegramSpinner.succeed('Telegram notification sent');
-        results.telegram = true;
-      }
-      
-      // Success output
-      if (options.json) {
-        console.log(JSON.stringify({
-          success: true,
-          packageName: pkg.name,
-          version: newVersion,
-          previousVersion: currentVersion,
-          dryRun: options.dryRun,
-          results
-        }, null, 2));
-      } else {
-        console.log(chalk.green('\n✅ Release completed successfully!\n'));
-        console.log(chalk.cyan('📦 Package: ') + chalk.white(pkg.name));
-        console.log(chalk.cyan('🏷️  Version: ') + chalk.white(newVersion));
-        
-        if (options.dryRun) {
-          console.log(chalk.yellow('\nThis was a dry run. No changes were made.'));
-        }
-      }
-      
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
-      if (options.json) {
-        console.log(JSON.stringify({
-          success: false,
-          error: errorMessage,
-          results
-        }, null, 2));
-      } else {
-        console.error(chalk.red(`\n❌ Release failed: ${errorMessage}\n`));
-      }
-      
-      process.exit(1);
-    }
-  });
+export async function ship(options: ShipOptions): Promise<void> {
+  return shipCommand(options);
+}
 
-function calculateVersion(current: string, bump: string): string {
-  const [major, minor, patch] = current.split('.').map(Number);
+export async function shipCommand(options: ShipOptions): Promise<void> {
+  console.log(chalk.blue('🚢 Ship - Release Pipeline\n'));
   
-  switch (bump) {
-    case 'major':
-      return `${major + 1}.0.0`;
-    case 'minor':
-      return `${major}.${minor + 1}.0`;
-    case 'patch':
-      return `${major}.${minor}.${patch + 1}`;
-    default:
-      // Assume explicit version
-      if (/^\d+\.\d+\.\d+/.test(bump)) {
-        return bump;
-      }
-      throw new Error(`Invalid version type: ${bump}`);
-  }
-}
-
-function getCommitsSinceLastTag(): CommitInfo[] {
   try {
-    const lastTag = execSync('git describe --tags --abbrev=0', { 
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore']
-    }).trim();
+    // Validate git state
+    validateGitState();
     
-    const logOutput = execSync(`git log ${lastTag}..HEAD --pretty=format:"%s"`, {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore']
-    });
+    // Get current version
+    const currentVersion = getCurrentVersion();
+    console.log(chalk.gray(`Current version: ${currentVersion}`));
     
-    return logOutput.split('\n').filter(Boolean).map(parseCommit);
-  } catch {
-    // No previous tag, get all commits
-    const logOutput = execSync('git log --pretty=format:"%s"', {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore']
-    });
+    // Calculate new version
+    const newVersion = calculateNewVersion(currentVersion, options.version);
+    console.log(chalk.gray(`New version: ${newVersion}`));
     
-    return logOutput.split('\n').filter(Boolean).map(parseCommit);
+    if (options.dryRun) {
+      console.log(chalk.yellow('\n🔍 DRY RUN - No changes will be applied\n'));
+    }
+    
+    // Get commits since last tag
+    const commits = getCommitsSinceLastTag();
+    console.log(chalk.gray(`Commits since last tag: ${commits.length}`));
+    
+    if (commits.length === 0) {
+      console.log(chalk.yellow('\n⚠️ No commits since last tag. Nothing to release.'));
+      return;
+    }
+    
+    // Generate changelog
+    let changelogEntry = '';
+    if (options.changelog) {
+      changelogEntry = generateChangelog(commits, newVersion);
+      console.log(chalk.blue('\n📝 Changelog entry:'));
+      console.log(chalk.gray(changelogEntry.split('\n').slice(0, 10).join('\n')));
+      if (changelogEntry.split('\n').length > 10) {
+        console.log(chalk.gray('...'));
+      }
+    }
+    
+    if (options.dryRun) {
+      console.log(chalk.yellow('\n✅ Dry run complete'));
+      return;
+    }
+    
+    // Get package info for notification
+    const packageInfo = getPackageInfo();
+    
+    // Update package.json version
+    updateVersion(newVersion);
+    console.log(chalk.green('✅ Updated package.json'));
+    
+    // Update changelog
+    if (options.changelog) {
+      updateChangelogFile(changelogEntry);
+      console.log(chalk.green('✅ Updated CHANGELOG.md'));
+    }
+    
+    // Git commit
+    execSync('git add package.json CHANGELOG.md 2>/dev/null || git add package.json', { stdio: 'ignore' });
+    execSync(`git commit -m "chore(release): v${newVersion}"`, { stdio: 'ignore' });
+    console.log(chalk.green('✅ Created release commit'));
+    
+    // Git tag
+    if (!options.skipTag) {
+      execSync(`git tag -a v${newVersion} -m "Release v${newVersion}"`, { stdio: 'ignore' });
+      console.log(chalk.green(`✅ Created tag v${newVersion}`));
+    }
+    
+    // Git push
+    if (!options.skipPush) {
+      execSync('git push', { stdio: 'ignore' });
+      if (!options.skipTag) {
+        execSync('git push --tags', { stdio: 'ignore' });
+      }
+      console.log(chalk.green('✅ Pushed to remote'));
+    }
+    
+    // GitHub release
+    let releaseUrl: string | undefined;
+    if (!options.skipRelease && !options.skipTag) {
+      releaseUrl = await createGitHubRelease(newVersion, changelogEntry);
+      if (releaseUrl) {
+        console.log(chalk.green('✅ Created GitHub release'));
+        console.log(chalk.blue(`   ${releaseUrl}`));
+      }
+    }
+    
+    // Telegram notification
+    await sendTelegramNotification(packageInfo.name, newVersion, releaseUrl);
+    
+    console.log(chalk.green(`\n🎉 Successfully shipped v${newVersion}!`));
+    
+  } catch (error) {
+    console.error(chalk.red('\n❌ Release failed:'), error instanceof Error ? error.message : error);
+    process.exit(1);
   }
 }
 
-function parseCommit(message: string): CommitInfo {
-  const conventionalRegex = /^(\w+)(?:\(([^)]+)\))?:\s*(.+)$/;
-  const match = message.match(conventionalRegex);
+function validateGitState(): void {
+  try {
+    // Check if git repo
+    execSync('git rev-parse --git-dir', { stdio: 'ignore' });
+    
+    // Check for uncommitted changes
+    const status = execSync('git status --porcelain', { encoding: 'utf-8' });
+    if (status.trim()) {
+      throw new Error('Uncommitted changes detected. Commit or stash them first.');
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Uncommitted')) {
+      throw error;
+    }
+    throw new Error('Not a git repository');
+  }
+}
+
+function getCurrentVersion(): string {
+  const packageJsonPath = resolve(process.cwd(), 'package.json');
+  if (!existsSync(packageJsonPath)) {
+    throw new Error('package.json not found');
+  }
+  
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+  return packageJson.version || '0.0.0';
+}
+
+function getPackageInfo(): { name: string; version: string } {
+  const packageJsonPath = resolve(process.cwd(), 'package.json');
+  if (!existsSync(packageJsonPath)) {
+    return { name: 'unknown', version: '0.0.0' };
+  }
+  
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+  return {
+    name: packageJson.name || 'unknown',
+    version: packageJson.version || '0.0.0'
+  };
+}
+
+function calculateNewVersion(current: string, bumpType: string): string {
+  // If explicit version provided
+  if (bumpType.match(/^\d+\.\d+\.\d+/)) {
+    return bumpType;
+  }
+  
+  // Otherwise treat as semver bump
+  const newVersion = semver.inc(current, bumpType as semver.ReleaseType);
+  if (!newVersion) {
+    throw new Error(`Invalid version bump type: ${bumpType}`);
+  }
+  
+  return newVersion;
+}
+
+function getCommitsSinceLastTag(): Commit[] {
+  try {
+    // Get the latest tag
+    let sinceRef = '';
+    try {
+      sinceRef = execSync('git describe --tags --abbrev=0', { encoding: 'utf-8' }).trim();
+    } catch {
+      // No tags yet, get all commits
+      sinceRef = '--max-parents=0 HEAD';
+    }
+    
+    // Get commits
+    const format = '%H|%s';
+    const output = execSync(`git log ${sinceRef}..HEAD --pretty=format:"${format}"`, {
+      encoding: 'utf-8',
+    });
+    
+    if (!output.trim()) return [];
+    
+    return output.trim().split('\n').map(line => {
+      const [hash, message] = line.split('|');
+      return parseCommit(hash, message);
+    });
+  } catch {
+    return [];
+  }
+}
+
+function parseCommit(hash: string, message: string): Commit {
+  // Parse conventional commit format
+  const match = message.match(/^(\w+)(?:\(([^)]+)\))?:\s*(.+)$/);
   
   if (match) {
     return {
+      hash: hash.slice(0, 7),
+      message,
       type: match[1],
       scope: match[2],
-      message: match[3],
-      breaking: message.includes('BREAKING CHANGE')
+      subject: match[3],
     };
   }
   
   return {
+    hash: hash.slice(0, 7),
+    message,
     type: 'other',
-    message: message,
-    breaking: message.includes('BREAKING CHANGE')
+    subject: message,
   };
 }
 
-function generateChangelog(commits: CommitInfo[], version: string): string {
-  const sections: Record<string, CommitInfo[]> = {
-    feat: [],
-    fix: [],
-    chore: [],
-    other: [],
-    breaking: []
-  };
+function generateChangelog(commits: Commit[], version: string): string {
+  const date = new Date().toISOString().split('T')[0];
+  let entry = `## [${version}] - ${date}\n\n`;
+  
+  // Group commits by type
+  const groups: Record<string, Commit[]> = {};
   
   for (const commit of commits) {
-    if (commit.breaking) {
-      sections.breaking.push(commit);
+    const type = conventionalTypes[commit.type] ? commit.type : 'other';
+    if (!groups[type]) groups[type] = [];
+    groups[type].push(commit);
+  }
+  
+  // Generate sections
+  for (const [type, typeCommits] of Object.entries(groups)) {
+    if (type === 'other' && !conventionalTypes[type]) continue;
+    
+    const config = conventionalTypes[type] || { emoji: '📝', section: 'Other Changes' };
+    entry += `### ${config.emoji} ${config.section}\n\n`;
+    
+    for (const commit of typeCommits) {
+      const scope = commit.scope ? `**${commit.scope}:** ` : '';
+      entry += `- ${scope}${commit.subject} (${commit.hash})\n`;
     }
     
-    if (sections[commit.type]) {
-      sections[commit.type].push(commit);
-    } else {
-      sections.other.push(commit);
-    }
+    entry += '\n';
   }
   
-  let changelog = `## [${version}] - ${new Date().toISOString().split('T')[0]}\n\n`;
-  
-  if (sections.breaking.length > 0) {
-    changelog += '### ⚠️ Breaking Changes\n\n';
-    for (const commit of sections.breaking) {
-      changelog += `- ${commit.message}\n`;
-    }
-    changelog += '\n';
-  }
-  
-  if (sections.feat.length > 0) {
-    changelog += '### ✨ Features\n\n';
-    for (const commit of sections.feat) {
-      changelog += `- ${commit.message}\n`;
-    }
-    changelog += '\n';
-  }
-  
-  if (sections.fix.length > 0) {
-    changelog += '### 🐛 Bug Fixes\n\n';
-    for (const commit of sections.fix) {
-      changelog += `- ${commit.message}\n`;
-    }
-    changelog += '\n';
-  }
-  
-  if (sections.chore.length > 0) {
-    changelog += '### 🧹 Chores\n\n';
-    for (const commit of sections.chore) {
-      changelog += `- ${commit.message}\n`;
-    }
-    changelog += '\n';
-  }
-  
-  return changelog.trim();
+  return entry;
 }
 
-program.parse();
+function updateVersion(version: string): void {
+  const packageJsonPath = resolve(process.cwd(), 'package.json');
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+  packageJson.version = version;
+  writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
+}
+
+function updateChangelogFile(newEntry: string): void {
+  const changelogPath = resolve(process.cwd(), 'CHANGELOG.md');
+  
+  let content = '';
+  if (existsSync(changelogPath)) {
+    content = readFileSync(changelogPath, 'utf-8');
+  } else {
+    content = '# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n';
+  }
+  
+  // Insert new entry after the header
+  const lines = content.split('\n');
+  const headerEnd = lines.findIndex(line => line.startsWith('## '));
+  
+  if (headerEnd === -1) {
+    content = content.trim() + '\n\n' + newEntry;
+  } else {
+    const before = lines.slice(0, headerEnd).join('\n');
+    const after = lines.slice(headerEnd).join('\n');
+    content = before + '\n\n' + newEntry + after;
+  }
+  
+  writeFileSync(changelogPath, content);
+}
+
+async function createGitHubRelease(version: string, changelog: string): Promise<string | undefined> {
+  const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+  
+  if (!token) {
+    console.log(chalk.yellow('⚠️ No GH_TOKEN found, skipping GitHub release'));
+    return undefined;
+  }
+  
+  // Check if gh CLI is available
+  try {
+    execSync('which gh', { stdio: 'ignore' });
+    
+    // Create release using gh CLI
+    const notes = changelog.replace(/### /g, '## ').replace(/## \[.+\] - .+\n\n/, '');
+    execSync(
+      `gh release create "v${version}" --title "v${version}" --notes "${notes.replace(/"/g, '\\"')}"`,
+      { stdio: 'ignore' }
+    );
+    
+    // Get the release URL
+    try {
+      const remoteUrl = execSync('git remote get-url origin', { encoding: 'utf-8' }).trim();
+      // Convert git@github.com:user/repo.git to https://github.com/user/repo
+      const match = remoteUrl.match(/github\.com[:/]([^/]+)\/(.+?)(?:\.git)?$/);
+      if (match) {
+        return `https://github.com/${match[1]}/${match[2]}/releases/tag/v${version}`;
+      }
+    } catch {
+      // Ignore errors getting URL
+    }
+    
+    return `v${version}`;
+  } catch {
+    console.log(chalk.yellow('⚠️ GitHub CLI not available, skipping GitHub release'));
+    return undefined;
+  }
+}
+
+async function sendTelegramNotification(packageName: string, version: string, releaseUrl?: string): Promise<void> {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  
+  if (!botToken || !chatId) {
+    return; // Silently skip if not configured
+  }
+  
+  try {
+    const message = `🚀 *Release Shipped*\n\n📦 ${packageName} v${version}\n✅ Successfully released to production${releaseUrl ? `\n\n[View Release](${releaseUrl})` : ''}`;
+    
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
+      })
+    });
+    
+    if (response.ok) {
+      console.log(chalk.green('✅ Sent Telegram notification'));
+    } else {
+      console.log(chalk.yellow('⚠️ Failed to send Telegram notification'));
+    }
+  } catch {
+    // Silently fail - notification is optional
+  }
+}
