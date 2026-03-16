@@ -1,0 +1,54 @@
+{
+  "$schema": "./superpowers.schema.json",
+  "browser": {
+    "defaultViewport": "desktop",
+    "viewports": {
+      "mobile": { "width": 375, "height": 667 },
+      "tablet": { "width": 768, "height": 1024 },
+      "desktop": { "width": 1280, "height": 720 }
+    },
+    "flows": {
+      "critical": ["/", "/about", "/contact"],
+      "auth": ["/login", "/dashboard", "/profile"],
+      "checkout": ["/cart", "/checkout", "/payment"]
+    },
+    "screenshotDir": "./screenshots"
+  },
+  "qa": {
+    "defaultMode": "targeted",
+    "coverageThreshold": 80,
+    "testCommand": "npm test",
+    "testPatterns": {
+      "unit": ["**/*.test.ts", "**/*.spec.ts"],
+      "integration": ["**/*.integration.test.ts"],
+      "e2e": ["**/e2e/**/*.spec.ts"]
+    },
+    "fileToTestMapping": {
+      "src/**/*.ts": "unit",
+      "src/components/*.tsx": ["unit", "visual"],
+      "src/api/**/*.ts": "integration",
+      "*.test.ts": "specific"
+    }
+  },
+  "ship": {
+    "requireCleanWorkingDir": true,
+    "runTestsBeforeRelease": true,
+    "testCommand": "npm test",
+    "changelog": {
+      "preset": "conventional",
+      "includeContributors": true
+    },
+    "github": {
+      "defaultOrg": "nKOxxx"
+    },
+    "telegram": {
+      "notifyOnShip": false
+    }
+  },
+  "ceoReview": {
+    "minimumScore": 10,
+    "requireAllBAT": false,
+    "autoGenerateNextSteps": true,
+    "marketAnalysis": true
+  }
+}

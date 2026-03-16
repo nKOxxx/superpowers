@@ -1,0 +1,32 @@
+{
+  "browser": {
+    "flows": {
+      "critical": ["/", "/api/health"],
+      "auth": ["/login", "/dashboard"],
+      "onboarding": ["/welcome", "/setup"]
+    },
+    "defaultTimeout": 30000
+  },
+  "qa": {
+    "defaultMode": "targeted",
+    "autoTestThreshold": 50,
+    "criticalPaths": ["/", "/api/health"],
+    "skipPatterns": ["*.md", "docs/*", "README*", "LICENSE*"],
+    "parallel": true,
+    "coverageThreshold": 80
+  },
+  "ship": {
+    "requireCleanWorkingDir": true,
+    "runTestsBeforeRelease": true,
+    "autoDeployTargets": [],
+    "telegramNotify": true,
+    "repos": {}
+  },
+  "github": {
+    "defaultOrg": "nKOxxx"
+  },
+  "telegram": {
+    "notifyOnShip": true,
+    "target": "@nikolin0"
+  }
+}

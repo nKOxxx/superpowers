@@ -1,0 +1,1 @@
+{"version":3,"file":"telegram.d.ts","sourceRoot":"","sources":["../../../../ship/scripts/lib/telegram.ts"],"names":[],"mappings":"AAAA;;GAEG;AAEH,MAAM,WAAW,mBAAmB;IAClC,IAAI,EAAE,MAAM,CAAC;IACb,OAAO,EAAE,MAAM,CAAC;IAChB,GAAG,CAAC,EAAE,MAAM,CAAC;CACd;AAED,wBAAsB,wBAAwB,CAC5C,MAAM,EAAE,MAAM,EACd,OAAO,EAAE,mBAAmB,GAC3B,OAAO,CAAC,IAAI,CAAC,CAmCf"}

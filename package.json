@@ -1,0 +1,50 @@
+{
+  "name": "@openclaw/superpowers",
+  "version": "1.0.0",
+  "description": "OpenClaw superpowers - TypeScript skills for browser automation, QA, releases, and product strategy",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint scripts/**/*.ts",
+    "lint:fix": "eslint scripts/**/*.ts --fix",
+    "format": "prettier --write \"scripts/**/*.ts\"",
+    "browse": "tsx scripts/browse.ts",
+    "qa": "tsx scripts/qa.ts",
+    "ship": "tsx scripts/ship.ts",
+    "plan-ceo-review": "tsx scripts/plan-ceo-review.ts"
+  },
+  "keywords": [
+    "openclaw",
+    "automation",
+    "testing",
+    "release",
+    "product-strategy"
+  ],
+  "author": "OpenClaw",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/minimatch": "^5.1.2",
+    "@types/node": "^20.19.37",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.4",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.1"
+  },
+  "dependencies": {
+    "@octokit/rest": "^20.0.2",
+    "commander": "^11.1.0",
+    "minimatch": "^9.0.3",
+    "picocolors": "^1.0.0",
+    "playwright": "^1.41.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@8.14.0"
+}

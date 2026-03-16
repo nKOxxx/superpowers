@@ -1,0 +1,1 @@
+{"version":3,"file":"version.d.ts","sourceRoot":"","sources":["../../../../ship/scripts/lib/version.ts"],"names":[],"mappings":"AAAA;;GAEG;AAIH,MAAM,MAAM,WAAW,GAAG,OAAO,GAAG,OAAO,GAAG,OAAO,CAAC;AAEtD,MAAM,WAAW,cAAc;IAC7B,MAAM,CAAC,EAAE,OAAO,CAAC;CAClB;AAED,wBAAsB,WAAW,CAC/B,YAAY,EAAE,MAAM,EACpB,OAAO,GAAE,cAAmB,GAC3B,OAAO,CAAC,MAAM,CAAC,CAiBjB"}

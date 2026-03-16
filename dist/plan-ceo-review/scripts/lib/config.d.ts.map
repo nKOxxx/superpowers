@@ -1,0 +1,1 @@
+{"version":3,"file":"config.d.ts","sourceRoot":"","sources":["../../../../plan-ceo-review/scripts/lib/config.ts"],"names":[],"mappings":"AAAA;;GAEG;AAKH,MAAM,WAAW,SAAS;IACxB,SAAS,CAAC,EAAE;QACV,YAAY,CAAC,EAAE,MAAM,CAAC;QACtB,aAAa,CAAC,EAAE,OAAO,CAAC;QACxB,qBAAqB,CAAC,EAAE,OAAO,CAAC;QAChC,cAAc,CAAC,EAAE,OAAO,CAAC;KAC1B,CAAC;CACH;AAED,wBAAsB,UAAU,IAAI,OAAO,CAAC,SAAS,CAAC,CAmBrD"}
