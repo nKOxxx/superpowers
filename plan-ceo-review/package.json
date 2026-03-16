@@ -9,10 +9,15 @@
   },
   "scripts": {
     "build": "tsc",
-    "package": "npm run build && tar -czf ../../dist-skills/plan-ceo-review.skill.tar.gz dist cli.js skill.json"
+    "package": "npm run build && mkdir -p ../../dist-skills && tar -czf ../../dist-skills/plan-ceo-review.skill.tar.gz dist cli.js skill.json SKILL.md"
   },
   "keywords": ["openclaw", "product", "strategy", "bat", "framework", "ceo"],
   "dependencies": {
-    "chalk": "^5.6.2"
+    "chalk": "^5.6.2",
+    "commander": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
   }
 }

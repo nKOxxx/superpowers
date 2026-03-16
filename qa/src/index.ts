@@ -1,9 +1,9 @@
 import { execSync } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
-import { resolve } from 'path';
 import chalk from 'chalk';
+import { resolve, join } from 'path';
 
-interface QAOptions {
+export interface QAOptions {
   mode: string;
   coverage: boolean;
   watch: boolean;
@@ -26,10 +26,10 @@ interface TestFrameworkConfig {
 const frameworks: Record<string, TestFrameworkConfig> = {
   vitest: {
     name: 'Vitest',
-    configFiles: ['vitest.config.ts', 'vitest.config.js', 'vite.config.ts', 'vite.config.js'],
+    configFiles: ['vitest.config.ts', 'vitest.config.js', 'vitest.config.mjs', 'vite.config.ts', 'vite.config.js'],
     testCommands: {
       targeted: 'npx vitest run --reporter=verbose',
-      smoke: 'npx vitest run --reporter=verbose --testTimeout=30000',
+      smoke: 'npx vitest run --reporter=verbose --testNamePattern="smoke|basic|critical"',
       full: 'npx vitest run --reporter=verbose',
     },
   },
@@ -38,16 +38,16 @@ const frameworks: Record<string, TestFrameworkConfig> = {
     configFiles: ['jest.config.ts', 'jest.config.js', 'jest.config.mjs'],
     testCommands: {
       targeted: 'npx jest --verbose',
-      smoke: 'npx jest --verbose --testTimeout=30000 --maxWorkers=2',
+      smoke: 'npx jest --verbose --testNamePattern="smoke|basic|critical"',
       full: 'npx jest --verbose --coverage',
     },
   },
   mocha: {
     name: 'Mocha',
-    configFiles: ['.mocharc.json', '.mocharc.js', 'mocha.opts'],
+    configFiles: ['.mocharc.json', '.mocharc.js', '.mocharc.yaml', 'mocha.opts'],
     testCommands: {
       targeted: 'npx mocha --reporter spec',
-      smoke: 'npx mocha --reporter spec --timeout 30000',
+      smoke: 'npx mocha --grep "smoke|basic|critical" --reporter spec',
       full: 'npx mocha --reporter spec --recursive',
     },
   },
@@ -218,6 +218,13 @@ function mapToTestFiles(changedFiles: string[], framework: string): string[] {
       const testDirFile = `${dir}__tests__/${baseName}${ext}`;
       if (existsSync(resolve(process.cwd(), testDirFile))) {
         testFiles.push(testDirFile);
+        break;
+      }
+      
+      // Check tests/ directory at root
+      const rootTestFile = `tests/${baseName}${ext}`;
+      if (existsSync(resolve(process.cwd(), rootTestFile))) {
+        testFiles.push(rootTestFile);
         break;
       }
     }

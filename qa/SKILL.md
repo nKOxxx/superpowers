@@ -1,72 +1,89 @@
 ---
 name: qa
 description: Systematic testing as QA Lead. Analyzes code changes and runs appropriate tests. Use when user needs code testing, quality assurance, regression testing, or test planning. Triggers on requests like /qa, run tests, check test coverage, QA review, or code quality checks.
+metadata:
+  openclaw:
+    requires:
+      bins: ["node", "npx", "git"]
+      npm: ["@nko/superpowers"]
+    primaryEnv: null
+    modelCompatibility: ["kimi-k2.5", "claude-opus-4", "gpt-4"]
+    skillType: "typescript"
+    entryPoint: "dist/index.js"
 ---
 
 # QA - Systematic Testing Skill
 
-Intelligent test execution based on code changes and test frameworks.
+Acts as QA Lead to analyze code changes and run appropriate tests. Supports three modes: targeted, smoke, and full.
 
 ## Capabilities
 
-- Auto-detects test framework (vitest, jest, mocha)
-- Three modes: targeted (git diff), smoke, full
-- Coverage reporting support
-- Test file mapping from source changes
+- **Targeted mode**: Analyzes git diff and runs only relevant tests
+- **Smoke mode**: Quick validation that core functionality works
+- **Full mode**: Complete regression test suite
+- Coverage reporting
+- Test framework auto-detection (vitest, jest, mocha)
 
 ## Usage
 
+### Run targeted tests (default)
+
 ```bash
-# Run tests based on git diff (default)
-/qa
+superpowers qa
+```
 
-# Smoke tests only
-/qa --mode=smoke
+### Smoke test - quick validation
 
-# Full test suite
-/qa --mode=full
+```bash
+superpowers qa --mode=smoke
+```
 
-# With coverage
-/qa --coverage
+### Full regression test suite
 
-# Targeted mode with specific files
-/qa --files=src/utils.ts,src/api.ts
+```bash
+superpowers qa --mode=full
+```
+
+### With coverage
+
+```bash
+superpowers qa --coverage
 ```
 
 ## Modes
 
-### targeted (default)
-Analyzes git diff to find changed files, maps to relevant test files, runs only affected tests.
+### Targeted (Default)
+Analyzes git diff to identify changed files, maps them to test files, and runs only those tests.
 
-### smoke
-Quick validation - runs a subset of critical tests (files matching *.smoke.* or *smoke*.test.*).
+Best for: Pre-commit validation, CI on PRs, quick feedback loops
 
-### full
-Complete regression suite - runs all tests.
+### Smoke
+Runs quick sanity tests tagged as "smoke", "basic", or "critical".
 
-## Test Framework Detection
+Best for: Pre-deployment validation, health checks
 
-Auto-detects in order: vitest > jest > mocha
+### Full
+Runs the complete test suite.
 
-Uses:
-- `vitest` - if vitest.config.* exists
-- `jest` - if jest.config.* exists
-- `npm test` - fallback
+Best for: Release validation, nightly builds
 
-## CLI Arguments
+## Options
 
-- `--mode` - targeted | smoke | full
-- `--coverage` - Enable coverage reporting
-- `--files` - Comma-separated file list (overrides git diff)
-- `--watch` - Watch mode (if supported)
+- `--mode=<mode>` - Test mode: targeted, smoke, full. Default: targeted
+- `--diff=<range>` - Git diff range for targeted mode. Default: HEAD~1
+- `--coverage` - Enable coverage reporting. Default: false
+- `--framework=<framework>` - Force specific framework (vitest, jest, mocha)
 
-## Output
+## Requirements
 
-- Test execution summary
-- Failed test details
-- Coverage report (if enabled)
-- Recommendations for fixes
+- Git repository
+- Test framework (vitest, jest, or mocha)
+- npm test command configured
 
-## Implementation
+## Output Example
 
-Use the bundled CLI in `cli.js`.
+```
+✔ Framework: vitest
+✔ Found 3 relevant tests
+✔ Tests passed! (1245ms)
+```

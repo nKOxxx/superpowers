@@ -1,65 +1,27 @@
-# /browse - Browser Automation Skill
+# @superpowers/browse
 
-Browser automation with Playwright for visual testing and QA.
-
-## Features
-
-- **Screenshot capture**: Single URL, full page, or element-specific
-- **Viewport presets**: Mobile (375x667), Tablet (768x1024), Desktop (1920x1080)
-- **Custom viewport**: Specify exact dimensions
-- **Action sequences**: Click, type, wait, scroll, hover
-- **Base64 output**: For Telegram integration
+Browser automation and visual testing with Playwright.
 
 ## Usage
 
 ```bash
-# Capture desktop screenshot
-browse https://example.com
-
-# Mobile viewport
-browse https://example.com --viewport=mobile
-
-# Full page screenshot
-browse https://example.com --full-page
-
-# Specific element
-browse https://example.com --selector="#hero"
-
-# Custom viewport
-browse https://example.com --width=1400 --height=900
-
-# Action sequence
-browse https://example.com --actions="click:#button,wait:1000,type:#input:hello"
+superpowers browse <url> [options]
 ```
 
 ## Options
 
-| Option | Description |
-|--------|-------------|
-| `--viewport` | Preset: mobile, tablet, desktop |
-| `--width` | Custom viewport width |
-| `--height` | Custom viewport height |
-| `--full-page` | Capture full scrollable page |
-| `--selector` | Screenshot specific CSS element |
-| `--actions` | Action sequence (comma-separated) |
-| `--output` | Output file path |
+- `--viewport=<preset>` - Viewport preset (mobile, tablet, desktop, wide)
+- `--full-page` - Capture full page screenshot
+- `--output=<path>` - Save screenshot to file path
+- `--wait=<ms>` - Wait time in ms after page load
+- `--selector=<selector>` - CSS selector to capture specific element
+- `--actions=<actions>` - Comma-separated actions
 
-## Action Syntax
-
-Actions are comma-separated with colon delimiters:
-- `click:selector` - Click element
-- `type:selector:text` - Type text into element
-- `wait:ms` - Wait milliseconds
-- `scroll:selector` - Scroll to element
-- `hover:selector` - Hover over element
-
-## Requirements
-
-- Node.js 18+
-- Playwright (auto-installed)
-
-## Installation
+## Examples
 
 ```bash
-openclaw skill install browse.skill.tar.gz
+superpowers browse https://example.com
+superpowers browse https://example.com --viewport=mobile
+superpowers browse https://example.com --full-page --output=screenshot.png
+superpowers browse https://example.com --actions="click:.btn,wait:1000"
 ```

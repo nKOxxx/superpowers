@@ -1,7 +1,11 @@
 {
   "name": "browse",
   "version": "1.0.0",
-  "description": "Browser automation with Playwright",
-  "entry": "dist/browse/index.js",
-  "bin": "browse"
+  "description": "Browser automation for visual testing and QA with Playwright",
+  "entry": "dist/index.js",
+  "bin": "browse",
+  "type": "typescript",
+  "requires": {
+    "node": ">=18.0.0"
+  }
 }

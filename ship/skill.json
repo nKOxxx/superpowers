@@ -1,7 +1,13 @@
 {
   "name": "ship",
   "version": "1.0.0",
-  "description": "Release pipeline with semantic versioning and changelog generation",
-  "entry": "dist/ship/index.js",
-  "bin": "ship"
+  "description": "One-command release pipeline - version bump, changelog, git tag, GitHub release",
+  "entry": "dist/index.js",
+  "bin": "ship",
+  "type": "typescript",
+  "requires": {
+    "node": ">=18.0.0",
+    "git": true
+  },
+  "env": ["GH_TOKEN", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"]
 }

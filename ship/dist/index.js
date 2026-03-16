@@ -15,6 +15,9 @@ const conventionalTypes = {
     ci: { emoji: '🔧', section: 'CI/CD' },
     chore: { emoji: '🔨', section: 'Chores' },
 };
+export async function ship(options) {
+    return shipCommand(options);
+}
 export async function shipCommand(options) {
     console.log(chalk.blue('🚢 Ship - Release Pipeline\n'));
     try {
@@ -50,8 +53,8 @@ export async function shipCommand(options) {
             console.log(chalk.yellow('\n✅ Dry run complete'));
             return;
         }
-        // Confirm with user
-        console.log(chalk.yellow(`\n⚠️ About to release v${newVersion}`));
+        // Get package info for notification
+        const packageInfo = getPackageInfo();
         // Update package.json version
         updateVersion(newVersion);
         console.log(chalk.green('✅ Updated package.json'));
@@ -78,10 +81,16 @@ export async function shipCommand(options) {
             console.log(chalk.green('✅ Pushed to remote'));
         }
         // GitHub release
+        let releaseUrl;
         if (!options.skipRelease && !options.skipTag) {
-            await createGitHubRelease(newVersion, changelogEntry);
-            console.log(chalk.green('✅ Created GitHub release'));
+            releaseUrl = await createGitHubRelease(newVersion, changelogEntry);
+            if (releaseUrl) {
+                console.log(chalk.green('✅ Created GitHub release'));
+                console.log(chalk.blue(`   ${releaseUrl}`));
+            }
         }
+        // Telegram notification
+        await sendTelegramNotification(packageInfo.name, newVersion, releaseUrl);
         console.log(chalk.green(`\n🎉 Successfully shipped v${newVersion}!`));
     }
     catch (error) {
@@ -113,6 +122,17 @@ function getCurrentVersion() {
     }
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
     return packageJson.version || '0.0.0';
+}
+function getPackageInfo() {
+    const packageJsonPath = resolve(process.cwd(), 'package.json');
+    if (!existsSync(packageJsonPath)) {
+        return { name: 'unknown', version: '0.0.0' };
+    }
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    return {
+        name: packageJson.name || 'unknown',
+        version: packageJson.version || '0.0.0'
+    };
 }
 function calculateNewVersion(current, bumpType) {
     // If explicit version provided
@@ -229,7 +249,7 @@ async function createGitHubRelease(version, changelog) {
     const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
     if (!token) {
         console.log(chalk.yellow('⚠️ No GH_TOKEN found, skipping GitHub release'));
-        return;
+        return undefined;
     }
     // Check if gh CLI is available
     try {
@@ -237,8 +257,53 @@ async function createGitHubRelease(version, changelog) {
         // Create release using gh CLI
         const notes = changelog.replace(/### /g, '## ').replace(/## \[.+\] - .+\n\n/, '');
         execSync(`gh release create "v${version}" --title "v${version}" --notes "${notes.replace(/"/g, '\\"')}"`, { stdio: 'ignore' });
+        // Get the release URL
+        try {
+            const remoteUrl = execSync('git remote get-url origin', { encoding: 'utf-8' }).trim();
+            // Convert git@github.com:user/repo.git to https://github.com/user/repo
+            const match = remoteUrl.match(/github\.com[:/]([^/]+)\/(.+?)(?:\.git)?$/);
+            if (match) {
+                return `https://github.com/${match[1]}/${match[2]}/releases/tag/v${version}`;
+            }
+        }
+        catch {
+            // Ignore errors getting URL
+        }
+        return `v${version}`;
     }
     catch {
         console.log(chalk.yellow('⚠️ GitHub CLI not available, skipping GitHub release'));
+        return undefined;
     }
 }
+async function sendTelegramNotification(packageName, version, releaseUrl) {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+    if (!botToken || !chatId) {
+        return; // Silently skip if not configured
+    }
+    try {
+        const message = `🚀 *Release Shipped*\n\n📦 ${packageName} v${version}\n✅ Successfully released to production${releaseUrl ? `\n\n[View Release](${releaseUrl})` : ''}`;
+        const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: message,
+                parse_mode: 'Markdown',
+                disable_web_page_preview: true
+            })
+        });
+        if (response.ok) {
+            console.log(chalk.green('✅ Sent Telegram notification'));
+        }
+        else {
+            console.log(chalk.yellow('⚠️ Failed to send Telegram notification'));
+        }
+    }
+    catch {
+        // Silently fail - notification is optional
+    }
+}
+//# sourceMappingURL=index.js.map

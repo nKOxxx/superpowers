@@ -1,86 +1,134 @@
 ---
 name: plan-ceo-review
 description: Product strategy review using BAT framework (Brand, Attention, Trust) and 10-star methodology. Use when evaluating whether to build a feature, product decisions, prioritization, or build vs buy decisions. Triggers on requests like /plan-ceo-review, should we build X, feature evaluation, product strategy, or build vs buy decisions.
+metadata:
+  openclaw:
+    requires:
+      bins: ["node", "npx"]
+      npm: ["@nko/superpowers"]
+    primaryEnv: null
+    modelCompatibility: ["kimi-k2.5", "claude-opus-4", "gpt-4"]
+    skillType: "typescript"
+    entryPoint: "dist/index.js"
 ---
 
-# Plan CEO Review - BAT Framework Skill
+# Plan CEO Review - Product Strategy Skill
 
-Strategic product evaluation using Brand, Attention, Trust scoring.
+Product strategy evaluation using the BAT framework (Brand, Attention, Trust) with 10-star methodology for build decisions.
 
-## Capabilities
+## The BAT Framework
 
-- BAT scoring (Brand, Attention, Trust 0-5 each)
-- 10-star methodology thresholds
-- Auto-calculation or manual scoring
-- Build/consider/don't build recommendations
-- Next steps generation
+Three dimensions scored 0-5 stars:
 
-## Usage
+**Brand** - Does this strengthen our brand?
+- High score: Differentiating, innovative, aligns with identity
 
-```bash
-# Interactive mode - answers questions for scoring
-/plan-ceo-review "Feature Name"
+**Attention** - Will users actually use this?
+- High score: High frequency, core workflow, solves real pain
 
-# With explicit scores
-/plan-ceo-review "Feature Name" --brand=4 --attention=5 --trust=3
-
-# With description
-/plan-ceo-review "Feature Name: Description of the feature"
-```
-
-## BAT Framework
-
-### Brand (0-5)
-Does this strengthen our brand identity?
-- 5 = Iconic, defines the brand
-- 4 = Strongly aligns with brand
-- 3 = Neutral/slightly positive
-- 2 = Weak brand connection
-- 1 = Off-brand
-- 0 = Damages brand
-
-### Attention (0-5)
-Will this capture and retain user attention?
-- 5 = Viral potential, high engagement
-- 4 = Strong user interest
-- 3 = Moderate attention
-- 2 = Low interest
-- 1 = Ignored
-- 0 = Negative attention
-
-### Trust (0-5)
-Does this build or leverage trust?
-- 5 = Deep trust, essential utility
-- 4 = Significant trust builder
-- 3 = Neutral trust
-- 2 = Slight trust erosion risk
-- 1 = High trust risk
-- 0 = Trust destroyer
+**Trust** - Does this build user trust?
+- High score: Security, reliability, transparency, safety
 
 ## 10-Star Methodology
 
-Total score = Brand + Attention + Trust (max 15)
+- **12-15 ⭐ BUILD** - Strong signal, proceed with confidence
+- **10-11 ⭐ BUILD** - Good signal, validate assumptions
+- **8-9 ⭐ CONSIDER** - Mixed signal, need more data
+- **0-7 ⭐ DON'T BUILD** - Weak signal, focus elsewhere
 
-- **12-15 stars** = BUILD - Strong strategic fit
-- **8-11 stars** = CONSIDER - Evaluate carefully
-- **0-7 stars** = DON'T BUILD - Poor strategic fit
+**Minimum threshold: 10/15 stars to build**
 
-## CLI Arguments
+## Usage
 
-- `feature` - Feature name (and optional description)
-- `--brand` - Brand score (0-5)
-- `--attention` - Attention score (0-5)
-- `--trust` - Trust score (0-5)
-- `--interactive` - Force interactive questioning
+### Basic evaluation
 
-## Output
+```bash
+superpowers ceo-review "mobile app" "Increase user engagement"
+```
 
-- BAT scores with justification
-- Total score / 15
-- Recommendation (BUILD/CONSIDER/DON'T BUILD)
-- Strategic reasoning
-- Suggested next steps
+### Full context
 
-## Implementation
+```bash
+superpowers ceo-review \
+  "AI code review" \
+  "Reduce review time 50%" \
+  --audience="Dev teams" \
+  --competition="GitHub Copilot" \
+  --trust="SOC2 certified"
+```
 
-Use the bundled CLI in `cli.js`.
+### JSON output
+
+```bash
+superpowers ceo-review "Dark mode" "User preference" --json
+```
+
+## Options
+
+- `--brand=<score>` - Manual brand score (0-5)
+- `--attention=<score>` - Manual attention score (0-5)
+- `--trust=<score>` - Manual trust score (0-5)
+- `--auto` - Auto-calculate scores based on description. Default: true
+- `--json` - Output as JSON
+
+## Output Example
+
+```
+══════════════════════════════════════════════════
+  CEO REVIEW: AI Code Review
+══════════════════════════════════════════════════
+
+  BAT Framework Scores:
+    Brand:     [████░] 4/5
+    Attention: [████░] 4/5
+    Trust:     [███░░] 3/5
+
+    BAT Total: 11/15 stars
+
+  10-Star Evaluation:
+    Average Score: 6.0/10
+
+  Recommendation: BUILD ✅
+
+  Rationale:
+    • Strong brand differentiation potential
+    • High user engagement potential
+
+  Next Steps:
+    1. Define success metrics and KPIs
+    2. Create detailed product spec
+    3. Estimate engineering effort
+
+══════════════════════════════════════════════════
+```
+
+## Scoring Guidelines
+
+### Brand (0-5)
+- **5**: Revolutionary, defines category, press-worthy
+- **4**: Strong differentiation, innovative
+- **3**: Good fit, incremental improvement
+- **2**: Table stakes, me-too feature
+- **1**: Off-brand, confusing
+
+### Attention (0-5)
+- **5**: Daily use, core workflow
+- **4**: Weekly use, important workflow
+- **3**: Monthly use, nice-to-have
+- **2**: Rare use, edge case
+- **1**: Nobody asked for this
+
+### Trust (0-5)
+- **5**: Security-critical, data protection
+- **4**: Reliability-critical, uptime essential
+- **3**: Transparency, user control
+- **2**: Error handling, feedback
+- **1**: No trust impact
+
+## Understanding the Framework
+
+```bash
+superpowers ceo-review --help
+```
+
+Displays detailed explanation of BAT methodology and 10-star scoring.

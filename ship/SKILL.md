@@ -1,77 +1,116 @@
 ---
 name: ship
 description: One-command release pipeline. Bumps version, generates changelog, creates GitHub release. Use when user wants to release a new version, publish package, or create GitHub release. Triggers on requests like /ship, release new version, publish, create release, or version bump.
+metadata:
+  openclaw:
+    requires:
+      bins: ["node", "npx", "git"]
+      npm: ["@nko/superpowers"]
+    primaryEnv: GH_TOKEN
+    modelCompatibility: ["kimi-k2.5", "claude-opus-4", "gpt-4"]
+    skillType: "typescript"
+    entryPoint: "dist/index.js"
 ---
 
 # Ship - Release Pipeline Skill
 
-Automated semantic versioning and release management.
+One-command release: version bump, changelog generation, git tag, push, GitHub release, and Telegram notifications.
 
 ## Capabilities
 
-- Semantic versioning (patch, minor, major, explicit)
+- Semantic versioning (patch, minor, major, or explicit version)
 - Conventional commit changelog generation
 - Git tag creation and push
-- GitHub release creation (via GH_TOKEN)
+- GitHub release creation
+- Telegram notifications (optional)
 - Dry-run preview mode
 
 ## Usage
 
+### Release patch version
+
 ```bash
-# Patch release (bug fixes)
-/ship --version=patch
-
-# Minor release (features)
-/ship --version=minor
-
-# Major release (breaking changes)
-/ship --version=major
-
-# Explicit version
-/ship --version=1.2.3
-
-# Dry run (preview only)
-/ship --version=minor --dry-run
+superpowers ship patch
 ```
 
-## Version Bumping
+### Release minor version
 
-- **patch** - 1.0.0 → 1.0.1 (bug fixes)
-- **minor** - 1.0.0 → 1.1.0 (features, backward compatible)
-- **major** - 1.0.0 → 2.0.0 (breaking changes)
-- **explicit** - Use exact version provided
+```bash
+superpowers ship minor
+```
+
+### Release major version
+
+```bash
+superpowers ship major
+```
+
+### Release specific version
+
+```bash
+superpowers ship 1.2.3
+```
+
+### Preview without executing
+
+```bash
+superpowers ship patch --dry-run
+```
+
+## Version Types
+
+- `patch` - Bug fixes (1.0.0 → 1.0.1)
+- `minor` - New features (1.0.0 → 1.1.0)
+- `major` - Breaking changes (1.0.0 → 2.0.0)
+- `x.y.z` - Explicit version number
+
+## Options
+
+- `--bump=<type>` - Version bump type (patch, minor, major, or explicit). Default: patch
+- `--dry-run` - Preview changes without executing. Default: false
+- `--skip-tag` - Skip git tag creation. Default: false
+- `--skip-push` - Skip git push. Default: false
+- `--skip-release` - Skip GitHub release. Default: false
+- `--no-changelog` - Skip changelog generation. Default: false
+
+## Requirements
+
+- Git repository with clean working directory
+- `GH_TOKEN` environment variable for GitHub releases (optional)
+
+## Release Steps
+
+1. **Validate**: Check git status and working directory
+2. **Tests**: Run test suite (unless --skip-tests)
+3. **Version**: Update version in package.json
+4. **Changelog**: Generate from conventional commits
+5. **Commit**: Create release commit
+6. **Tag**: Create git tag (vX.Y.Z)
+7. **Push**: Push commit and tag to origin
+8. **Release**: Create GitHub release (if GH_TOKEN set)
+9. **Notify**: Send Telegram notification (if configured)
 
 ## Changelog Generation
 
 Parses conventional commits since last tag:
-- `feat:` → Features section
-- `fix:` → Bug Fixes section
-- `docs:` → Documentation section
-- `refactor:` → Code Refactoring section
-- `test:` → Tests section
-- `chore:` → Chores section
-- `BREAKING CHANGE:` → Breaking Changes section
+- `feat:` → ✨ Features section
+- `fix:` → 🐛 Bug Fixes section
+- `chore:` → 🧹 Chores section
+- `BREAKING CHANGE:` → ⚠️ Breaking Changes section
 
-## CLI Arguments
+## Environment Variables
 
-- `--version` - patch | minor | major | x.x.x
-- `--dry-run` - Preview changes without applying
-- `--no-push` - Skip git push
-- `--no-release` - Skip GitHub release creation
+- `GH_TOKEN` - GitHub personal access token with `repo` scope (for GitHub releases)
+- `TELEGRAM_BOT_TOKEN` - Bot token for Telegram notifications (optional)
+- `TELEGRAM_CHAT_ID` - Chat ID for Telegram notifications (optional)
 
-## Prerequisites
+## Telegram Integration
 
-- Git repo with clean working directory
-- GH_TOKEN env var for GitHub releases (optional)
-- Write access to repository
+When `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are set:
 
-## Output
+```
+🚀 Release Shipped
 
-- Version bump confirmation
-- Changelog preview
-- Git tag push status
-- GitHub release URL (if created)
-
-## Implementation
-
-Use the bundled CLI in `cli.js`.
+📦 package-name v1.2.3
+✅ Successfully released to production
+```

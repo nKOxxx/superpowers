@@ -1,7 +1,11 @@
 {
   "name": "plan-ceo-review",
   "version": "1.0.0",
-  "description": "Product strategy review using BAT framework",
-  "entry": "dist/plan-ceo-review/index.js",
-  "bin": "plan-ceo-review"
+  "description": "Product strategy review using BAT framework (Brand, Attention, Trust) and 10-star methodology",
+  "entry": "dist/index.js",
+  "bin": "plan-ceo-review",
+  "type": "typescript",
+  "requires": {
+    "node": ">=18.0.0"
+  }
 }

@@ -3,6 +3,16 @@ const RECOMMENDATION_THRESHOLDS = {
     build: 10, // 2/3 of 15 (max score)
     consider: 7.5, // 1/2 of 15
 };
+export async function ceoReview(options) {
+    const reviewOptions = {
+        brand: options.brand,
+        attention: options.attention,
+        trust: options.trust,
+        auto: !options.brand && !options.attention && !options.trust,
+        json: false,
+    };
+    return reviewCommand(options.feature, reviewOptions);
+}
 export async function reviewCommand(description, options) {
     // Parse description
     const { name, desc } = parseDescription(description);
@@ -23,9 +33,19 @@ export async function reviewCommand(description, options) {
     // Output
     if (options.json) {
         console.log(JSON.stringify(result, null, 2));
+        if (options.output) {
+            const { writeFileSync } = await import('fs');
+            writeFileSync(options.output, JSON.stringify(result, null, 2));
+            console.log(chalk.gray(`\n💾 Saved to ${options.output}`));
+        }
     }
     else {
         printReview(result);
+        if (options.output) {
+            const { writeFileSync } = await import('fs');
+            writeFileSync(options.output, JSON.stringify(result, null, 2));
+            console.log(chalk.gray(`\n💾 Saved to ${options.output}`));
+        }
     }
 }
 function parseDescription(description) {
@@ -37,7 +57,7 @@ function parseDescription(description) {
         };
     }
     return {
-        name: 'Unnamed Feature',
+        name: description,
         desc: description,
     };
 }
@@ -49,7 +69,8 @@ function autoCalculateScores(name, description) {
     // Brand indicators
     const brandIndicators = [
         'brand', 'identity', 'recognition', 'market position', 'premium',
-        'reputation', 'authority', 'thought leadership', 'unique',
+        'reputation', 'authority', 'thought leadership', 'unique', 'ai', 'ml',
+        'smart', 'intelligent', 'auto', 'predictive', 'advanced', 'custom',
     ];
     let brandScore = 3;
     for (const indicator of brandIndicators) {
@@ -60,7 +81,8 @@ function autoCalculateScores(name, description) {
     const attentionIndicators = [
         'engagement', 'viral', 'growth', 'traffic', 'acquisition',
         'retention', 'user', 'customer', 'marketing', 'seo',
-        'social', 'share', 'discover', 'notification',
+        'social', 'share', 'discover', 'notification', 'dashboard',
+        'daily', 'workflow', 'core', 'main', 'home', 'mobile', 'app',
     ];
     let attentionScore = 3;
     for (const indicator of attentionIndicators) {
@@ -71,7 +93,8 @@ function autoCalculateScores(name, description) {
     const trustIndicators = [
         'security', 'privacy', 'reliable', 'transparent', 'verified',
         'guarantee', 'compliance', 'audit', 'safe', 'protect',
-        'authentic', 'proven', 'trusted', 'expert',
+        'authentic', 'proven', 'trusted', 'expert', 'encryption',
+        '2fa', 'auth', 'verify', 'backup', 'sync', 'recovery', 'uptime',
     ];
     let trustScore = 3;
     for (const indicator of trustIndicators) {
@@ -232,3 +255,46 @@ function printReview(result) {
 function formatScore(score) {
     return score.toFixed(1).replace('.0', '');
 }
+export function printFrameworkExplanation() {
+    console.log(chalk.cyan(`
+╔════════════════════════════════════════════════════════════════╗
+║                 THE BAT FRAMEWORK                              ║
+╠════════════════════════════════════════════════════════════════╣
+║                                                                ║
+║  Three dimensions scored 0-5 stars each:                       ║
+║                                                                ║
+║  BRAND (0-5)                                                   ║
+║  • 5: Revolutionary, defines category, press-worthy            ║
+║  • 4: Strong differentiation, innovative                       ║
+║  • 3: Good fit, incremental improvement                        ║
+║  • 2: Table stakes, me-too feature                             ║
+║  • 1: Off-brand, confusing                                     ║
+║                                                                ║
+║  ATTENTION (0-5)                                               ║
+║  • 5: Daily use, core workflow                                 ║
+║  • 4: Weekly use, important workflow                           ║
+║  • 3: Monthly use, nice-to-have                                ║
+║  • 2: Rare use, edge case                                      ║
+║  • 1: Nobody asked for this                                    ║
+║                                                                ║
+║  TRUST (0-5)                                                   ║
+║  • 5: Security-critical, data protection                       ║
+║  • 4: Reliability-critical, uptime essential                   ║
+║  • 3: Transparency, user control                               ║
+║  • 2: Error handling, feedback                                 ║
+║  • 1: No trust impact                                          ║
+║                                                                ║
+╠════════════════════════════════════════════════════════════════╣
+║  10-STAR METHODOLOGY                                           ║
+║                                                                ║
+║  12-15 ⭐ BUILD      - Strong signal, proceed with confidence  ║
+║  10-11 ⭐ BUILD      - Good signal, validate assumptions       ║
+║   8-9  ⭐ CONSIDER   - Mixed signal, need more data            ║
+║   0-7  ⭐ DON'T BUILD - Weak signal, focus elsewhere           ║
+║                                                                ║
+║  Minimum threshold: 10/15 stars to build                       ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+`));
+}
+//# sourceMappingURL=index.js.map

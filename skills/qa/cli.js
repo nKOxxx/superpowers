@@ -13,7 +13,15 @@ program
   .option('-c, --coverage', 'Enable coverage reporting', false)
   .option('-w, --watch', 'Watch mode', false)
   .option('-u, --update', 'Update snapshots', false)
-  .option('--since <ref>', 'Git ref to compare against for targeted mode', 'HEAD~1')
-  .action(qaCommand);
+  .option('-s, --since <ref>', 'Git ref to compare against for targeted mode', 'HEAD~1')
+  .action((options) => {
+    qaCommand({
+      mode: options.mode,
+      coverage: options.coverage,
+      watch: options.watch,
+      update: options.update,
+      since: options.since,
+    });
+  });
 
 program.parse();
