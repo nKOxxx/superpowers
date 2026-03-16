@@ -7,6 +7,9 @@ metadata:
       bins: ["node", "npx", "git"]
       npm: ["@nko/superpowers"]
     primaryEnv: null
+    modelCompatibility: ["kimi-k2.5", "claude-opus-4", "gpt-4"]
+    skillType: "typescript"
+    entryPoint: "dist/index.js"
 ---
 
 # QA - Systematic Testing Skill
@@ -19,7 +22,7 @@ Acts as QA Lead to analyze code changes and run appropriate tests. Supports thre
 - **Smoke mode**: Quick validation that core functionality works
 - **Full mode**: Complete regression test suite
 - Coverage reporting
-- Test framework auto-detection
+- Test framework auto-detection (vitest, jest, mocha)
 
 ## Usage
 
@@ -69,35 +72,18 @@ Best for: Release validation, nightly builds
 - `--mode=<mode>` - Test mode: targeted, smoke, full. Default: targeted
 - `--diff=<range>` - Git diff range for targeted mode. Default: HEAD~1
 - `--coverage` - Enable coverage reporting. Default: false
-- `--parallel` - Run tests in parallel. Default: false
+- `--framework=<framework>` - Force specific framework (vitest, jest, mocha)
 
 ## Requirements
 
 - Git repository
+- Test framework (vitest, jest, or mocha)
 - npm test command configured
 
 ## Output Example
 
 ```
-══════════════════════════════════════════════════
-QA Mode: TARGETED
-══════════════════════════════════════════════════
-
-Files Changed: 3
-  - src/auth/login.ts
-  - src/api/users.ts
-  - src/components/Button.tsx
-
-Tests Selected: 2
-  - tests/auth/login.test.ts
-  - tests/components/Button.test.tsx
-
-Results:
-  ✓ tests/auth/login.test.ts (245ms)
-  ✓ tests/components/Button.test.tsx (112ms)
-
-──────────────────────────────────────────────────
-Passed: 2/2 (100%)
-Duration: 1.2s
-Status: PASSED
+✔ Framework: vitest
+✔ Found 3 relevant tests
+✔ Tests passed! (1245ms)
 ```

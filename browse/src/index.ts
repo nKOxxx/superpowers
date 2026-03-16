@@ -28,7 +28,12 @@ const viewportPresets: Record<string, { width: number; height: number }> = {
   desktop: { width: 1920, height: 1080 },
 };
 
-export async function browseCommand(url: string, options: BrowseOptions): Promise<void> {
+export async function browse(options: BrowseOptions & { url: string }): Promise<{ success: boolean; base64?: string; error?: string }> {
+  const { url, ...browseOptions } = options;
+  return browseCommand(url, browseOptions);
+}
+
+export async function browseCommand(url: string, options: BrowseOptions): Promise<{ success: boolean; base64?: string; error?: string }> {
   console.log(chalk.blue('🌐 Opening browser...'));
   
   let browser: Browser | null = null;
@@ -98,9 +103,11 @@ export async function browseCommand(url: string, options: BrowseOptions): Promis
     
     await context.close();
     
+    return { success: true, base64: screenshotBuffer.toString('base64') };
+    
   } catch (error) {
     console.error(chalk.red('❌ Error:'), error instanceof Error ? error.message : error);
-    process.exit(1);
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   } finally {
     if (browser) {
       await browser.close();
@@ -160,4 +167,19 @@ async function executeActions(page: Page, actions: BrowseAction[]): Promise<void
         console.log(chalk.yellow(`  Unknown action type: ${action.type}`));
     }
   }
+}
+
+export async function flow(options: {
+  url: string;
+  actions: BrowseAction[];
+  viewport: string;
+  output?: string;
+}): Promise<{ success: boolean; base64?: string; error?: string }> {
+  return browseCommand(options.url, {
+    viewport: options.viewport,
+    fullPage: false,
+    wait: '1000',
+    actions: JSON.stringify(options.actions),
+    output: options.output,
+  });
 }

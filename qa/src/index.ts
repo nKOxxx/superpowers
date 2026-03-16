@@ -53,6 +53,10 @@ const frameworks: Record<string, TestFrameworkConfig> = {
   },
 };
 
+export async function qa(options: QAOptions): Promise<void> {
+  return qaCommand(options);
+}
+
 export async function qaCommand(options: QAOptions): Promise<void> {
   console.log(chalk.blue('🧪 QA Lead - Starting test run...'));
   console.log(chalk.gray(`Mode: ${options.mode} | Coverage: ${options.coverage ? 'yes' : 'no'}`));

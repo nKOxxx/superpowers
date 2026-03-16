@@ -31,6 +31,24 @@ const RECOMMENDATION_THRESHOLDS = {
   consider: 7.5,  // 1/2 of 15
 };
 
+export async function ceoReview(options: {
+  feature: string;
+  brand?: number;
+  attention?: number;
+  trust?: number;
+  goal?: string;
+  interactive?: boolean;
+}): Promise<void> {
+  const reviewOptions: ReviewOptions = {
+    brand: options.brand,
+    attention: options.attention,
+    trust: options.trust,
+    auto: !options.brand && !options.attention && !options.trust,
+    json: false,
+  };
+  return reviewCommand(options.feature, reviewOptions);
+}
+
 export async function reviewCommand(description: string, options: ReviewOptions): Promise<void> {
   // Parse description
   const { name, desc } = parseDescription(description);

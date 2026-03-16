@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "package": "npm run build && tar -czf ../dist-skills/ship.skill.tar.gz -C .. ship/dist ship/cli.js ship/skill.json"
+    "package": "npm run build && tar -czf ../../dist-skills/ship.skill.tar.gz dist cli.js skill.json"
   },
   "keywords": [
     "openclaw",

@@ -1,262 +1,194 @@
-import { chromium, type Browser, type Page, type BrowserContext } from 'playwright';
-import { writeFileSync } from 'fs';
+import { Command } from 'commander';
+import { chromium, Browser, Page } from 'playwright';
+import chalk from 'chalk';
+import ora from 'ora';
+import { readFileSync, existsSync, mkdirSync } from 'fs';
+import { dirname } from 'path';
 
-// Types
-export interface Viewport {
+interface ViewportPreset {
   width: number;
   height: number;
+  deviceScaleFactor: number;
 }
 
-export interface BrowseOptions {
-  url: string;
-  viewport?: 'mobile' | 'tablet' | 'desktop' | Viewport;
-  fullPage?: boolean;
-  selector?: string;
-  actions?: BrowseAction[];
-  outputPath?: string;
-  timeout?: number;
-}
-
-export interface BrowseAction {
-  type: 'click' | 'type' | 'wait' | 'scroll' | 'hover' | 'screenshot';
-  selector?: string;
-  text?: string;
-  duration?: number;
-  x?: number;
-  y?: number;
-  key?: string;
-  output?: string;
-}
-
-export interface FlowOptions {
-  url: string;
-  actions: BrowseAction[];
+interface BrowseOptions {
   viewport?: string;
+  fullPage?: boolean;
   output?: string;
+  wait?: string;
+  selector?: string;
+  actions?: string;
+  json?: boolean;
 }
 
-export interface ScreenshotResult {
-  success: boolean;
-  base64?: string;
-  path?: string;
-  error?: string;
-  viewport: Viewport;
-  url: string;
-  timestamp: string;
-}
-
-// Viewport presets
-const VIEWPORTS: Record<string, Viewport> = {
-  mobile: { width: 375, height: 667 },
-  tablet: { width: 768, height: 1024 },
-  desktop: { width: 1920, height: 1080 }
+const VIEWPORT_PRESETS: Record<string, ViewportPreset> = {
+  mobile: { width: 375, height: 667, deviceScaleFactor: 2 },
+  tablet: { width: 768, height: 1024, deviceScaleFactor: 2 },
+  desktop: { width: 1280, height: 720, deviceScaleFactor: 1 },
+  wide: { width: 1920, height: 1080, deviceScaleFactor: 1 }
 };
 
-export const VIEWPORT_PRESETS = VIEWPORTS;
+const program = new Command();
 
-function getViewport(viewport: string | undefined): Viewport {
-  if (!viewport) return VIEWPORTS.desktop;
-  if (viewport in VIEWPORTS) {
-    return VIEWPORTS[viewport];
-  }
-  // Try parsing as WxH
-  const match = viewport.match(/^(\d+)x(\d+)$/);
-  if (match) {
-    return { width: parseInt(match[1], 10), height: parseInt(match[2], 10) };
-  }
-  return VIEWPORTS.desktop;
-}
+program
+  .name('browse')
+  .description('Browser automation and visual testing with Playwright')
+  .argument('<url>', 'URL to browse')
+  .option('-v, --viewport <preset>', 'Viewport preset (mobile, tablet, desktop, wide)', 'desktop')
+  .option('-f, --full-page', 'Capture full page screenshot', false)
+  .option('-o, --output <path>', 'Save screenshot to file path')
+  .option('-w, --wait <ms>', 'Wait time in ms after page load', '1000')
+  .option('-s, --selector <selector>', 'CSS selector to capture specific element')
+  .option('-a, --actions <actions>', 'Comma-separated actions (click:sel,type:sel|text,wait:ms,scroll,hover:sel)')
+  .option('-j, --json', 'Output results as JSON', false)
+  .action(async (url: string, options: BrowseOptions) => {
+    const spinner = ora('Launching browser...').start();
+    let browser: Browser | null = null;
 
-async function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+    try {
+      // Validate URL
+      let targetUrl = url;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        targetUrl = `https://${url}`;
+      }
 
-export async function browseToFile(options: BrowseOptions): Promise<ScreenshotResult> {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
-  let page: Page | undefined;
+      // Get viewport
+      const viewport = VIEWPORT_PRESETS[options.viewport || 'desktop'] || VIEWPORT_PRESETS.desktop;
 
-  try {
-    browser = await chromium.launch({ headless: true });
-    const viewport = typeof options.viewport === 'string' 
-      ? getViewport(options.viewport) 
-      : (options.viewport || VIEWPORTS.desktop);
-    
-    context = await browser.newContext({
-      viewport,
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-    });
-    
-    page = await context.newPage();
-    
-    await page.goto(options.url, { waitUntil: 'networkidle', timeout: options.timeout || 30000 });
-    
-    // Execute actions if provided
-    if (options.actions && options.actions.length > 0) {
-      for (const action of options.actions) {
-        switch (action.type) {
-          case 'click':
-            if (action.selector) await page.click(action.selector);
-            break;
-          case 'type':
-            if (action.selector && action.text !== undefined) {
-              await page.fill(action.selector, action.text);
-            }
-            break;
-          case 'wait':
-            await delay(action.duration || 1000);
-            break;
-          case 'scroll':
-            if (action.x !== undefined && action.y !== undefined) {
-              await page.evaluate(({ x, y }: { x: number; y: number }) => {
-                if (typeof window !== 'undefined') window.scrollTo(x, y);
-              }, { x: action.x, y: action.y });
-            } else {
-              await page.evaluate(() => {
-                if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-                  window.scrollTo(0, document.body.scrollHeight);
-                }
-              });
-            }
-            break;
-          case 'hover':
-            if (action.selector) await page.hover(action.selector);
-            break;
+      // Launch browser
+      browser = await chromium.launch({ headless: true });
+      const context = await browser.newContext({ viewport });
+      const page = await context.newPage();
+
+      spinner.text = `Navigating to ${targetUrl}...`;
+      await page.goto(targetUrl, { waitUntil: 'networkidle' });
+
+      // Execute actions if provided
+      if (options.actions) {
+        spinner.text = 'Executing actions...';
+        await executeActions(page, options.actions);
+      }
+
+      // Wait
+      const waitMs = parseInt(options.wait || '1000', 10);
+      await page.waitForTimeout(waitMs);
+
+      // Take screenshot
+      spinner.text = 'Capturing screenshot...';
+      let screenshotBuffer: Buffer;
+
+      if (options.selector) {
+        const element = await page.locator(options.selector).first();
+        screenshotBuffer = await element.screenshot();
+      } else {
+        screenshotBuffer = await page.screenshot({ 
+          fullPage: options.fullPage || false 
+        });
+      }
+
+      const base64Data = screenshotBuffer.toString('base64');
+
+      // Save to file if output specified
+      if (options.output) {
+        const outputDir = dirname(options.output);
+        if (!existsSync(outputDir)) {
+          mkdirSync(outputDir, { recursive: true });
         }
+        await page.screenshot({ 
+          path: options.output,
+          fullPage: options.fullPage || false 
+        });
       }
+
+      await browser.close();
+      browser = null;
+      spinner.succeed('Screenshot captured!');
+
+      // Output results
+      if (options.json) {
+        console.log(JSON.stringify({
+          success: true,
+          url: targetUrl,
+          viewport: options.viewport,
+          fullPage: options.fullPage || false,
+          screenshot: base64Data,
+          outputPath: options.output || null
+        }, null, 2));
+      } else {
+        console.log(chalk.green('\n✓ Screenshot captured'));
+        console.log(chalk.gray(`  URL: ${targetUrl}`));
+        console.log(chalk.gray(`  Viewport: ${viewport.width}x${viewport.height}`));
+        if (options.output) {
+          console.log(chalk.gray(`  Saved to: ${options.output}`));
+        }
+        
+        // Output base64 for OpenClaw canvas
+        console.log(chalk.cyan('\n--- SCREENSHOT_BASE64_START ---'));
+        console.log(base64Data);
+        console.log(chalk.cyan('--- SCREENSHOT_BASE64_END ---'));
+      }
+
+    } catch (error) {
+      if (browser) await browser.close();
+      spinner.fail('Failed to capture screenshot');
+      
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      if (options.json) {
+        console.log(JSON.stringify({
+          success: false,
+          error: errorMessage
+        }, null, 2));
+      } else {
+        console.error(chalk.red(`\n✗ Error: ${errorMessage}`));
+      }
+      
+      process.exit(1);
     }
+  });
+
+async function executeActions(page: Page, actionsString: string): Promise<void> {
+  const actions = actionsString.split(',');
+  
+  for (const action of actions) {
+    const [type, ...params] = action.split(':');
     
-    await delay(500);
-    
-    let screenshot: Buffer;
-    
-    if (options.selector) {
-      const element = await page.locator(options.selector).first();
-      screenshot = await element.screenshot({ type: 'png' });
-    } else {
-      screenshot = await page.screenshot({ 
-        fullPage: options.fullPage || false,
-        type: 'png' 
-      });
+    switch (type) {
+      case 'click':
+        await page.locator(params[0]).first().click();
+        break;
+        
+      case 'type':
+        const [selector, text] = params.join(':').split('|');
+        await page.locator(selector).first().fill(text);
+        break;
+        
+      case 'wait':
+        await page.waitForTimeout(parseInt(params[0], 10));
+        break;
+        
+      case 'scroll':
+        await page.mouse.wheel(0, 800);
+        break;
+        
+      case 'hover':
+        await page.locator(params[0]).first().hover();
+        break;
+        
+      case 'navigate':
+        await page.goto(params.join(':'), { waitUntil: 'networkidle' });
+        break;
+        
+      case 'screenshot':
+        // Just a marker, main screenshot happens after all actions
+        break;
     }
-    
-    const base64 = screenshot.toString('base64');
-    let path: string | undefined;
-    
-    if (options.outputPath) {
-      writeFileSync(options.outputPath, screenshot);
-      path = options.outputPath;
-    }
-    
-    return {
-      success: true,
-      base64,
-      path,
-      viewport,
-      url: options.url,
-      timestamp: new Date().toISOString()
-    };
-    
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error),
-      viewport: typeof options.viewport === 'string' ? getViewport(options.viewport) : (options.viewport || VIEWPORTS.desktop),
-      url: options.url,
-      timestamp: new Date().toISOString()
-    };
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 }
 
-// Re-export browseToFile as browse for compatibility
-export const browse = browseToFile;
-
-export async function flow(options: FlowOptions): Promise<string[]> {
-  const screenshots: string[] = [];
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
-  let page: Page | undefined;
-
-  try {
-    browser = await chromium.launch({ headless: true });
-    const viewport = getViewport(options.viewport);
-    
-    context = await browser.newContext({ viewport });
-    page = await context.newPage();
-    
-    await page.goto(options.url, { waitUntil: 'networkidle' });
-    
-    for (let i = 0; i < options.actions.length; i++) {
-      const action = options.actions[i];
-      
-      switch (action.type) {
-        case 'click':
-          if (action.selector) {
-            await page.click(action.selector);
-          }
-          break;
-          
-        case 'type':
-          if (action.selector && action.text !== undefined) {
-            await page.fill(action.selector, action.text);
-          }
-          break;
-          
-        case 'wait':
-          await delay(action.duration || 1000);
-          break;
-          
-        case 'scroll':
-          if (action.x !== undefined && action.y !== undefined) {
-            await page.evaluate(({ x, y }: { x: number; y: number }) => {
-              if (typeof window !== 'undefined') window.scrollTo(x, y);
-            }, { x: action.x, y: action.y });
-          } else {
-            await page.evaluate(() => {
-              if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-                window.scrollTo(0, document.body.scrollHeight);
-              }
-            });
-          }
-          break;
-          
-        case 'hover':
-          if (action.selector) {
-            await page.hover(action.selector);
-          }
-          break;
-          
-        case 'screenshot':
-          const screenshot = await page.screenshot({ type: 'png' });
-          if (action.output) {
-            writeFileSync(action.output, screenshot);
-            screenshots.push(action.output);
-          } else {
-            screenshots.push(screenshot.toString('base64'));
-          }
-          break;
-      }
-      
-      // Small delay between actions
-      await delay(500);
-    }
-    
-    // Final screenshot if not already captured
-    if (options.output && !screenshots.includes(options.output)) {
-      const finalScreenshot = await page.screenshot({ type: 'png' });
-      writeFileSync(options.output, finalScreenshot);
-      screenshots.push(options.output);
-    }
-    
-    return screenshots;
-    
-  } catch (error) {
-    throw error;
-  } finally {
-    await context?.close();
-    await browser?.close();
-  }
+// Show help if no arguments
+if (process.argv.length < 3) {
+  program.help();
 }
+
+program.parse();

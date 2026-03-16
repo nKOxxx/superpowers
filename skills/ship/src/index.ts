@@ -1,297 +1,343 @@
+import { Command } from 'commander';
 import { execSync } from 'child_process';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import chalk from 'chalk';
 import ora from 'ora';
-import semver from 'semver';
 
-export interface ShipOptions {
-  version: string;
+interface ShipOptions {
   dryRun?: boolean;
-  tag?: boolean;
-  release?: boolean;
-  message?: string;
+  skipTests?: boolean;
+  skipChangelog?: boolean;
+  skipGit?: boolean;
+  skipGithub?: boolean;
+  prerelease?: boolean;
+  notes?: string;
+  json?: boolean;
 }
 
-interface ConventionalCommit {
+interface ReleaseInfo {
+  version: string;
+  previousVersion: string;
+  changelog: string;
+  commits: CommitInfo[];
+}
+
+interface CommitInfo {
   type: string;
-  scope?: string;
   message: string;
+  scope?: string;
   breaking: boolean;
 }
 
-function getCurrentVersion(): string {
-  if (existsSync('package.json')) {
-    const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
-    return pkg.version || '0.0.0';
+const program = new Command();
+
+program
+  .name('ship')
+  .description('One-command release pipeline')
+  .argument('<version>', 'Version type (patch, minor, major) or explicit version (x.y.z)')
+  .option('--dry-run', 'Preview changes without executing', false)
+  .option('--skip-tests', 'Skip test run before release', false)
+  .option('--skip-changelog', 'Skip changelog update', false)
+  .option('--skip-git', 'Skip git operations', false)
+  .option('--skip-github', 'Skip GitHub release', false)
+  .option('--prerelease', 'Mark as prerelease', false)
+  .option('--notes <text>', 'Custom release notes')
+  .option('-j, --json', 'Output results as JSON', false)
+  .action(async (versionArg: string, options: ShipOptions) => {
+    const results: Record<string, boolean | string> = {};
+    
+    try {
+      // Step 1: Validate
+      const validateSpinner = ora('Validating repository...').start();
+      
+      if (!existsSync('package.json')) {
+        validateSpinner.fail('No package.json found');
+        throw new Error('package.json not found');
+      }
+      
+      const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
+      const currentVersion = pkg.version;
+      
+      // Check git status
+      const gitStatus = execSync('git status --porcelain', { encoding: 'utf-8' });
+      if (gitStatus.trim() && !options.dryRun) {
+        validateSpinner.fail('Working directory not clean');
+        throw new Error('Working directory has uncommitted changes');
+      }
+      
+      validateSpinner.succeed('Repository validated');
+      
+      // Calculate new version
+      const newVersion = calculateVersion(currentVersion, versionArg);
+      results.previousVersion = currentVersion;
+      results.version = newVersion;
+      
+      console.log(chalk.cyan(`\n📦 ${pkg.name} ${chalk.bold(currentVersion)} → ${chalk.bold.green(newVersion)}\n`));
+      
+      if (options.dryRun) {
+        console.log(chalk.yellow('🔍 DRY RUN - No changes will be made\n'));
+      }
+      
+      // Step 2: Run tests
+      if (!options.skipTests) {
+        const testSpinner = ora('Running tests...').start();
+        
+        try {
+          if (!options.dryRun) {
+            execSync('npm test', { stdio: 'pipe' });
+          }
+          testSpinner.succeed('Tests passed');
+          results.tests = true;
+        } catch {
+          testSpinner.fail('Tests failed');
+          throw new Error('Tests failed - release aborted');
+        }
+      }
+      
+      // Step 3: Update version
+      const versionSpinner = ora(`Updating version to ${newVersion}...`).start();
+      
+      if (!options.dryRun) {
+        pkg.version = newVersion;
+        writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+      }
+      
+      versionSpinner.succeed(`Version updated to ${newVersion}`);
+      results.versionBump = true;
+      
+      // Step 4: Generate changelog
+      let changelog = '';
+      if (!options.skipChangelog) {
+        const changelogSpinner = ora('Generating changelog...').start();
+        
+        const commits = getCommitsSinceLastTag();
+        changelog = generateChangelog(commits, newVersion);
+        
+        if (!options.dryRun && existsSync('CHANGELOG.md')) {
+          const existingChangelog = readFileSync('CHANGELOG.md', 'utf-8');
+          writeFileSync('CHANGELOG.md', changelog + '\n\n' + existingChangelog);
+        } else if (!options.dryRun) {
+          writeFileSync('CHANGELOG.md', changelog);
+        }
+        
+        changelogSpinner.succeed('Changelog generated');
+        results.changelog = true;
+      }
+      
+      // Step 5: Git commit and tag
+      if (!options.skipGit) {
+        const gitSpinner = ora('Creating git commit and tag...').start();
+        
+        if (!options.dryRun) {
+          execSync('git add package.json CHANGELOG.md', { stdio: 'pipe' });
+          execSync(`git commit -m "chore(release): v${newVersion}"`, { stdio: 'pipe' });
+          execSync(`git tag v${newVersion}`, { stdio: 'pipe' });
+          execSync('git push origin HEAD', { stdio: 'pipe' });
+          execSync('git push origin --tags', { stdio: 'pipe' });
+        }
+        
+        gitSpinner.succeed('Git commit and tag created');
+        results.git = true;
+      }
+      
+      // Step 6: GitHub release
+      if (!options.skipGithub && process.env.GH_TOKEN) {
+        const githubSpinner = ora('Creating GitHub release...').start();
+        
+        if (!options.dryRun) {
+          const releaseNotes = options.notes || changelog || `Release v${newVersion}`;
+          const prereleaseFlag = options.prerelease ? '--prerelease' : '';
+          
+          execSync(
+            `gh release create v${newVersion} ${prereleaseFlag} --title "v${newVersion}" --notes "${releaseNotes}"`,
+            { stdio: 'pipe', env: { ...process.env, GH_TOKEN: process.env.GH_TOKEN } }
+          );
+        }
+        
+        githubSpinner.succeed('GitHub release created');
+        results.github = true;
+      }
+      
+      // Step 7: Telegram notification
+      if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
+        const telegramSpinner = ora('Sending Telegram notification...').start();
+        
+        if (!options.dryRun) {
+          const message = encodeURIComponent(
+            `🚀 *Release Shipped*\n\n` +
+            `📦 ${pkg.name} *v${newVersion}*\n` +
+            `✅ Successfully released to production`
+          );
+          
+          execSync(
+            `curl -s -X POST "https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage" ` +
+            `-d "chat_id=${process.env.TELEGRAM_CHAT_ID}" ` +
+            `-d "text=${message}" ` +
+            `-d "parse_mode=Markdown"`,
+            { stdio: 'pipe' }
+          );
+        }
+        
+        telegramSpinner.succeed('Telegram notification sent');
+        results.telegram = true;
+      }
+      
+      // Success output
+      if (options.json) {
+        console.log(JSON.stringify({
+          success: true,
+          packageName: pkg.name,
+          version: newVersion,
+          previousVersion: currentVersion,
+          dryRun: options.dryRun,
+          results
+        }, null, 2));
+      } else {
+        console.log(chalk.green('\n✅ Release completed successfully!\n'));
+        console.log(chalk.cyan('📦 Package: ') + chalk.white(pkg.name));
+        console.log(chalk.cyan('🏷️  Version: ') + chalk.white(newVersion));
+        
+        if (options.dryRun) {
+          console.log(chalk.yellow('\nThis was a dry run. No changes were made.'));
+        }
+      }
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      if (options.json) {
+        console.log(JSON.stringify({
+          success: false,
+          error: errorMessage,
+          results
+        }, null, 2));
+      } else {
+        console.error(chalk.red(`\n❌ Release failed: ${errorMessage}\n`));
+      }
+      
+      process.exit(1);
+    }
+  });
+
+function calculateVersion(current: string, bump: string): string {
+  const [major, minor, patch] = current.split('.').map(Number);
+  
+  switch (bump) {
+    case 'major':
+      return `${major + 1}.0.0`;
+    case 'minor':
+      return `${major}.${minor + 1}.0`;
+    case 'patch':
+      return `${major}.${minor}.${patch + 1}`;
+    default:
+      // Assume explicit version
+      if (/^\d+\.\d+\.\d+/.test(bump)) {
+        return bump;
+      }
+      throw new Error(`Invalid version type: ${bump}`);
   }
-  return '0.0.0';
 }
 
-function parseConventionalCommit(commit: string): ConventionalCommit | null {
-  // Format: type(scope): message or type: message
-  const match = commit.match(/^(\w+)(?:\(([^)]+)\))?\s*:\s*(.+)$/);
-  if (!match) return null;
-
-  const [, type, scope, message] = match;
-  const breaking = message.includes('BREAKING CHANGE') || message.startsWith('!');
-
-  return { type, scope, message: message.replace(/^!\s*/, ''), breaking };
-}
-
-function getCommitsSinceLastTag(): string[] {
+function getCommitsSinceLastTag(): CommitInfo[] {
   try {
-    const lastTag = execSync('git describe --tags --abbrev=0 2>/dev/null || echo ""', { encoding: 'utf-8' }).trim();
-    const range = lastTag ? `${lastTag}..HEAD` : 'HEAD';
-    const output = execSync(`git log ${range} --pretty=format:"%s"`, { encoding: 'utf-8' });
-    return output.trim().split('\n').filter(Boolean);
+    const lastTag = execSync('git describe --tags --abbrev=0', { 
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'ignore']
+    }).trim();
+    
+    const logOutput = execSync(`git log ${lastTag}..HEAD --pretty=format:"%s"`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'ignore']
+    });
+    
+    return logOutput.split('\n').filter(Boolean).map(parseCommit);
   } catch {
-    return [];
+    // No previous tag, get all commits
+    const logOutput = execSync('git log --pretty=format:"%s"', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'ignore']
+    });
+    
+    return logOutput.split('\n').filter(Boolean).map(parseCommit);
   }
 }
 
-function categorizeCommits(commits: string[]): Record<string, string[]> {
-  const categories: Record<string, string[]> = {
+function parseCommit(message: string): CommitInfo {
+  const conventionalRegex = /^(\w+)(?:\(([^)]+)\))?:\s*(.+)$/;
+  const match = message.match(conventionalRegex);
+  
+  if (match) {
+    return {
+      type: match[1],
+      scope: match[2],
+      message: match[3],
+      breaking: message.includes('BREAKING CHANGE')
+    };
+  }
+  
+  return {
+    type: 'other',
+    message: message,
+    breaking: message.includes('BREAKING CHANGE')
+  };
+}
+
+function generateChangelog(commits: CommitInfo[], version: string): string {
+  const sections: Record<string, CommitInfo[]> = {
     feat: [],
     fix: [],
-    docs: [],
-    style: [],
-    refactor: [],
-    perf: [],
-    test: [],
     chore: [],
-    other: []
+    other: [],
+    breaking: []
   };
-
+  
   for (const commit of commits) {
-    const parsed = parseConventionalCommit(commit);
-    if (parsed) {
-      const category = categories[parsed.type] ? parsed.type : 'other';
-      categories[category].push(parsed.message);
-    } else {
-      categories.other.push(commit);
+    if (commit.breaking) {
+      sections.breaking.push(commit);
     }
-  }
-
-  return categories;
-}
-
-function determineBumpType(commits: string[]): 'major' | 'minor' | 'patch' {
-  let hasBreaking = false;
-  let hasFeature = false;
-
-  for (const commit of commits) {
-    const parsed = parseConventionalCommit(commit);
-    if (parsed) {
-      if (parsed.breaking) hasBreaking = true;
-      if (parsed.type === 'feat') hasFeature = true;
-    }
-  }
-
-  if (hasBreaking) return 'major';
-  if (hasFeature) return 'minor';
-  return 'patch';
-}
-
-function generateChangelog(commits: string[], version: string): string {
-  const categories = categorizeCommits(commits);
-  const date = new Date().toISOString().split('T')[0];
-  
-  let changelog = `## [${version}] - ${date}\n\n`;
-
-  if (categories.feat.length > 0) {
-    changelog += '### Features\n';
-    for (const msg of categories.feat) {
-      changelog += `- ${msg}\n`;
-    }
-    changelog += '\n';
-  }
-
-  if (categories.fix.length > 0) {
-    changelog += '### Bug Fixes\n';
-    for (const msg of categories.fix) {
-      changelog += `- ${msg}\n`;
-    }
-    changelog += '\n';
-  }
-
-  if (categories.docs.length > 0) {
-    changelog += '### Documentation\n';
-    for (const msg of categories.docs) {
-      changelog += `- ${msg}\n`;
-    }
-    changelog += '\n';
-  }
-
-  const otherTypes = ['refactor', 'perf', 'test', 'chore', 'style', 'other'];
-  for (const type of otherTypes) {
-    if (categories[type]?.length > 0) {
-      changelog += `### ${type.charAt(0).toUpperCase() + type.slice(1)}\n`;
-      for (const msg of categories[type]) {
-        changelog += `- ${msg}\n`;
-      }
-      changelog += '\n';
-    }
-  }
-
-  return changelog;
-}
-
-function updateChangelog(newSection: string): void {
-  const changelogPath = 'CHANGELOG.md';
-  const header = '# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n';
-  
-  if (existsSync(changelogPath)) {
-    const existing = readFileSync(changelogPath, 'utf-8');
-    writeFileSync(changelogPath, existing.replace('# Changelog\n\n', header) + '\n' + newSection);
-  } else {
-    writeFileSync(changelogPath, header + newSection);
-  }
-}
-
-function updatePackageVersion(version: string): void {
-  if (existsSync('package.json')) {
-    const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
-    pkg.version = version;
-    writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-  }
-}
-
-async function createGitHubRelease(version: string, changelog: string, message?: string): Promise<void> {
-  const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
-  if (!token) {
-    console.log(chalk.yellow('⚠️ No GH_TOKEN found. Skipping GitHub release.'));
-    return;
-  }
-
-  const tag = version.startsWith('v') ? version : `v${version}`;
-  const releaseBody = message || changelog;
-
-  try {
-    // Use gh CLI if available
-    execSync('which gh', { stdio: 'ignore' });
     
-    const cmd = [
-      'gh', 'release', 'create', tag,
-      '--title', tag,
-      '--notes', releaseBody
-    ].join(' ');
-    
-    execSync(cmd, { stdio: 'inherit' });
-    console.log(chalk.green(`✅ GitHub release ${tag} created`));
-  } catch {
-    console.log(chalk.yellow('⚠️ GitHub CLI not available. Create release manually.'));
-  }
-}
-
-export async function ship(options: ShipOptions): Promise<boolean> {
-  console.log(chalk.blue.bold('\n🚀 Ship Release\n'));
-
-  const spinner = ora('Analyzing repository...').start();
-
-  try {
-    // Check git status
-    const status = execSync('git status --porcelain', { encoding: 'utf-8' });
-    if (status.trim()) {
-      spinner.fail(chalk.red('Working directory is not clean. Commit or stash changes first.'));
-      return false;
-    }
-
-    // Get current version
-    const currentVersion = getCurrentVersion();
-    spinner.text = `Current version: ${currentVersion}`;
-
-    // Calculate new version
-    let newVersion: string;
-    const versionInput = options.version;
-
-    if (['major', 'minor', 'patch'].includes(versionInput)) {
-      const bumpType = versionInput as 'major' | 'minor' | 'patch';
-      newVersion = semver.inc(currentVersion, bumpType) || currentVersion;
-    } else if (semver.valid(versionInput)) {
-      newVersion = versionInput;
+    if (sections[commit.type]) {
+      sections[commit.type].push(commit);
     } else {
-      // Try to auto-detect from commits
-      const commits = getCommitsSinceLastTag();
-      const bumpType = determineBumpType(commits);
-      newVersion = semver.inc(currentVersion, bumpType) || currentVersion;
-      spinner.text = `Auto-detected ${bumpType} bump: ${currentVersion} → ${newVersion}`;
+      sections.other.push(commit);
     }
-
-    spinner.succeed(`Version: ${currentVersion} → ${newVersion}`);
-
-    // Get commits for changelog
-    const commits = getCommitsSinceLastTag();
-    const changelog = generateChangelog(commits, newVersion);
-
-    console.log(chalk.gray('\nChanges to be released:'));
-    console.log(chalk.gray('─'.repeat(40)));
-    console.log(changelog);
-    console.log(chalk.gray('─'.repeat(40)));
-
-    if (options.dryRun) {
-      console.log(chalk.yellow('\n🔍 Dry run - no changes made'));
-      return true;
-    }
-
-    // Update version
-    const versionSpinner = ora('Updating version...').start();
-    updatePackageVersion(newVersion);
-    versionSpinner.succeed(`Updated to v${newVersion}`);
-
-    // Update changelog
-    const changelogSpinner = ora('Updating CHANGELOG...').start();
-    updateChangelog(changelog);
-    changelogSpinner.succeed('CHANGELOG updated');
-
-    // Git commit
-    const commitSpinner = ora('Creating git commit...').start();
-    execSync('git add -A');
-    execSync(`git commit -m "chore(release): v${newVersion}"`);
-    commitSpinner.succeed('Commit created');
-
-    // Git tag
-    if (options.tag !== false) {
-      const tagSpinner = ora('Creating git tag...').start();
-      const tag = newVersion.startsWith('v') ? newVersion : `v${newVersion}`;
-      execSync(`git tag -a ${tag} -m "Release ${tag}"`);
-      tagSpinner.succeed(`Tag ${tag} created`);
-
-      // Push
-      const pushSpinner = ora('Pushing to remote...').start();
-      execSync('git push origin HEAD');
-      execSync('git push origin --tags');
-      pushSpinner.succeed('Pushed to remote');
-    }
-
-    // GitHub release
-    if (options.release !== false) {
-      await createGitHubRelease(newVersion, changelog, options.message);
-    }
-
-    console.log(chalk.green.bold(`\n✅ Successfully shipped v${newVersion}\n`));
-    return true;
-
-  } catch (error) {
-    spinner.fail(chalk.red(`Release failed: ${error instanceof Error ? error.message : String(error)}`));
-    return false;
-  }
-}
-
-// CLI entry
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const args = process.argv.slice(2);
-  const version = args.find(a => a.startsWith('--version='))?.split('=')[1] || '';
-  const dryRun = args.includes('--dry-run');
-  const noTag = args.includes('--no-tag');
-  const noRelease = args.includes('--no-release');
-  const message = args.find(a => a.startsWith('--message='))?.split('=')[1];
-  
-  if (!version) {
-    console.error(chalk.red('Usage: ship --version=<patch|minor|major|x.x.x>'));
-    process.exit(1);
   }
   
-  ship({ version, dryRun, tag: !noTag, release: !noRelease, message }).then(success => {
-    process.exit(success ? 0 : 1);
-  });
+  let changelog = `## [${version}] - ${new Date().toISOString().split('T')[0]}\n\n`;
+  
+  if (sections.breaking.length > 0) {
+    changelog += '### ⚠️ Breaking Changes\n\n';
+    for (const commit of sections.breaking) {
+      changelog += `- ${commit.message}\n`;
+    }
+    changelog += '\n';
+  }
+  
+  if (sections.feat.length > 0) {
+    changelog += '### ✨ Features\n\n';
+    for (const commit of sections.feat) {
+      changelog += `- ${commit.message}\n`;
+    }
+    changelog += '\n';
+  }
+  
+  if (sections.fix.length > 0) {
+    changelog += '### 🐛 Bug Fixes\n\n';
+    for (const commit of sections.fix) {
+      changelog += `- ${commit.message}\n`;
+    }
+    changelog += '\n';
+  }
+  
+  if (sections.chore.length > 0) {
+    changelog += '### 🧹 Chores\n\n';
+    for (const commit of sections.chore) {
+      changelog += `- ${commit.message}\n`;
+    }
+    changelog += '\n';
+  }
+  
+  return changelog.trim();
 }
+
+program.parse();

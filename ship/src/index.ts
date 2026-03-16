@@ -34,6 +34,10 @@ const conventionalTypes: Record<string, { emoji: string; section: string }> = {
   chore: { emoji: '🔨', section: 'Chores' },
 };
 
+export async function ship(options: ShipOptions): Promise<void> {
+  return shipCommand(options);
+}
+
 export async function shipCommand(options: ShipOptions): Promise<void> {
   console.log(chalk.blue('🚢 Ship - Release Pipeline\n'));
   

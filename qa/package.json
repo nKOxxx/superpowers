@@ -9,11 +9,10 @@
   },
   "scripts": {
     "build": "tsc",
-    "package": "npm run build && tar -czf ../dist-skills/qa.skill.tar.gz -C .. qa/dist qa/cli.js qa/skill.json"
+    "package": "npm run build && tar -czf ../../dist-skills/qa.skill.tar.gz dist cli.js skill.json"
   },
   "keywords": ["openclaw", "testing", "qa", "vitest", "jest", "mocha"],
-  "devDependencies": {
-    "vitest": "^1.0.0"
-  },
-  "dependencies": {}
+  "dependencies": {
+    "chalk": "^5.6.2"
+  }
 }

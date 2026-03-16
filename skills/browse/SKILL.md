@@ -7,6 +7,9 @@ metadata:
       bins: ["node", "npx"]
       npm: ["@nko/superpowers"]
     primaryEnv: null
+    modelCompatibility: ["kimi-k2.5", "claude-opus-4", "gpt-4"]
+    skillType: "typescript"
+    entryPoint: "dist/index.js"
 ---
 
 # Browse - Browser Automation Skill
@@ -45,25 +48,24 @@ superpowers browse https://example.com --full-page
 ### Custom actions
 
 ```bash
-superpowers browse https://example.com --actions="click:.btn,wait:1000,screenshot"
+superpowers browse https://example.com --actions="click:.btn,wait:1000,type:#input|hello"
 ```
 
 ## Options
 
-- `--viewport=<name>` - Viewport preset (mobile, tablet, desktop). Default: desktop
-- `--width=<pixels>` - Custom viewport width
-- `--height=<pixels>` - Custom viewport height
+- `--viewport=<name>` - Viewport preset (mobile, tablet, desktop, wide). Default: desktop
 - `--full-page` - Capture full page screenshot. Default: false
-- `--output=<dir>` - Output directory for screenshots. Default: ./screenshots
-- `--wait-for=<selector>` - Wait for element before screenshot
+- `--output=<path>` - Save screenshot to file path
+- `--wait=<ms>` - Wait time in ms after page load. Default: 1000
+- `--selector=<selector>` - CSS selector to capture specific element
 - `--actions=<actions>` - Comma-separated actions
-- `--timeout=<ms>` - Navigation timeout. Default: 30000
 
 ## Viewport Presets
 
-- `mobile`: 375x667
-- `tablet`: 768x1024
-- `desktop`: 1280x720
+- `mobile`: 375x667 @ 2x
+- `tablet`: 768x1024 @ 2x
+- `desktop`: 1280x720 @ 1x
+- `wide`: 1920x1080 @ 1x
 
 ## Action Syntax
 
@@ -74,14 +76,24 @@ Actions are comma-separated with colon-separated parameters:
 - `wait:<ms>` - Wait milliseconds
 - `scroll` - Scroll down one viewport
 - `hover:<selector>` - Hover over element
+- `navigate:<url>` - Navigate to URL
 - `screenshot` - Take screenshot at this point
 
 Example: `click:.menu,wait:500,hover:.dropdown-item,screenshot`
 
+## Flow Mode
+
+For complex multi-step flows:
+
+```bash
+superpowers flow https://example.com --actions='[{"type":"click","selector":".btn"},{"type":"wait","delay":1000}]'
+```
+
 ## Output
 
-Screenshots saved to output directory with filenames:
-`<hostname>_<viewport>_<timestamp>.png`
+- Base64 output to stdout by default
+- File output with `--output` flag
+- Screenshot data available for OpenClay canvas display
 
 ## Requirements
 

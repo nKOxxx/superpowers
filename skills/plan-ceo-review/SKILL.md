@@ -7,6 +7,9 @@ metadata:
       bins: ["node", "npx"]
       npm: ["@nko/superpowers"]
     primaryEnv: null
+    modelCompatibility: ["kimi-k2.5", "claude-opus-4", "gpt-4"]
+    skillType: "typescript"
+    entryPoint: "dist/index.js"
 ---
 
 # Plan CEO Review - Product Strategy Skill
@@ -18,13 +21,13 @@ Product strategy evaluation using the BAT framework (Brand, Attention, Trust) wi
 Three dimensions scored 0-5 stars:
 
 **Brand** - Does this strengthen our brand?
-High score: Differentiating, innovative, aligns with identity
+- High score: Differentiating, innovative, aligns with identity
 
 **Attention** - Will users actually use this?
-High score: High frequency, core workflow, solves real pain
+- High score: High frequency, core workflow, solves real pain
 
 **Trust** - Does this build user trust?
-High score: Security, reliability, transparency, safety
+- High score: Security, reliability, transparency, safety
 
 ## 10-Star Methodology
 
@@ -40,50 +43,64 @@ High score: Security, reliability, transparency, safety
 ### Basic evaluation
 
 ```bash
-superpowers ceo-review --feature="mobile app"
+superpowers ceo-review "mobile app" "Increase user engagement"
 ```
 
 ### Full context
 
 ```bash
 superpowers ceo-review \
-  --feature="AI code review" \
-  --goal="Reduce review time 50%" \
-  --audience="Dev teams"
+  "AI code review" \
+  "Reduce review time 50%" \
+  --audience="Dev teams" \
+  --competition="GitHub Copilot" \
+  --trust="SOC2 certified"
+```
+
+### JSON output
+
+```bash
+superpowers ceo-review "Dark mode" "User preference" --json --output=review.json
 ```
 
 ## Options
 
-- `--feature=<name>` - Feature name (required)
-- `--goal=<text>` - Business goal
 - `--audience=<text>` - Target audience
 - `--competition=<text>` - Competitors
 - `--trust=<text>` - Trust assets you have
+- `--brand=<score>` - Manual brand score (0-5)
+- `--attention=<score>` - Manual attention score (0-5)
+- `--trust-score=<score>` - Manual trust score (0-5)
+- `--json` - Output as JSON
+- `--output=<path>` - Save to file
 
 ## Output Example
 
 ```
 ══════════════════════════════════════════════════
-AI Code Review
+  CEO REVIEW: AI Code Review
 ══════════════════════════════════════════════════
 
-Brand:     ⭐⭐⭐⭐⭐ (5/5)
-Attention: ⭐⭐⭐⭐○ (4/5)
-Trust:     ⭐⭐⭐○○ (3/5)
+  BAT Framework Scores:
+    Brand:     [████░] 4/5
+    Attention: [████░] 4/5
+    Trust:     [███░░] 3/5
 
-Total: 12/15 ⭐
+    BAT Total: 11/15 stars
 
-Recommendation: BUILD ✅
+  10-Star Evaluation:
+    Average Score: 6.0/10
 
-Rationale:
-  • Strong brand differentiation potential
-  • High user engagement potential
-  • Direct revenue impact should be modeled
+  Recommendation: BUILD ✅
 
-Next Steps:
-  1. Define success metrics (DAU, engagement time)
-  2. Coordinate with marketing for launch narrative
-  3. Set 30-day post-launch review date
+  Rationale:
+    • Strong brand differentiation potential
+    • High user engagement potential
+
+  Next Steps:
+    1. Define success metrics and KPIs
+    2. Create detailed product spec
+    3. Estimate engineering effort
 
 ══════════════════════════════════════════════════
 ```
@@ -110,3 +127,11 @@ Next Steps:
 - **3**: Transparency, user control
 - **2**: Error handling, feedback
 - **1**: No trust impact
+
+## Understanding the Framework
+
+```bash
+superpowers ceo-review framework
+```
+
+Displays detailed explanation of BAT methodology and 10-star scoring.

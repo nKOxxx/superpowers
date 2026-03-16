@@ -1,0 +1,35 @@
+{
+  "name": "@nko/superpowers",
+  "version": "1.0.0",
+  "description": "OpenClaw superpowers CLI - Browser automation, QA testing, release pipeline, and product strategy",
+  "type": "module",
+  "bin": {
+    "superpowers": "./bin/superpowers.js"
+  },
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "clean": "npm run clean --workspaces",
+    "test": "npm run test --workspaces",
+    "package": "mkdir -p dist && npm run package --workspaces"
+  },
+  "workspaces": [
+    "skills/*"
+  ],
+  "keywords": [
+    "openclaw",
+    "cli",
+    "browser-automation",
+    "testing",
+    "release",
+    "product-strategy"
+  ],
+  "author": "nKO",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nKOxxx/superpowers.git"
+  }
+}
