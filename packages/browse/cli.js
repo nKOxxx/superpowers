@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { browseCommand } from './index.js';
+import { browseCommand } from './dist/index.js';
 
 const args = process.argv.slice(2);
 

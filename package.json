@@ -3,18 +3,27 @@
   "version": "1.0.0",
   "description": "TypeScript skill collection for OpenClaw - browser automation, QA testing, release management, and product strategy",
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "bin": {
     "superpowers": "./dist/cli.js",
-    "browse": "./dist/browse.js",
-    "qa": "./dist/qa.js",
-    "ship": "./dist/ship.js",
-    "plan-ceo-review": "./dist/plan-ceo-review.js"
+    "browse": "./packages/browse/cli.js",
+    "qa": "./packages/qa/cli.js",
+    "ship": "./packages/ship/cli.js",
+    "plan-ceo-review": "./packages/plan-ceo-review/cli.js"
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "lint": "eslint src/**/*.ts",
-    "test": "vitest run"
+    "build": "npm run build --workspaces",
+    "build:common": "npm run build --workspace=packages/common",
+    "build:browse": "npm run build --workspace=packages/browse",
+    "build:qa": "npm run build --workspace=packages/qa",
+    "build:ship": "npm run build --workspace=packages/ship",
+    "build:plan-ceo-review": "npm run build --workspace=packages/plan-ceo-review",
+    "clean": "npm run clean --workspaces",
+    "lint": "eslint packages/*/src/**/*.ts",
+    "test": "npm run test --workspaces",
+    "package:all": "./package-skills.sh"
   },
   "keywords": [
     "openclaw",
@@ -24,7 +33,8 @@
     "release",
     "product-strategy",
     "playwright",
-    "cli"
+    "cli",
+    "typescript"
   ],
   "author": "nKO",
   "license": "MIT",

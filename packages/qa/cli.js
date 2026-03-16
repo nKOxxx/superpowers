@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { qaCommand } from './index.js';
+import { qaCommand } from './dist/index.js';
 
 const args = process.argv.slice(2);
 const options = {
