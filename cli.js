@@ -20,10 +20,10 @@ const command = process.argv[2];
 const args = process.argv.slice(3);
 
 const commands = {
-  'browse': 'skills/browse/dist/index.js',
-  'qa': 'skills/qa/dist/index.js',
-  'ship': 'skills/ship/dist/index.js',
-  'ceo-review': 'skills/plan-ceo-review/dist/index.js',
+  'browse': 'browse/dist/index.js',
+  'qa': 'qa/dist/index.js',
+  'ship': 'ship/dist/index.js',
+  'ceo-review': 'plan-ceo-review/dist/index.js',
   'help': null,
   '--help': null,
   '-h': null
