@@ -1,0 +1,13 @@
+{
+  "name": "ship",
+  "version": "1.0.3",
+  "description": "One-command release pipeline. Bumps version, generates changelog, creates GitHub release. Triggers on /ship, release new version, publish, create release, or version bump.",
+  "entry": "dist/scripts/ship.js",
+  "triggers": ["/ship", "release new version", "publish", "create release", "version bump"],
+  "model": "kimi-k2.5",
+  "config": {
+    "requireCleanWorkingDir": true,
+    "runTestsBeforeRelease": true,
+    "telegramNotify": true
+  }
+}

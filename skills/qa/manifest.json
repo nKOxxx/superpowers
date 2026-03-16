@@ -1,0 +1,13 @@
+{
+  "name": "qa",
+  "version": "1.0.3",
+  "description": "Systematic testing as QA Lead. Analyzes code changes and runs appropriate tests with smart test selection. Triggers on /qa, run tests, test coverage, or code quality checks.",
+  "entry": "dist/scripts/qa.js",
+  "triggers": ["/qa", "run tests", "test coverage", "QA review", "code quality", "regression testing", "check tests"],
+  "model": "kimi-k2.5",
+  "config": {
+    "defaultMode": "targeted",
+    "coverageThreshold": 80,
+    "autoTestThreshold": 50
+  }
+}

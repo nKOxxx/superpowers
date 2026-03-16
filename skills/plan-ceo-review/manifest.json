@@ -1,0 +1,14 @@
+{
+  "name": "plan-ceo-review",
+  "version": "1.0.3",
+  "description": "Product strategy review using BAT framework (Brand, Attention, Trust) and 10-star methodology. Triggers on /plan-ceo-review, should we build X, feature evaluation, product strategy, or build vs buy decisions.",
+  "entry": "dist/scripts/plan-ceo-review.js",
+  "triggers": ["/plan-ceo-review", "should we build", "feature evaluation", "product strategy", "build vs buy", "prioritize feature"],
+  "model": "kimi-k2.5",
+  "config": {
+    "minimumScore": 10,
+    "requireAllBAT": false,
+    "autoGenerateNextSteps": true,
+    "marketAnalysis": true
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "browse",
+  "version": "1.0.3",
+  "description": "Browser automation for visual testing and UI flows using Playwright. Triggers on /browse, screenshot requests, visual testing, or browser automation tasks.",
+  "entry": "dist/scripts/browse.js",
+  "triggers": ["/browse", "screenshot", "visual testing", "browser automation", "web testing", "capture page", "test UI flow"],
+  "model": "kimi-k2.5",
+  "config": {
+    "viewports": {
+      "mobile": { "width": 375, "height": 812 },
+      "tablet": { "width": 768, "height": 1024 },
+      "desktop": { "width": 1920, "height": 1080 }
+    },
+    "flows": {},
+    "defaultTimeout": 30000
+  }
+}
