@@ -4,6 +4,27 @@ import * as path from 'path';
 import semver from 'semver';
 import { simpleGit } from 'simple-git';
 import chalk from 'chalk';
+// Telegram notification helper
+async function sendTelegramNotification(botToken, chatId, message) {
+    try {
+        const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: message,
+                parse_mode: 'HTML'
+            })
+        });
+        if (!response.ok) {
+            console.warn(chalk.yellow(`Telegram notification failed: ${response.statusText}`));
+        }
+    }
+    catch (error) {
+        console.warn(chalk.yellow(`Telegram notification error: ${error instanceof Error ? error.message : String(error)}`));
+    }
+}
 const DEFAULT_CONFIG = {
     defaultBump: 'patch',
     changelogPath: 'CHANGELOG.md',
@@ -143,6 +164,20 @@ export class ShipSkill {
                 catch {
                     console.warn(chalk.yellow(`Post-release hook failed: ${hook}`));
                 }
+            }
+            // Send Telegram notification if configured
+            if (this.config.telegram) {
+                const telegramMessage = `
+🚀 <b>Release Published</b>
+
+📦 Package: ${process.env.npm_package_name || 'unknown'}
+🔖 Version: ${newVersion}
+🌿 Branch: ${status.currentBranch}
+📝 Commits: ${status.commitsSinceTag}
+
+<a href="https://github.com/${this.config.githubRepo || 'owner/repo'}/releases/tag/${this.config.tagPrefix}${newVersion}">View Release</a>
+        `.trim();
+                await sendTelegramNotification(this.config.telegram.botToken, this.config.telegram.chatId, telegramMessage);
             }
             return { success: true, message: `Released ${currentVersion} → ${newVersion}` };
         }
