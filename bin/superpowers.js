@@ -47,7 +47,7 @@ if (!skillPackage) {
 
 // Find the skill's dist/cli.js
 const skillPaths = [
-  join(__dirname, '..', 'skills', skillPackage.replace('@superpowers/', ''), 'dist', 'cli.js'),
+  join(__dirname, '..', skillPackage.replace('@superpowers/', ''), 'dist', 'cli.js'),
   join(process.cwd(), 'node_modules', skillPackage, 'dist', 'cli.js'),
 ];
 
