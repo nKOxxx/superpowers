@@ -9,7 +9,9 @@
   },
   "scripts": {
     "build": "tsc",
-    "package": "npm run build && mkdir -p ../../dist-skills && tar -czf ../../dist-skills/plan-ceo-review.skill.tar.gz dist cli.js skill.json SKILL.md"
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "package": "npm run build && mkdir -p ../dist-skills && tar -czf ../dist-skills/plan-ceo-review.skill.tar.gz dist cli.js skill.json SKILL.md package.json"
   },
   "keywords": ["openclaw", "product", "strategy", "bat", "framework", "ceo"],
   "dependencies": {

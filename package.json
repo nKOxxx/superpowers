@@ -13,7 +13,10 @@
     "package": "mkdir -p dist && npm run package --workspaces"
   },
   "workspaces": [
-    "skills/*"
+    "browse",
+    "qa",
+    "ship",
+    "plan-ceo-review"
   ],
   "keywords": [
     "openclaw",
