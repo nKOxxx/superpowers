@@ -1,5 +1,6 @@
 import { execSync } from 'child_process';
 import { readFile, writeFile } from 'fs/promises';
+import { readFileSync } from 'fs';
 import { join } from 'path';
 import { fileExists, log, readJson, writeJson, notifyTelegram } from '../shared/utils.js';
 import { ShipConfig } from '../shared/types.js';
@@ -53,8 +54,6 @@ export function getCurrentVersion(): string {
     return '0.0.0';
   }
 }
-
-import { readFileSync } from 'fs';
 
 export function getCurrentBranch(): string {
   try {

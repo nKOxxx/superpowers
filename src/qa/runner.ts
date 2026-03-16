@@ -1,6 +1,5 @@
 import { execSync, spawn } from 'child_process';
-import { readFile, readdir, writeFile } from 'fs/promises';
-import { accessSync } from 'fs';
+import { readFile, readFileSync, readdir, writeFile, accessSync } from 'fs';
 import { join, dirname, relative } from 'path';
 import { fileExists, log, readJson, writeJson } from '../shared/utils.js';
 import { QaConfig } from '../shared/types.js';
@@ -77,8 +76,6 @@ export function detectRunner(): string {
   
   return 'node';
 }
-
-import { readFileSync } from 'fs';
 
 export async function getChangedFiles(): Promise<string[]> {
   try {

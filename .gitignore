@@ -13,3 +13,20 @@ screenshots/
 coverage/
 .vscode/
 .idea/
+
+# Compiled JS files in src directories
+src/**/*.js
+src/**/*.js.map
+src/**/*.d.ts
+src/**/*.d.ts.map
+browse/src/**/*.js
+browse/tests/**/*.js
+qa/src/**/*.js
+qa/tests/**/*.js
+ship/src/**/*.js
+ship/tests/**/*.js
+plan-ceo-review/src/**/*.js
+plan-ceo-review/tests/**/*.js
+shared/src/**/*.js
+packages/**/*.js
+skills/**/*.js
