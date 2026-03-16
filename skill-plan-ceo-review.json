@@ -1,10 +1,7 @@
 {
   "name": "plan-ceo-review",
+  "description": "Product strategy evaluation using BAT framework and 10-star methodology",
+  "emoji": "🎯",
   "version": "1.0.0",
-  "description": "Product strategy review using BAT framework",
-  "entry": "dist/plan-ceo-review/index.js",
-  "cli": {
-    "command": "ceo-review",
-    "description": "Product strategy review using BAT framework"
-  }
+  "entry": "plan-ceo-review"
 }

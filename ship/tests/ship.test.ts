@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { ship } from '../src/index.js';
+import { ShipSkill } from '../src/index.js';
 
-describe('ship', () => {
+describe('ShipSkill', () => {
   it('should be defined', () => {
-    expect(ship).toBeDefined();
-    expect(typeof ship).toBe('function');
+    const skill = new ShipSkill();
+    expect(skill).toBeDefined();
+    expect(typeof skill.release).toBe('function');
+    expect(typeof skill.getStatus).toBe('function');
+    expect(typeof skill.preview).toBe('function');
   });
 });

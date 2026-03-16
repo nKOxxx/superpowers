@@ -1,10 +1,7 @@
 {
   "name": "ship",
+  "description": "One-command release pipeline - version bump, changelog, GitHub release",
+  "emoji": "🚀",
   "version": "1.0.0",
-  "description": "One-command release pipeline with changelog and GitHub releases",
-  "entry": "dist/ship/index.js",
-  "cli": {
-    "command": "ship",
-    "description": "One-command release pipeline"
-  }
+  "entry": "ship"
 }

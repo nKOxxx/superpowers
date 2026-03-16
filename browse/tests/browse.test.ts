@@ -1,14 +1,28 @@
-import { describe, it, expect } from 'vitest';
-import { browse, flow } from '../src/index.js';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { BrowseSkill } from '../src/index.js';
 
-describe('browse', () => {
-  it('should be defined', () => {
-    expect(browse).toBeDefined();
-    expect(typeof browse).toBe('function');
+describe('BrowseSkill', () => {
+  let skill: BrowseSkill;
+
+  beforeAll(async () => {
+    skill = new BrowseSkill();
+    await skill.init();
   });
 
-  it('should be defined for flow', () => {
-    expect(flow).toBeDefined();
-    expect(typeof flow).toBe('function');
+  afterAll(async () => {
+    await skill.close();
+  });
+
+  it('should be defined', () => {
+    expect(skill).toBeDefined();
+    expect(typeof skill.screenshot).toBe('function');
+    expect(typeof skill.testUrl).toBe('function');
+    expect(typeof skill.click).toBe('function');
+    expect(typeof skill.type).toBe('function');
+    expect(typeof skill.runFlow).toBe('function');
+  });
+
+  it('should initialize browser', () => {
+    expect(skill).toBeInstanceOf(BrowseSkill);
   });
 });

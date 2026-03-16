@@ -6,10 +6,10 @@ TypeScript skill collection for OpenClaw - browser automation, QA testing, relea
 
 | Skill | Command | Description |
 |-------|---------|-------------|
-| browse | `superpowers browse <url>` | Browser automation with Playwright - screenshots, UI testing, flow validation |
-| qa | `superpowers qa` | Systematic testing - targeted, smoke, and full test modes |
-| ship | `superpowers ship <version>` | One-command release pipeline - version bump, changelog, GitHub release |
-| plan-ceo-review | `superpowers ceo-review <feature>` | Product strategy using BAT framework (Brand, Attention, Trust) |
+| browse | `browse <url>` | Browser automation with Playwright - screenshots, UI testing, flow validation |
+| qa | `qa` | Systematic testing - targeted, smoke, and full test modes |
+| ship | `ship <version>` | One-command release pipeline - version bump, changelog, GitHub release |
+| plan-ceo-review | `plan-ceo-review <feature>` | Product strategy using BAT framework (Brand, Attention, Trust) |
 
 ## Installation
 
@@ -21,16 +21,16 @@ npm install -g @nko/superpowers
 
 ```bash
 # Screenshot a website
-superpowers browse https://example.com --viewport=mobile
+browse screenshot https://example.com --viewport=mobile
 
 # Run targeted tests
-superpowers qa --mode=targeted
+qa run --mode=targeted
 
 # Release a new version
-superpowers ship patch
+ship release patch
 
 # Evaluate a feature idea
-superpowers ceo-review "AI assistant" --audience="Developers"
+plan-ceo-review review "AI assistant" --audience="Developers"
 ```
 
 ## Individual Skills
@@ -123,6 +123,22 @@ Scoring:
 - 10-11 ⭐: **BUILD** - Good signal
 - 8-9 ⭐: **CONSIDER** - Mixed signal
 - 0-7 ⭐: **DON'T BUILD** - Weak signal
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Build all skills
+npm run build
+
+# Test all skills
+npm test
+
+# Package skills for distribution
+npm run package:all
+```
 
 ## License
 

@@ -1,62 +1,45 @@
 # Changelog
 
-## [1.0.1] - 2026-03-15
+All notable changes to the OpenClaw Superpowers project will be documented in this file.
 
-### Added
-- add 4 TypeScript OpenClaw superpowers skills
-- Initial implementation of 4 OpenClaw superpowers skills
-- finalize CLI and add shared utilities for all 4 superpowers skills
-- Implement 4 OpenClaw superpowers skills
-- Package superpowers skills for distribution
-- Enhance qa and ship skills with improved implementations
-- Finalize browse skill with standalone CLI and OpenClaw integration
-- Implement 4 OpenClaw superpowers skills
-- OpenClaw skill packaging complete
-- initial superpowers skills - browse, qa, ship, plan-ceo-review
-- **skills:** Complete OpenClaw Superpowers skill pack
-- Complete Superpowers Skills implementation with tests
-- Add Superpowers Skills implementation
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### Fixed
-- add test and package scripts to skill package.json files
-- correct build paths in package.json scripts
-- ESM compatibility - replace CommonJS require with ESM import.meta.url
-- Downgrade chalk to v4 for CommonJS compatibility
-- remove invalid user-invocable from SKILL.md frontmatter
-- improve smoke test to use build check instead of --grep flag
+## [1.0.0] - 2026-03-16
 
-### Changed
-- clean up obsolete dist/skills files
+### ✨ Features
 
-### Documentation
-- add implementation summary
+- **browse**: Browser automation with Playwright
+  - Screenshot capture with viewport presets
+  - URL testing with content validation
+  - Element interaction (click, type)
+  - Multi-step flow automation
+  
+- **qa**: Systematic testing framework
+  - Targeted test mode (git-aware)
+  - Smoke test mode
+  - Full test suite with coverage
+  - Risk analysis and recommendations
+  - Support for Vitest, Jest, Playwright, Mocha
+  
+- **ship**: One-command release pipeline
+  - Semantic version bumping
+  - Automatic changelog generation
+  - Git tagging and pushing
+  - GitHub release integration
+  - npm publishing support
+  - Telegram notifications
+  
+- **plan-ceo-review**: Product strategy evaluation
+  - BAT Framework (Brand, Attention, Trust)
+  - 10-Star Methodology
+  - Feature comparison
+  - Build/don't build recommendations
 
-## [1.0.2] - 2026-03-15
+### 🔧 Technical
 
-## [1.0.1] - 2026-03-15
-
-### Added
-- Package superpowers skills for distribution
-- Enhance qa and ship skills with improved implementations
-- Finalize browse skill with standalone CLI and OpenClaw integration
-- Implement 4 OpenClaw superpowers skills
-- OpenClaw skill packaging complete
-- initial superpowers skills - browse, qa, ship, plan-ceo-review
-- **skills:** Complete OpenClaw Superpowers skill pack
-- Complete Superpowers Skills implementation with tests
-- Add Superpowers Skills implementation
-
-### Fixed
-- ESM compatibility - replace CommonJS require with ESM import.meta.url
-- Downgrade chalk to v4 for CommonJS compatibility
-- remove invalid user-invocable from SKILL.md frontmatter
-- improve smoke test to use build check instead of --grep flag
-
-### Changed
-- clean up obsolete dist/skills files
-
-### Documentation
-- add implementation summary
-
-All notable changes to this project will be documented in this file.
-
+- TypeScript implementation for all skills
+- Node.js >= 18.0.0 required
+- NPM workspace structure
+- Kimi K2.5 compatible
+- OpenClaw skill format compliant

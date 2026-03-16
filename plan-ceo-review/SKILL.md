@@ -1,134 +1,313 @@
 ---
 name: plan-ceo-review
-description: Product strategy review using BAT framework (Brand, Attention, Trust) and 10-star methodology. Use when evaluating whether to build a feature, product decisions, prioritization, or build vs buy decisions. Triggers on requests like /plan-ceo-review, should we build X, feature evaluation, product strategy, or build vs buy decisions.
+description: "Product strategy evaluation using BAT framework (Brand, Attention, Trust) and 10-star methodology. Use when: (1) evaluating new feature ideas, (2) prioritizing product roadmap, (3) comparing product opportunities, (4) making build vs. don't build decisions."
 metadata:
-  openclaw:
-    requires:
-      bins: ["node", "npx"]
-      npm: ["@nko/superpowers"]
-    primaryEnv: null
-    modelCompatibility: ["kimi-k2.5", "claude-opus-4", "gpt-4"]
-    skillType: "typescript"
-    entryPoint: "dist/index.js"
+  {
+    "openclaw":
+      {
+        "emoji": "🎯",
+        "requires": { "bins": ["npx"] },
+        "install":
+          [
+            {
+              "id": "npm",
+              "kind": "npm",
+              "package": "@superpowers/plan-ceo-review",
+              "bins": ["plan-ceo-review"],
+              "label": "Install CEO Review skill (npm)",
+            },
+          ],
+      },
+  }
 ---
 
-# Plan CEO Review - Product Strategy Skill
+# Plan CEO Review Skill
 
-Product strategy evaluation using the BAT framework (Brand, Attention, Trust) with 10-star methodology for build decisions.
+Product strategy evaluation using the BAT framework and 10-star methodology. Make better product decisions with structured analysis.
 
-## The BAT Framework
+## Quick Start
 
-Three dimensions scored 0-5 stars:
+```bash
+# Review a feature idea
+plan-ceo-review review "AI-powered code review"
 
-**Brand** - Does this strengthen our brand?
-- High score: Differentiating, innovative, aligns with identity
+# Review with target audience
+plan-ceo-review review "Mobile app" --audience="developers"
 
-**Attention** - Will users actually use this?
-- High score: High frequency, core workflow, solves real pain
+# Compare two features
+plan-ceo-review compare "Feature A" "Feature B"
 
-**Trust** - Does this build user trust?
-- High score: Security, reliability, transparency, safety
+# Learn the frameworks
+plan-ceo-review framework
+```
+
+## Commands
+
+### review <feature>
+
+Analyze a feature idea using BAT framework and 10-star methodology.
+
+**Options:**
+- `-a, --audience <audience>` - Target audience description
+- `-m, --market <market>` - Market segment
+- `-f, --format <format>` - Output format: `text` (default), `json`, `markdown`
+- `-d, --detailed` - Include detailed analysis
+- `-o, --output <file>` - Save report to file
+
+**Examples:**
+```bash
+# Basic review
+plan-ceo-review review "Dark mode"
+
+# Review with context
+plan-ceo-review review "AI Assistant" --audience="enterprise teams" --market="SaaS"
+
+# Export as markdown
+plan-ceo-review review "New dashboard" --format=markdown --output=review.md
+
+# JSON output for automation
+plan-ceo-review review "API v2" --format=json
+```
+
+Sample output:
+```
+📊 CEO Review: AI Assistant
+
+🎯 BAT Framework Score
+   Brand:     ●●●●○ 4/5
+   Attention: ●●●●● 5/5
+   Trust:     ●●●○○ 3/5
+   TOTAL:     12/15 🟢
+
+📋 Recommendation: BUILD
+   Strong signal across all BAT dimensions. Clear product-market fit indicators.
+
+⭐ 10-Star Methodology
+   Overall: ⭐⭐⭐⭐⭐⭐⭐○○○ 7/10
+   Current State: Great - exceeds expectations
+
+🎯 Final Verdict
+   PRIORITY BUILD - Strong BAT score and high star rating indicate product-market fit potential.
+
+📍 Next Steps:
+   1. Add transparency, security features, or user control options
+   2. Simplify the user experience - reduce friction
+   3. Validate with target users through prototypes or interviews
+
+💰 Resources: Medium-High - Accelerate to capitalize on strong signals
+📅 Timeline: 2-3 months - Standard development timeline
+```
+
+### compare <feature1> <feature2>
+
+Compare two feature ideas side-by-side.
+
+**Example:**
+```bash
+plan-ceo-review compare "Mobile app" "Desktop app" --audience="remote workers"
+```
+
+Output:
+```
+⚖️  Feature Comparison
+
+Feature 1: Mobile app
+  BAT: 11/15 | Stars: 7/10 | BUILD
+
+Feature 2: Desktop app
+  BAT: 9/15 | Stars: 6/10 | CONSIDER
+
+🏆 Winner: Mobile app
+```
+
+### framework
+
+Display explanation of the BAT and 10-star frameworks.
+
+```bash
+plan-ceo-review framework
+```
+
+## BAT Framework
+
+The BAT framework evaluates product opportunities across three dimensions:
+
+### Brand (0-5)
+Does this strengthen our brand?
+
+**Scoring guide:**
+- 5: Iconic feature that defines the brand
+- 4: Strongly aligns with brand positioning
+- 3: Neutral brand impact
+- 2: Slight brand misalignment
+- 1: Weakens or dilutes brand
+- 0: Actively harms brand
+
+**Consider:**
+- Does it match our brand values?
+- Will users associate this with us?
+- Does it differentiate us from competitors?
+
+### Attention (0-5)
+Will users actually use this?
+
+**Scoring guide:**
+- 5: Must-have, high demand
+- 4: Strong user interest
+- 3: Moderate appeal
+- 2: Niche interest
+- 1: Hard to communicate value
+- 0: No user interest
+
+**Consider:**
+- Is it solving a real problem?
+- How often will users engage?
+- Is it easy to discover and try?
+
+### Trust (0-5)
+Does this build user trust?
+
+**Scoring guide:**
+- 5: Significantly increases trust
+- 4: Builds confidence
+- 3: Neutral impact
+- 2: Minor trust concerns
+- 1: Significant trust issues
+- 0: Violates user trust
+
+**Consider:**
+- Is it transparent?
+- Does it protect user data?
+- Are users in control?
+
+### BAT Scoring Summary
+
+| Score | Recommendation | Action |
+|-------|----------------|--------|
+| 12-15 ⭐ | **BUILD** | Strong signal - prioritize |
+| 10-11 ⭐ | **BUILD** | Good signal - proceed |
+| 8-9 ⭐ | **CONSIDER** | Mixed signal - needs refinement |
+| 0-7 ⭐ | **DON'T BUILD** | Weak signal - reconsider |
 
 ## 10-Star Methodology
 
-- **12-15 ⭐ BUILD** - Strong signal, proceed with confidence
-- **10-11 ⭐ BUILD** - Good signal, validate assumptions
-- **8-9 ⭐ CONSIDER** - Mixed signal, need more data
-- **0-7 ⭐ DON'T BUILD** - Weak signal, focus elsewhere
+Inspired by Brian Chesky's approach to product excellence:
 
-**Minimum threshold: 10/15 stars to build**
+### Rating Scale
 
-## Usage
+| Stars | Description |
+|-------|-------------|
+| 1★ | Works (barely) |
+| 2★ | Functional but frustrating |
+| 3★ | Meets basic needs |
+| 4★ | Adequate |
+| 5★ | Meets expectations |
+| 6★ | Good |
+| 7★ | Great - exceeds expectations |
+| 8★ | Excellent - delightful |
+| 9★ | World-class |
+| 10★ | Transforms the category |
 
-### Basic evaluation
+### Dimensions
 
-```bash
-superpowers ceo-review "mobile app" "Increase user engagement"
-```
+**Problem (1-10)**
+- How well does it solve a real user problem?
+- Is this a must-have or nice-to-have?
 
-### Full context
+**Usability (1-10)**
+- How easy is it to use?
+- Time to first value?
 
-```bash
-superpowers ceo-review \
-  "AI code review" \
-  "Reduce review time 50%" \
-  --audience="Dev teams" \
-  --competition="GitHub Copilot" \
-  --trust="SOC2 certified"
-```
+**Delight (1-10)**
+- Does it create moments of joy?
+- Are there unexpected pleasant surprises?
 
-### JSON output
+**Feasibility (1-10)**
+- Can we build this well?
+- Technical complexity?
 
-```bash
-superpowers ceo-review "Dark mode" "User preference" --json
-```
+**Viability (1-10)**
+- Sustainable business model?
+- Resource requirements reasonable?
 
-## Options
+### The 10-Star Vision
 
-- `--brand=<score>` - Manual brand score (0-5)
-- `--attention=<score>` - Manual attention score (0-5)
-- `--trust=<score>` - Manual trust score (0-5)
-- `--auto` - Auto-calculate scores based on description. Default: true
-- `--json` - Output as JSON
+For any feature, ask: "What would a 10-star version look like?"
 
-## Output Example
+A 10-star experience:
+- Works perfectly without any setup
+- Anticipates user needs
+- Provides value in 30 seconds
+- Creates genuine delight
+- Users actively recommend
+- Becomes indispensable
+- Sets a new industry standard
 
-```
-══════════════════════════════════════════════════
-  CEO REVIEW: AI Code Review
-══════════════════════════════════════════════════
+## Integration Tips
 
-  BAT Framework Scores:
-    Brand:     [████░] 4/5
-    Attention: [████░] 4/5
-    Trust:     [███░░] 3/5
+### Product Planning
 
-    BAT Total: 11/15 stars
-
-  10-Star Evaluation:
-    Average Score: 6.0/10
-
-  Recommendation: BUILD ✅
-
-  Rationale:
-    • Strong brand differentiation potential
-    • High user engagement potential
-
-  Next Steps:
-    1. Define success metrics and KPIs
-    2. Create detailed product spec
-    3. Estimate engineering effort
-
-══════════════════════════════════════════════════
-```
-
-## Scoring Guidelines
-
-### Brand (0-5)
-- **5**: Revolutionary, defines category, press-worthy
-- **4**: Strong differentiation, innovative
-- **3**: Good fit, incremental improvement
-- **2**: Table stakes, me-too feature
-- **1**: Off-brand, confusing
-
-### Attention (0-5)
-- **5**: Daily use, core workflow
-- **4**: Weekly use, important workflow
-- **3**: Monthly use, nice-to-have
-- **2**: Rare use, edge case
-- **1**: Nobody asked for this
-
-### Trust (0-5)
-- **5**: Security-critical, data protection
-- **4**: Reliability-critical, uptime essential
-- **3**: Transparency, user control
-- **2**: Error handling, feedback
-- **1**: No trust impact
-
-## Understanding the Framework
+Use CEO Review before sprint planning:
 
 ```bash
-superpowers ceo-review --help
+# In your planning script
+for feature in $(cat features.txt); do
+  plan-ceo-review review "$feature" --format=json --output="reviews/$feature.json"
+done
 ```
 
-Displays detailed explanation of BAT methodology and 10-star scoring.
+### Decision Documentation
+
+Save reviews for future reference:
+
+```bash
+plan-ceo-review review "Feature X" \
+  --audience="enterprise" \
+  --format=markdown \
+  --output="decisions/2024-01-15-feature-x.md"
+```
+
+### Team Discussions
+
+Use comparison for prioritization:
+
+```bash
+plan-ceo-review compare "API First" "UI First" --audience="developers"
+```
+
+## Best Practices
+
+1. **Define the audience clearly** - The same feature scores differently for different users
+2. **Be honest** - Don't inflate scores to justify a decision already made
+3. **Use comparisons** - Relative scoring helps when everything seems important
+4. **Review periodically** - Market conditions change; re-score quarterly
+5. **Document the why** - Save markdown outputs for decision history
+
+## Output Formats
+
+### Text (Default)
+Human-readable format with emojis and colors.
+
+### JSON
+Machine-readable for automation:
+```json
+{
+  "feature": "AI Assistant",
+  "bat": {
+    "total": 12,
+    "recommendation": "BUILD"
+  },
+  "stars": {
+    "overall": 7
+  }
+}
+```
+
+### Markdown
+Documentation-ready for PRs or wikis.
+
+## Framework Origins
+
+**BAT Framework**: Adapted from product strategy frameworks focusing on the three pillars of product success.
+
+**10-Star Methodology**: Popularized by Brian Chesky (Airbnb CEO) as a way to push teams beyond "good enough" to truly exceptional products.

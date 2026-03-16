@@ -1,10 +1,7 @@
 {
   "name": "qa",
+  "description": "Systematic testing - QA Lead persona with targeted, smoke, and full test modes",
+  "emoji": "🧪",
   "version": "1.0.0",
-  "description": "Systematic testing as QA Lead with git diff analysis",
-  "entry": "dist/qa/index.js",
-  "cli": {
-    "command": "qa",
-    "description": "Systematic testing as QA Lead"
-  }
+  "entry": "qa"
 }

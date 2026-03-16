@@ -1,116 +1,318 @@
 ---
 name: ship
-description: One-command release pipeline. Bumps version, generates changelog, creates GitHub release. Use when user wants to release a new version, publish package, or create GitHub release. Triggers on requests like /ship, release new version, publish, create release, or version bump.
+description: "One-command release pipeline - version bumping, changelog generation, and GitHub releases. Use when: (1) creating a new release, (2) managing semantic versioning, (3) automating release workflows, (4) publishing to npm/GitHub."
 metadata:
-  openclaw:
-    requires:
-      bins: ["node", "npx", "git"]
-      npm: ["@nko/superpowers"]
-    primaryEnv: GH_TOKEN
-    modelCompatibility: ["kimi-k2.5", "claude-opus-4", "gpt-4"]
-    skillType: "typescript"
-    entryPoint: "dist/index.js"
+  {
+    "openclaw":
+      {
+        "emoji": "🚀",
+        "requires": { "bins": ["npx"] },
+        "install":
+          [
+            {
+              "id": "npm",
+              "kind": "npm",
+              "package": "@superpowers/ship",
+              "bins": ["ship"],
+              "label": "Install Ship skill (npm)",
+            },
+          ],
+      },
+  }
 ---
 
-# Ship - Release Pipeline Skill
+# Ship Skill
 
-One-command release: version bump, changelog generation, git tag, push, GitHub release, and Telegram notifications.
+One-command release pipeline. Version bumping, changelog generation, GitHub releases, and npm publishing - all in one command.
 
-## Capabilities
-
-- Semantic versioning (patch, minor, major, or explicit version)
-- Conventional commit changelog generation
-- Git tag creation and push
-- GitHub release creation
-- Telegram notifications (optional)
-- Dry-run preview mode
-
-## Usage
-
-### Release patch version
+## Quick Start
 
 ```bash
-superpowers ship patch
+# Initialize configuration
+ship init
+
+# Create a patch release
+ship release patch
+
+# Create a minor release with dry run
+ship release minor --dry-run
+
+# Preview what will be released
+ship preview
 ```
 
-### Release minor version
+## Commands
 
+### release [bump]
+
+Create a new release. The bump argument can be `major`, `minor`, `patch`, or `prerelease` (default: `patch`).
+
+**Workflow:**
+1. Analyze commits since last tag
+2. Run tests (unless --skip-tests)
+3. Update version in package.json
+4. Update CHANGELOG.md
+5. Commit changes
+6. Create git tag
+7. Push to origin
+8. Create GitHub release (if token available)
+9. Publish to npm (if token available)
+
+**Options:**
+- `-t, --tag <tag>` - Prerelease tag (e.g., `alpha`, `beta`, `rc`)
+- `--skip-changelog` - Skip changelog generation
+- `--skip-github` - Skip GitHub release creation
+- `--skip-npm` - Skip npm publishing
+- `--skip-git-checks` - Skip git branch/working directory checks
+- `--skip-tests` - Skip running tests
+- `-n, --dry-run` - Preview changes without making them
+- `-f, --force` - Force release even with warnings
+- `-v, --version <version>` - Custom version (overrides bump)
+
+**Examples:**
 ```bash
-superpowers ship minor
+# Patch release (1.0.0 → 1.0.1)
+ship release patch
+
+# Minor release (1.0.0 → 1.1.0)
+ship release minor
+
+# Major release (1.0.0 → 2.0.0)
+ship release major
+
+# Prerelease (1.0.0 → 1.0.1-alpha.0)
+ship release prerelease --tag alpha
+
+# Dry run to preview changes
+ship release minor --dry-run
+
+# Force release from non-main branch
+ship release patch --force --skip-git-checks
+
+# Custom version
+ship release --version 2.0.0-beta.1
 ```
 
-### Release major version
+### status
 
+Show current release status and configuration.
+
+**Output:**
+- Current version
+- Current branch
+- Working directory status
+- Last tag
+- Commits since last tag
+- Recommended bump type
+- Token availability (GH_TOKEN, NPM_TOKEN)
+
+**Example:**
 ```bash
-superpowers ship major
+ship status
 ```
 
-### Release specific version
+Sample output:
+```
+📊 Release Status
 
+Current State:
+  Version: 1.2.3
+  Branch: main
+  Working dir: clean
+  Last tag: v1.2.3
+
+Commits:
+  Since last tag: 5
+  Recommended bump: minor
+
+Recent commits:
+  feat: add user authentication
+  fix: resolve login redirect issue
+  docs: update API documentation
+
+Configuration:
+  GH_TOKEN: ✓
+  NPM_TOKEN: ✗
+```
+
+### preview [bump]
+
+Preview what would be included in the next release without making any changes.
+
+**Example:**
 ```bash
-superpowers ship 1.2.3
+ship preview
+ship preview minor
+ship preview major
 ```
 
-### Preview without executing
+Shows:
+- Current and new version
+- Changelog entry that would be generated
+- Commits that will be included
 
+### init
+
+Initialize Ship configuration in the current project.
+
+**Options:**
+- `--default-bump <type>` - Set default bump type
+- `--changelog-path <path>` - Set changelog file path
+- `--release-branch <branch>` - Set release branch name
+
+**Example:**
 ```bash
-superpowers ship patch --dry-run
+ship init
+ship init --default-bump minor --release-branch develop
 ```
 
-## Version Types
+## Configuration
 
-- `patch` - Bug fixes (1.0.0 → 1.0.1)
-- `minor` - New features (1.0.0 → 1.1.0)
-- `major` - Breaking changes (1.0.0 → 2.0.0)
-- `x.y.z` - Explicit version number
+Create `.ship.config.json` in your project root:
 
-## Options
+```json
+{
+  "defaultBump": "patch",
+  "changelogPath": "CHANGELOG.md",
+  "packageFiles": ["package.json", "package-lock.json"],
+  "tagPrefix": "v",
+  "releaseBranch": "main",
+  "requireCleanWorkingDir": true,
+  "runTests": true,
+  "testCommand": "npm test",
+  "preReleaseHooks": ["npm run lint"],
+  "postReleaseHooks": ["npm run deploy:docs"],
+  "githubRepo": "owner/repo",
+  "npmRegistry": "https://registry.npmjs.org/",
+  "npmAccess": "public",
+  "telegram": {
+    "botToken": "${TELEGRAM_BOT_TOKEN}",
+    "chatId": "${TELEGRAM_CHAT_ID}"
+  }
+}
+```
 
-- `--bump=<type>` - Version bump type (patch, minor, major, or explicit). Default: patch
-- `--dry-run` - Preview changes without executing. Default: false
-- `--skip-tag` - Skip git tag creation. Default: false
-- `--skip-push` - Skip git push. Default: false
-- `--skip-release` - Skip GitHub release. Default: false
-- `--no-changelog` - Skip changelog generation. Default: false
+### Configuration Options
 
-## Requirements
-
-- Git repository with clean working directory
-- `GH_TOKEN` environment variable for GitHub releases (optional)
-
-## Release Steps
-
-1. **Validate**: Check git status and working directory
-2. **Tests**: Run test suite (unless --skip-tests)
-3. **Version**: Update version in package.json
-4. **Changelog**: Generate from conventional commits
-5. **Commit**: Create release commit
-6. **Tag**: Create git tag (vX.Y.Z)
-7. **Push**: Push commit and tag to origin
-8. **Release**: Create GitHub release (if GH_TOKEN set)
-9. **Notify**: Send Telegram notification (if configured)
-
-## Changelog Generation
-
-Parses conventional commits since last tag:
-- `feat:` → ✨ Features section
-- `fix:` → 🐛 Bug Fixes section
-- `chore:` → 🧹 Chores section
-- `BREAKING CHANGE:` → ⚠️ Breaking Changes section
+| Option | Default | Description |
+|--------|---------|-------------|
+| `defaultBump` | `patch` | Default version bump type |
+| `changelogPath` | `CHANGELOG.md` | Path to changelog file |
+| `packageFiles` | `["package.json"]` | Files to update with new version |
+| `tagPrefix` | `v` | Git tag prefix |
+| `releaseBranch` | `main` | Required branch for releases |
+| `requireCleanWorkingDir` | `true` | Require clean git state |
+| `runTests` | `true` | Run tests before release |
+| `testCommand` | `npm test` | Test command to run |
+| `preReleaseHooks` | `[]` | Commands to run before release |
+| `postReleaseHooks` | `[]` | Commands to run after release |
+| `githubRepo` | auto | GitHub owner/repo (auto-detected) |
+| `npmRegistry` | npmjs | npm registry URL |
+| `npmAccess` | `public` | npm package access |
+| `telegram` | - | Telegram notification settings |
 
 ## Environment Variables
 
-- `GH_TOKEN` - GitHub personal access token with `repo` scope (for GitHub releases)
-- `TELEGRAM_BOT_TOKEN` - Bot token for Telegram notifications (optional)
-- `TELEGRAM_CHAT_ID` - Chat ID for Telegram notifications (optional)
+Set these in your environment or CI configuration:
 
-## Telegram Integration
+### Required for GitHub releases
+- `GH_TOKEN` or `GITHUB_TOKEN` - GitHub personal access token with `repo` scope
 
-When `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are set:
+### Required for npm publishing
+- `NPM_TOKEN` - npm authentication token
 
+### Optional for notifications
+- `TELEGRAM_BOT_TOKEN` - Telegram bot token
+- `TELEGRAM_CHAT_ID` - Telegram chat ID
+
+## Conventional Commits
+
+Ship analyzes commit messages following the [Conventional Commits](https://www.conventionalcommits.org/) specification:
+
+| Commit Type | Version Impact | Example |
+|-------------|----------------|---------|
+| `feat:` | Minor bump | `feat: add login` → 1.0.0 → 1.1.0 |
+| `fix:` | Patch bump | `fix: auth bug` → 1.0.0 → 1.0.1 |
+| `BREAKING CHANGE:` | Major bump | BREAKING CHANGE in footer |
+| `feat!:` | Major bump | Breaking change indicator |
+
+### Changelog Sections
+
+Commits are grouped into changelog sections:
+
+- ⚠ **BREAKING CHANGES**
+- ✨ **Features** (`feat`)
+- 🐛 **Bug Fixes** (`fix`)
+- 📚 **Documentation** (`docs`)
+- 💄 **Styles** (`style`)
+- ♻️ **Code Refactoring** (`refactor`)
+- ⚡ **Performance** (`perf`)
+- ✅ **Tests** (`test`)
+- 🔧 **Chores** (`chore`)
+
+## CI/CD Integration
+
+### GitHub Actions
+
+```yaml
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+      
+      - run: npm ci
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+      
+      - name: Release
+        run: npx ship release ${{ github.event.inputs.bump }} --ci
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
-🚀 Release Shipped
 
-📦 package-name v1.2.3
-✅ Successfully released to production
-```
+### Pre-release Checklist
+
+Before running `ship release`:
+
+1. ✅ All tests passing
+2. ✅ Changelog reviewed
+3. ✅ Documentation updated
+4. ✅ Version bump appropriate
+5. ✅ On correct branch
+6. ✅ Working directory clean
+
+## Safety Features
+
+- **Branch protection** - Only releases from configured branch
+- **Clean working directory** - Requires no uncommitted changes
+- **Dry run mode** - Preview before executing
+- **Force flag** - Override checks when needed
+- **Pre-release hooks** - Run linting, type checks, etc.
+- **Test execution** - Run test suite before release

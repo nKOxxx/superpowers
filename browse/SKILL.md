@@ -1,93 +1,194 @@
 ---
 name: browse
-description: Browser automation for visual testing and QA with Playwright. Use when user needs to test web applications, capture screenshots, validate UI flows, or perform automated browser actions. Triggers on requests like /browse URL, visual testing, screenshot capture, flow testing, or UI automation.
+description: "Browser automation with Playwright - screenshots, UI testing, click/type interactions, and flow validation. Use when: (1) taking website screenshots for visual testing, (2) validating web UI elements and flows, (3) testing URL availability and content, (4) automating browser interactions."
 metadata:
-  openclaw:
-    requires:
-      bins: ["node", "npx"]
-      npm: ["@nko/superpowers"]
-    primaryEnv: null
-    modelCompatibility: ["kimi-k2.5", "claude-opus-4", "gpt-4"]
-    skillType: "typescript"
-    entryPoint: "dist/index.js"
+  {
+    "openclaw":
+      {
+        "emoji": "🌐",
+        "requires": { "bins": ["npx"] },
+        "install":
+          [
+            {
+              "id": "npm",
+              "kind": "npm",
+              "package": "@superpowers/browse",
+              "bins": ["browse"],
+              "label": "Install Browse skill (npm)",
+            },
+          ],
+      },
+  }
 ---
 
-# Browse - Browser Automation Skill
+# Browse Skill
 
-Visual testing and browser automation using Playwright. Provides screenshot capture, flow testing, and UI validation.
+Browser automation powered by Playwright. Take screenshots, test URLs, interact with UI elements, and validate web flows.
 
-## Capabilities
-
-- Screenshot capture (single URL, full page, element-specific)
-- Multiple viewport presets (mobile, tablet, desktop, wide)
-- Custom viewport dimensions
-- Flow-based testing (sequence of page navigations)
-- Custom actions (click, type, wait, scroll, hover)
-- Wait for elements before screenshot
-
-## Usage
-
-### Screenshot a URL
+## Quick Start
 
 ```bash
-superpowers browse https://example.com
+# Take a screenshot
+browse screenshot https://example.com
+
+# Test a URL
+browse test-url https://example.com --expect-text "Welcome"
+
+# Click an element
+browse click https://example.com --selector "#submit-btn"
+
+# Type into a form
+browse type https://example.com --selector "#email" --text "user@example.com"
 ```
 
-### Mobile viewport
+## Commands
 
+### screenshot <url>
+
+Take a screenshot of a webpage.
+
+**Options:**
+- `-v, --viewport <preset>` - Viewport preset: `desktop` (default), `mobile`, `tablet`
+- `-W, --width <number>` - Custom viewport width
+- `-H, --height <number>` - Custom viewport height
+- `-o, --output <dir>` - Output directory (default: `./screenshots`)
+- `-f, --filename <name>` - Custom filename
+- `--full-page` - Capture full page (not just viewport)
+- `--wait-for <selector>` - Wait for element before screenshot
+- `--wait-time <ms>` - Wait time before screenshot
+- `--hide <selectors...>` - Hide elements (e.g., cookie banners)
+- `--dark-mode` - Enable dark mode
+
+**Examples:**
 ```bash
-superpowers browse https://example.com --viewport=mobile
+# Mobile screenshot
+browse screenshot https://example.com --viewport mobile
+
+# Full page with custom output
+browse screenshot https://example.com --full-page -o ./output
+
+# Wait for element and hide cookie banner
+browse screenshot https://example.com --wait-for "#content" --hide "#cookie-banner"
 ```
 
-### Full page screenshot
+### test-url <url>
 
+Test a URL for availability and content validation.
+
+**Options:**
+- `--expect-status <code>` - Expected HTTP status (default: 200)
+- `--expect-text <text>` - Text that should appear on page
+- `--expect-selector <selector>` - CSS selector that should exist
+- `-t, --timeout <ms>` - Page load timeout
+- `--dark-mode` - Enable dark mode
+
+**Examples:**
 ```bash
-superpowers browse https://example.com --full-page
+# Basic health check
+browse test-url https://example.com
+
+# Check for specific content
+browse test-url https://example.com --expect-text "Sign Up" --expect-selector ".hero"
+
+# Custom timeout
+browse test-url https://example.com --timeout 10000
 ```
 
-### Custom actions
+### click <url>
 
+Click an element on a webpage.
+
+**Options:**
+- `-s, --selector <selector>` - (Required) Element selector to click
+- `--screenshot` - Take screenshot after click
+- `--wait-for-navigation` - Wait for navigation after click
+- `-v, --viewport <preset>` - Viewport preset
+
+**Examples:**
 ```bash
-superpowers browse https://example.com --actions='[{"type":"click","selector":".btn"},{"type":"wait","duration":1000}]'
+# Click a button
+browse click https://example.com --selector "#submit-btn"
+
+# Click and wait for navigation
+browse click https://example.com --selector "a.next" --wait-for-navigation --screenshot
 ```
 
-## Options
+### type <url>
 
-- `--viewport=<name>` - Viewport preset (mobile, tablet, desktop, wide). Default: desktop
-- `--full-page` - Capture full page screenshot. Default: false
-- `--output=<path>` - Save screenshot to file path
-- `--wait=<ms>` - Wait time in ms after page load. Default: 1000
-- `--selector=<selector>` - CSS selector to capture specific element
-- `--actions=<json>` - JSON array of actions to perform
+Type text into an input field.
+
+**Options:**
+- `-s, --selector <selector>` - (Required) Input field selector
+- `-t, --text <text>` - (Required) Text to type
+- `--clear` - Clear field before typing
+- `--submit` - Submit form after typing (press Enter)
+- `--delay <ms>` - Delay between keystrokes
+- `--screenshot` - Take screenshot after typing
+
+**Examples:**
+```bash
+# Fill a form field
+browse type https://example.com --selector "#email" --text "user@example.com"
+
+# Fill and submit
+browse type https://example.com --selector "#search" --text "query" --submit
+```
+
+### flow <flow-file>
+
+Run a multi-step browser flow from a JSON file.
+
+**Flow JSON format:**
+```json
+{
+  "name": "Login flow",
+  "viewport": "desktop",
+  "outputDir": "./screenshots",
+  "steps": [
+    { "action": "navigate", "url": "https://example.com/login" },
+    { "action": "type", "selector": "#email", "text": "user@example.com" },
+    { "action": "type", "selector": "#password", "text": "secret" },
+    { "action": "click", "selector": "#login-btn" },
+    { "action": "wait", "time": 2000 },
+    { "action": "screenshot", "filename": "logged-in.png" }
+  ]
+}
+```
+
+**Step types:**
+- `navigate` - Navigate to URL (requires `url`)
+- `click` - Click element (requires `selector`)
+- `type` - Type text (requires `selector` and `text`)
+- `wait` - Wait for time (requires `time` in ms)
+- `scroll` - Scroll down one viewport
+- `screenshot` - Take screenshot (optional `filename`)
 
 ## Viewport Presets
 
-- `mobile`: 375x667 @ 2x
-- `tablet`: 768x1024 @ 2x
-- `desktop`: 1280x720 @ 1x
-- `wide`: 1920x1080 @ 1x
-
-## Action Format
-
-Actions are JSON objects with a `type` field:
-
-```json
-[
-  { "type": "click", "selector": ".button" },
-  { "type": "type", "selector": "#input", "text": "hello" },
-  { "type": "wait", "duration": 1000 },
-  { "type": "scroll" },
-  { "type": "hover", "selector": ".dropdown" }
-]
-```
+| Preset | Width | Height |
+|--------|-------|--------|
+| desktop | 1920 | 1080 |
+| mobile | 375 | 667 |
+| tablet | 768 | 1024 |
 
 ## Output
 
-- Base64 output to stdout by default
-- File output with `--output` flag
-- Screenshot data available for OpenClaw canvas display
+All screenshots are saved to the specified output directory with timestamps:
+```
+screenshots/
+├── screenshot-2024-01-15T10-30-00-000Z.png
+└── ...
+```
 
-## Requirements
+## CI/CD Integration
 
-- Node.js >= 18.0.0
-- Playwright browsers (installed automatically)
+The `test-url` command exits with code 1 on test failure, making it suitable for CI pipelines:
+
+```bash
+# In your CI workflow
+browse test-url https://staging.example.com --expect-text "Dashboard"
+```
+
+## Environment Variables
+
+No required environment variables. Playwright browsers are installed automatically on first run.

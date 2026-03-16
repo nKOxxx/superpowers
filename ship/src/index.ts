@@ -1,412 +1,316 @@
 import { execSync } from 'child_process';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import semver from 'semver';
+import { simpleGit } from 'simple-git';
+import { ShipConfig, ReleaseOptions, ReleaseType, ReleaseStatus, ChangelogEntry } from './types.js';
 import chalk from 'chalk';
 
-interface ShipOptions {
-  version: string;
-  dryRun: boolean;
-  skipTag: boolean;
-  skipPush: boolean;
-  skipRelease: boolean;
-  changelog: boolean;
-}
-
-interface Commit {
-  hash: string;
-  message: string;
-  type: string;
-  scope?: string;
-  subject: string;
-}
-
-const conventionalTypes: Record<string, { emoji: string; section: string }> = {
-  feat: { emoji: '✨', section: 'Features' },
-  fix: { emoji: '🐛', section: 'Bug Fixes' },
-  docs: { emoji: '📚', section: 'Documentation' },
-  style: { emoji: '💄', section: 'Styles' },
-  refactor: { emoji: '♻️', section: 'Code Refactoring' },
-  perf: { emoji: '⚡', section: 'Performance Improvements' },
-  test: { emoji: '✅', section: 'Tests' },
-  build: { emoji: '📦', section: 'Build System' },
-  ci: { emoji: '🔧', section: 'CI/CD' },
-  chore: { emoji: '🔨', section: 'Chores' },
+const DEFAULT_CONFIG: ShipConfig = {
+  defaultBump: 'patch',
+  changelogPath: 'CHANGELOG.md',
+  packageFiles: ['package.json', 'package-lock.json'],
+  tagPrefix: 'v',
+  releaseBranch: 'main',
+  requireCleanWorkingDir: true,
+  runTests: true,
+  testCommand: 'npm test',
+  preReleaseHooks: [],
+  postReleaseHooks: []
 };
 
-export async function ship(options: ShipOptions): Promise<void> {
-  return shipCommand(options);
-}
+export class ShipSkill {
+  private config: ShipConfig;
+  private git = simpleGit();
 
-export async function shipCommand(options: ShipOptions): Promise<void> {
-  console.log(chalk.blue('🚢 Ship - Release Pipeline\n'));
-  
-  try {
-    // Validate git state
-    validateGitState();
-    
-    // Get current version
-    const currentVersion = getCurrentVersion();
-    console.log(chalk.gray(`Current version: ${currentVersion}`));
-    
-    // Calculate new version
-    const newVersion = calculateNewVersion(currentVersion, options.version);
-    console.log(chalk.gray(`New version: ${newVersion}`));
-    
-    if (options.dryRun) {
-      console.log(chalk.yellow('\n🔍 DRY RUN - No changes will be applied\n'));
+  constructor(config: Partial<ShipConfig> = {}) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
+  }
+
+  async loadConfig(): Promise<void> {
+    try {
+      const configPath = path.join(process.cwd(), '.ship.config.json');
+      const content = await fs.readFile(configPath, 'utf-8');
+      const userConfig = JSON.parse(content);
+      this.config = { ...this.config, ...userConfig };
+    } catch {
+      // Use default config
     }
+  }
+
+  async getStatus(): Promise<ReleaseStatus> {
+    const pkgPath = path.join(process.cwd(), 'package.json');
+    const pkg = JSON.parse(await fs.readFile(pkgPath, 'utf-8'));
+    
+    const branch = await this.git.branch();
+    const status = await this.git.status();
+    const tags = await this.git.tags(['--sort=-creatordate']);
+    
+    const latestTag = tags.latest || 'v0.0.0';
+    const currentVersion = pkg.version;
     
     // Get commits since last tag
-    const commits = getCommitsSinceLastTag();
-    console.log(chalk.gray(`Commits since last tag: ${commits.length}`));
+    const logs = await this.git.log({ from: latestTag, to: 'HEAD' });
+    const commits = logs.all.map((l: { message: string }) => l.message);
     
-    if (commits.length === 0) {
-      console.log(chalk.yellow('\n⚠️ No commits since last tag. Nothing to release.'));
-      return;
-    }
+    // Determine recommended bump
+    const recommendedBump = this.determineBumpFromCommits(commits);
     
-    // Generate changelog
-    let changelogEntry = '';
-    if (options.changelog) {
-      changelogEntry = generateChangelog(commits, newVersion);
-      console.log(chalk.blue('\n📝 Changelog entry:'));
-      console.log(chalk.gray(changelogEntry.split('\n').slice(0, 10).join('\n')));
-      if (changelogEntry.split('\n').length > 10) {
-        console.log(chalk.gray('...'));
-      }
-    }
-    
-    if (options.dryRun) {
-      console.log(chalk.yellow('\n✅ Dry run complete'));
-      return;
-    }
-    
-    // Get package info for notification
-    const packageInfo = getPackageInfo();
-    
-    // Update package.json version
-    updateVersion(newVersion);
-    console.log(chalk.green('✅ Updated package.json'));
-    
-    // Update changelog
-    if (options.changelog) {
-      updateChangelogFile(changelogEntry);
-      console.log(chalk.green('✅ Updated CHANGELOG.md'));
-    }
-    
-    // Git commit
-    execSync('git add package.json CHANGELOG.md 2>/dev/null || git add package.json', { stdio: 'ignore' });
-    execSync(`git commit -m "chore(release): v${newVersion}"`, { stdio: 'ignore' });
-    console.log(chalk.green('✅ Created release commit'));
-    
-    // Git tag
-    if (!options.skipTag) {
-      execSync(`git tag -a v${newVersion} -m "Release v${newVersion}"`, { stdio: 'ignore' });
-      console.log(chalk.green(`✅ Created tag v${newVersion}`));
-    }
-    
-    // Git push
-    if (!options.skipPush) {
-      execSync('git push', { stdio: 'ignore' });
-      if (!options.skipTag) {
-        execSync('git push --tags', { stdio: 'ignore' });
-      }
-      console.log(chalk.green('✅ Pushed to remote'));
-    }
-    
-    // GitHub release
-    let releaseUrl: string | undefined;
-    if (!options.skipRelease && !options.skipTag) {
-      releaseUrl = await createGitHubRelease(newVersion, changelogEntry);
-      if (releaseUrl) {
-        console.log(chalk.green('✅ Created GitHub release'));
-        console.log(chalk.blue(`   ${releaseUrl}`));
-      }
-    }
-    
-    // Telegram notification
-    await sendTelegramNotification(packageInfo.name, newVersion, releaseUrl);
-    
-    console.log(chalk.green(`\n🎉 Successfully shipped v${newVersion}!`));
-    
-  } catch (error) {
-    console.error(chalk.red('\n❌ Release failed:'), error instanceof Error ? error.message : error);
-    process.exit(1);
-  }
-}
-
-function validateGitState(): void {
-  try {
-    // Check if git repo
-    execSync('git rev-parse --git-dir', { stdio: 'ignore' });
-    
-    // Check for uncommitted changes
-    const status = execSync('git status --porcelain', { encoding: 'utf-8' });
-    if (status.trim()) {
-      throw new Error('Uncommitted changes detected. Commit or stash them first.');
-    }
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('Uncommitted')) {
-      throw error;
-    }
-    throw new Error('Not a git repository');
-  }
-}
-
-function getCurrentVersion(): string {
-  const packageJsonPath = resolve(process.cwd(), 'package.json');
-  if (!existsSync(packageJsonPath)) {
-    throw new Error('package.json not found');
-  }
-  
-  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-  return packageJson.version || '0.0.0';
-}
-
-function getPackageInfo(): { name: string; version: string } {
-  const packageJsonPath = resolve(process.cwd(), 'package.json');
-  if (!existsSync(packageJsonPath)) {
-    return { name: 'unknown', version: '0.0.0' };
-  }
-  
-  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-  return {
-    name: packageJson.name || 'unknown',
-    version: packageJson.version || '0.0.0'
-  };
-}
-
-function calculateNewVersion(current: string, bumpType: string): string {
-  // If explicit version provided
-  if (bumpType.match(/^\d+\.\d+\.\d+/)) {
-    return bumpType;
-  }
-
-  // Parse current version
-  const match = current.match(/^(\d+)\.(\d+)\.(\d+)(?:-(.+))?$/);
-  if (!match) {
-    throw new Error(`Invalid current version: ${current}`);
-  }
-
-  let [, major, minor, patch, prerelease] = match;
-  let majorNum = parseInt(major, 10);
-  let minorNum = parseInt(minor, 10);
-  let patchNum = parseInt(patch, 10);
-  let prereleaseStr: string | undefined = prerelease;
-
-  // Apply bump
-  switch (bumpType) {
-    case 'major':
-      majorNum++;
-      minorNum = 0;
-      patchNum = 0;
-      prereleaseStr = undefined;
-      break;
-    case 'minor':
-      minorNum++;
-      patchNum = 0;
-      prereleaseStr = undefined;
-      break;
-    case 'patch':
-      patchNum++;
-      prereleaseStr = undefined;
-      break;
-    case 'prerelease':
-      patchNum++;
-      prereleaseStr = prereleaseStr ? `${prereleaseStr}.1` : 'alpha.1';
-      break;
-    default:
-      throw new Error(`Invalid version bump type: ${bumpType}. Use: major, minor, patch, prerelease, or explicit version (e.g., 1.2.3)`);
-  }
-
-  let newVersion = `${majorNum}.${minorNum}.${patchNum}`;
-  if (prereleaseStr) {
-    newVersion += `-${prereleaseStr}`;
-  }
-
-  return newVersion;
-}
-
-function getCommitsSinceLastTag(): Commit[] {
-  try {
-    // Get the latest tag
-    let sinceRef = '';
-    try {
-      sinceRef = execSync('git describe --tags --abbrev=0', { encoding: 'utf-8' }).trim();
-    } catch {
-      // No tags yet, get all commits
-      sinceRef = '--max-parents=0 HEAD';
-    }
-    
-    // Get commits
-    const format = '%H|%s';
-    const output = execSync(`git log ${sinceRef}..HEAD --pretty=format:"${format}"`, {
-      encoding: 'utf-8',
-    });
-    
-    if (!output.trim()) return [];
-    
-    return output.trim().split('\n').map(line => {
-      const [hash, message] = line.split('|');
-      return parseCommit(hash, message);
-    });
-  } catch {
-    return [];
-  }
-}
-
-function parseCommit(hash: string, message: string): Commit {
-  // Parse conventional commit format
-  const match = message.match(/^(\w+)(?:\(([^)]+)\))?:\s*(.+)$/);
-  
-  if (match) {
     return {
-      hash: hash.slice(0, 7),
-      message,
-      type: match[1],
-      scope: match[2],
-      subject: match[3],
+      currentVersion,
+      currentBranch: branch.current,
+      isClean: status.isClean(),
+      lastTag: latestTag,
+      commitsSinceTag: commits.length,
+      recommendedBump,
+      hasGhToken: !!process.env.GH_TOKEN || !!process.env.GITHUB_TOKEN,
+      hasNpmToken: !!process.env.NPM_TOKEN
     };
   }
-  
-  return {
-    hash: hash.slice(0, 7),
-    message,
-    type: 'other',
-    subject: message,
-  };
-}
 
-function generateChangelog(commits: Commit[], version: string): string {
-  const date = new Date().toISOString().split('T')[0];
-  let entry = `## [${version}] - ${date}\n\n`;
-  
-  // Group commits by type
-  const groups: Record<string, Commit[]> = {};
-  
-  for (const commit of commits) {
-    const type = conventionalTypes[commit.type] ? commit.type : 'other';
-    if (!groups[type]) groups[type] = [];
-    groups[type].push(commit);
-  }
-  
-  // Generate sections
-  for (const [type, typeCommits] of Object.entries(groups)) {
-    if (type === 'other' && !conventionalTypes[type]) continue;
+  async release(type: ReleaseType, options: ReleaseOptions = {}): Promise<{ success: boolean; message: string }> {
+    const status = await this.getStatus();
     
-    const config = conventionalTypes[type] || { emoji: '📝', section: 'Other Changes' };
-    entry += `### ${config.emoji} ${config.section}\n\n`;
-    
-    for (const commit of typeCommits) {
-      const scope = commit.scope ? `**${commit.scope}:** ` : '';
-      entry += `- ${scope}${commit.subject} (${commit.hash})\n`;
-    }
-    
-    entry += '\n';
-  }
-  
-  return entry;
-}
-
-function updateVersion(version: string): void {
-  const packageJsonPath = resolve(process.cwd(), 'package.json');
-  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
-  packageJson.version = version;
-  writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
-}
-
-function updateChangelogFile(newEntry: string): void {
-  const changelogPath = resolve(process.cwd(), 'CHANGELOG.md');
-  
-  let content = '';
-  if (existsSync(changelogPath)) {
-    content = readFileSync(changelogPath, 'utf-8');
-  } else {
-    content = '# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n';
-  }
-  
-  // Insert new entry after the header
-  const lines = content.split('\n');
-  const headerEnd = lines.findIndex(line => line.startsWith('## '));
-  
-  if (headerEnd === -1) {
-    content = content.trim() + '\n\n' + newEntry;
-  } else {
-    const before = lines.slice(0, headerEnd).join('\n');
-    const after = lines.slice(headerEnd).join('\n');
-    content = before + '\n\n' + newEntry + after;
-  }
-  
-  writeFileSync(changelogPath, content);
-}
-
-async function createGitHubRelease(version: string, changelog: string): Promise<string | undefined> {
-  const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
-  
-  if (!token) {
-    console.log(chalk.yellow('⚠️ No GH_TOKEN found, skipping GitHub release'));
-    return undefined;
-  }
-  
-  // Check if gh CLI is available
-  try {
-    execSync('which gh', { stdio: 'ignore' });
-    
-    // Create release using gh CLI
-    const notes = changelog.replace(/### /g, '## ').replace(/## \[.+\] - .+\n\n/, '');
-    execSync(
-      `gh release create "v${version}" --title "v${version}" --notes "${notes.replace(/"/g, '\\"')}"`,
-      { stdio: 'ignore' }
-    );
-    
-    // Get the release URL
-    try {
-      const remoteUrl = execSync('git remote get-url origin', { encoding: 'utf-8' }).trim();
-      // Convert git@github.com:user/repo.git to https://github.com/user/repo
-      const match = remoteUrl.match(/github\.com[:/]([^/]+)\/(.+?)(?:\.git)?$/);
-      if (match) {
-        return `https://github.com/${match[1]}/${match[2]}/releases/tag/v${version}`;
+    // Pre-release checks
+    if (!options.skipGitChecks) {
+      if (status.currentBranch !== this.config.releaseBranch && !options.force) {
+        return { 
+          success: false, 
+          message: `Not on ${this.config.releaseBranch} branch (current: ${status.currentBranch}). Use --force to override.` 
+        };
       }
-    } catch {
-      // Ignore errors getting URL
+      
+      if (!status.isClean && this.config.requireCleanWorkingDir && !options.force) {
+        return { success: false, message: 'Working directory is not clean. Use --force to override.' };
+      }
     }
-    
-    return `v${version}`;
-  } catch {
-    console.log(chalk.yellow('⚠️ GitHub CLI not available, skipping GitHub release'));
-    return undefined;
-  }
-}
 
-async function sendTelegramNotification(packageName: string, version: string, releaseUrl?: string): Promise<void> {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  
-  if (!botToken || !chatId) {
-    return; // Silently skip if not configured
-  }
-  
-  try {
-    const message = `🚀 *Release Shipped*\n\n📦 ${packageName} v${version}\n✅ Successfully released to production${releaseUrl ? `\n\n[View Release](${releaseUrl})` : ''}`;
-    
-    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: message,
-        parse_mode: 'Markdown',
-        disable_web_page_preview: true
-      })
-    });
-    
-    if (response.ok) {
-      console.log(chalk.green('✅ Sent Telegram notification'));
-    } else {
-      console.log(chalk.yellow('⚠️ Failed to send Telegram notification'));
+    // Run pre-release hooks
+    for (const hook of this.config.preReleaseHooks) {
+      try {
+        execSync(hook, { stdio: 'inherit' });
+      } catch {
+        return { success: false, message: `Pre-release hook failed: ${hook}` };
+      }
     }
-  } catch {
-    // Silently fail - notification is optional
+
+    // Run tests if configured
+    if (this.config.runTests && !options.skipTests) {
+      try {
+        console.log(chalk.blue('Running tests...'));
+        execSync(this.config.testCommand, { stdio: 'inherit' });
+      } catch {
+        return { success: false, message: 'Tests failed' };
+      }
+    }
+
+    // Calculate new version
+    const currentVersion = status.currentVersion;
+    let newVersion: string;
+    
+    if (options.version) {
+      newVersion = options.version;
+    } else {
+      const prereleaseId = options.tag || 'alpha';
+      newVersion = semver.inc(currentVersion, type, prereleaseId) || currentVersion;
+    }
+
+    if (options.dryRun) {
+      return { 
+        success: true, 
+        message: `Dry run: Would release ${currentVersion} → ${newVersion}` 
+      };
+    }
+
+    try {
+      // Update version in package files
+      for (const file of this.config.packageFiles) {
+        const filePath = path.join(process.cwd(), file);
+        try {
+          const content = await fs.readFile(filePath, 'utf-8');
+          const json = JSON.parse(content);
+          json.version = newVersion;
+          await fs.writeFile(filePath, JSON.stringify(json, null, 2) + '\n');
+        } catch {
+          // File might not exist, skip
+        }
+      }
+
+      // Update changelog
+      if (!options.skipChangelog) {
+        await this.updateChangelog(newVersion, status.commitsSinceTag);
+      }
+
+      // Commit changes
+      await this.git.add('.');
+      await this.git.commit(`chore(release): ${this.config.tagPrefix}${newVersion}`);
+
+      // Create tag
+      const tagName = `${this.config.tagPrefix}${newVersion}`;
+      await this.git.addTag(tagName);
+
+      // Push to origin
+      if (!options.skipGitChecks) {
+        await this.git.push('origin', status.currentBranch);
+        await this.git.pushTags('origin');
+      }
+
+      // Run post-release hooks
+      for (const hook of this.config.postReleaseHooks) {
+        try {
+          execSync(hook, { stdio: 'inherit' });
+        } catch {
+          console.warn(chalk.yellow(`Post-release hook failed: ${hook}`));
+        }
+      }
+
+      return { success: true, message: `Released ${currentVersion} → ${newVersion}` };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: `Release failed: ${error instanceof Error ? error.message : String(error)}` 
+      };
+    }
+  }
+
+  async preview(type: ReleaseType): Promise<{ currentVersion: string; newVersion: string; changelog: string }> {
+    const status = await this.getStatus();
+    const currentVersion = status.currentVersion;
+    
+    let newVersion: string;
+    if (type === 'prerelease') {
+      newVersion = semver.inc(currentVersion, type, 'alpha') || currentVersion;
+    } else {
+      newVersion = semver.inc(currentVersion, type) || currentVersion;
+    }
+    
+    const changelog = await this.generateChangelogPreview(newVersion, status.commitsSinceTag);
+    
+    return { currentVersion, newVersion, changelog };
+  }
+
+  private determineBumpFromCommits(commits: string[]): ReleaseType {
+    let hasBreaking = false;
+    let hasFeature = false;
+    
+    for (const commit of commits) {
+      if (commit.includes('BREAKING CHANGE') || commit.includes('!:')) {
+        hasBreaking = true;
+        break;
+      }
+      if (commit.startsWith('feat')) {
+        hasFeature = true;
+      }
+    }
+    
+    if (hasBreaking) return 'major';
+    if (hasFeature) return 'minor';
+    return 'patch';
+  }
+
+  private async updateChangelog(version: string, commitCount: number): Promise<void> {
+    const logs = await this.git.log({ maxCount: commitCount || 20 });
+    const entries = this.parseChangelogEntries(logs.all.map((l: { message: string }) => l.message));
+    
+    const changelogPath = path.join(process.cwd(), this.config.changelogPath);
+    let existingContent = '';
+    
+    try {
+      existingContent = await fs.readFile(changelogPath, 'utf-8');
+    } catch {
+      // File doesn't exist
+    }
+
+    const newSection = this.formatChangelogSection(version, entries);
+    const updatedContent = newSection + '\n\n' + existingContent;
+    
+    await fs.writeFile(changelogPath, updatedContent);
+  }
+
+  private async generateChangelogPreview(version: string, commitCount: number): Promise<string> {
+    const logs = await this.git.log({ maxCount: commitCount || 20 });
+    const entries = this.parseChangelogEntries(logs.all.map((l: { message: string }) => l.message));
+    return this.formatChangelogSection(version, entries);
+  }
+
+  private parseChangelogEntries(commits: string[]): ChangelogEntry[] {
+    const entries: ChangelogEntry[] = [];
+    
+    for (const commit of commits) {
+      const lines = commit.split('\n');
+      const firstLine = lines[0];
+      
+      // Parse conventional commit
+      const match = firstLine.match(/^(\w+)(?:\([^)]+\))?!?:\s*(.+)$/);
+      if (match) {
+        const [, type, message] = match;
+        const isBreaking = firstLine.includes('!:') || commit.includes('BREAKING CHANGE:');
+        
+        entries.push({
+          type: isBreaking ? 'breaking' : type,
+          message,
+          isBreaking
+        });
+      }
+    }
+    
+    return entries;
+  }
+
+  private formatChangelogSection(version: string, entries: ChangelogEntry[]): string {
+    const date = new Date().toISOString().split('T')[0];
+    let section = `## [${version}] - ${date}\n\n`;
+    
+    const groups: Record<string, ChangelogEntry[]> = {
+      breaking: [],
+      feat: [],
+      fix: [],
+      docs: [],
+      style: [],
+      refactor: [],
+      perf: [],
+      test: [],
+      chore: []
+    };
+    
+    for (const entry of entries) {
+      const key = entry.type in groups ? entry.type : 'chore';
+      groups[key].push(entry);
+    }
+    
+    if (groups.breaking.length > 0) {
+      section += '### ⚠ BREAKING CHANGES\n\n';
+      for (const entry of groups.breaking) {
+        section += `- ${entry.message}\n`;
+      }
+      section += '\n';
+    }
+    
+    if (groups.feat.length > 0) {
+      section += '### ✨ Features\n\n';
+      for (const entry of groups.feat) {
+        section += `- ${entry.message}\n`;
+      }
+      section += '\n';
+    }
+    
+    if (groups.fix.length > 0) {
+      section += '### 🐛 Bug Fixes\n\n';
+      for (const entry of groups.fix) {
+        section += `- ${entry.message}\n`;
+      }
+      section += '\n';
+    }
+    
+    return section;
+  }
+
+  async initConfig(): Promise<void> {
+    const configPath = path.join(process.cwd(), '.ship.config.json');
+    await fs.writeFile(configPath, JSON.stringify(DEFAULT_CONFIG, null, 2));
+  }
+
+  getConfig(): ShipConfig {
+    return this.config;
   }
 }
