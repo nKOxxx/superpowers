@@ -12,7 +12,7 @@ metadata:
             {
               "id": "npm",
               "kind": "npm",
-              "package": "@superpowers/qa",
+              "package": "@nko/superpowers",
               "bins": ["qa"],
               "label": "Install QA skill (npm)",
             },
@@ -29,13 +29,13 @@ Systematic testing with QA Lead intelligence. Automatically analyzes code change
 
 ```bash
 # Analyze changes and run targeted tests
-qa run
+qa
 
 # Run smoke tests
-qa run --mode=smoke
+qa --mode=smoke
 
 # Run full test suite
-qa run --mode=full --coverage
+qa --mode=full --coverage
 ```
 
 ## Commands
@@ -65,19 +65,19 @@ Run tests based on the specified mode.
 **Examples:**
 ```bash
 # Run targeted tests (default)
-qa run
+qa
 
 # Run with coverage
-qa run --mode=full --coverage
+qa --mode=full --coverage
 
 # Run specific pattern
-qa run --pattern="auth"
+qa --pattern="auth"
 
 # Watch mode for development
-qa run --mode=targeted --watch
+qa --mode=targeted --watch
 
 # CI mode with bail
-qa run --mode=smoke --ci --bail
+qa --mode=smoke --ci --bail
 ```
 
 ### analyze
@@ -115,41 +115,7 @@ Affected Tests:
   ✓ src/auth/login.test.ts
 
 Recommendation:
-  Run: qa run --mode=smoke
-```
-
-### config
-
-Manage QA configuration.
-
-**Subcommands:**
-```bash
-# Initialize config file
-qa config --init
-
-# Show current config
-qa config --show
-
-# Set a config value
-qa config --set defaultRunner --value vitest
-qa config --set coverageThreshold --value 85
-```
-
-**Configuration options:**
-- `defaultRunner` - Default test runner (jest, vitest, playwright, mocha)
-- `testDirs` - Directories to search for tests
-- `testPatterns` - File patterns for test files
-- `coverageThreshold` - Minimum coverage percentage
-- `smokeTags` - Tags that identify smoke tests
-- `timeout` - Default test timeout
-- `workers` - Default number of parallel workers
-
-### detect
-
-Detect the test runner used in the current project.
-
-```bash
-qa detect
+  Run: qa --mode=smoke
 ```
 
 ## Test Modes
@@ -191,25 +157,34 @@ Runs the complete test suite with coverage reporting.
 - Nightly builds
 - Coverage validation
 
-## Configuration File
+## Smart Test Selection
 
-Create `.qa.config.json` in your project root:
+The QA skill maps file changes to tests:
+
+| Changed File Pattern | Tests to Run |
+|---------------------|--------------|
+| `src/**/*.ts` | Unit tests for affected modules |
+| `src/components/*.tsx` | Component tests + visual regression |
+| `src/api/**/*.ts` | API integration tests |
+| `*.test.ts` | Those specific tests |
+| `package.json` | Full dependency check + smoke |
+
+## Configuration
+
+Configure via `superpowers.config.json`:
 
 ```json
 {
-  "defaultRunner": "vitest",
-  "testDirs": ["src", "tests", "__tests__"],
-  "testPatterns": [
-    "**/*.test.ts",
-    "**/*.test.js",
-    "**/*.spec.ts",
-    "**/*.spec.js"
-  ],
-  "coverageThreshold": 80,
-  "smokeTags": ["smoke", "critical", "sanity"],
-  "exclude": ["node_modules/**", "dist/**"],
-  "timeout": 30000,
-  "workers": 4
+  "qa": {
+    "defaultMode": "targeted",
+    "coverageThreshold": 80,
+    "testCommand": "npm test",
+    "testPatterns": {
+      "unit": ["**/*.test.ts", "**/*.spec.ts"],
+      "integration": ["**/*.integration.test.ts"],
+      "e2e": ["**/e2e/**/*.spec.ts"]
+    }
+  }
 }
 ```
 
@@ -231,36 +206,56 @@ The analyze command calculates a risk score based on:
 
 ## CI/CD Integration
 
-The `run` command exits with code 1 on test failure:
+Exits with code 1 on test failure:
 
 ```yaml
 # GitHub Actions example
 - name: Run targeted tests
-  run: qa run --mode=targeted
+  run: qa --mode=targeted
 
 - name: Run smoke tests
   if: github.ref == 'refs/heads/main'
-  run: qa run --mode=smoke --ci
+  run: qa --mode=smoke --ci
 
 - name: Run full tests with coverage
   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  run: qa run --mode=full --coverage
+  run: qa --mode=full --coverage
 ```
 
 ## Supported Test Runners
 
 | Runner | Status | Notes |
-|--------|--------|--------|
+|--------|--------|-------|
 | Vitest | ✅ Full | Recommended |
 | Jest | ✅ Full | Full support |
 | Playwright | ✅ Full | E2E testing |
 | Mocha | ✅ Basic | Core support |
 | Node.js Test | ✅ Basic | Built-in |
 
-## Environment Variables
+## Output Format
 
-Set these in your shell or CI environment:
+```
+QA Report - Mode: targeted
+============================
+Files Changed: 3
+  - src/auth/login.ts
+  - src/auth/session.ts
+  - tests/auth.test.ts
 
-- `TEST_TIMEOUT` - Override default timeout
-- `TEST_WORKERS` - Override default workers
-- `COVERAGE_THRESHOLD` - Override coverage threshold
+Tests Selected: 5
+  ✓ auth/login.test.ts (3 tests)
+  ✓ auth/session.test.ts (2 tests)
+
+Results:
+  Passed: 5/5 (100%)
+  Duration: 2.3s
+  Coverage: 87%
+
+Status: ✅ PASSED
+```
+
+## Resources
+
+- **scripts/qa.ts** - Main QA orchestration script
+- **scripts/lib/analyzer.ts** - Code change analyzer
+- **scripts/lib/test-runner.ts** - Test execution engine

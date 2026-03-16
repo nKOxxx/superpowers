@@ -12,7 +12,7 @@ metadata:
             {
               "id": "npm",
               "kind": "npm",
-              "package": "@superpowers/browse",
+              "package": "@nko/superpowers",
               "bins": ["browse"],
               "label": "Install Browse skill (npm)",
             },
@@ -29,10 +29,10 @@ Browser automation powered by Playwright. Take screenshots, test URLs, interact 
 
 ```bash
 # Take a screenshot
-browse screenshot https://example.com
+browse https://example.com
 
 # Test a URL
-browse test-url https://example.com --expect-text "Welcome"
+browse https://example.com --expect-text "Welcome"
 
 # Click an element
 browse click https://example.com --selector "#submit-btn"
@@ -62,13 +62,13 @@ Take a screenshot of a webpage.
 **Examples:**
 ```bash
 # Mobile screenshot
-browse screenshot https://example.com --viewport mobile
+browse https://example.com --viewport mobile
 
 # Full page with custom output
-browse screenshot https://example.com --full-page -o ./output
+browse https://example.com --full-page -o ./output
 
 # Wait for element and hide cookie banner
-browse screenshot https://example.com --wait-for "#content" --hide "#cookie-banner"
+browse https://example.com --wait-for "#content" --hide "#cookie-banner"
 ```
 
 ### test-url <url>
@@ -85,13 +85,13 @@ Test a URL for availability and content validation.
 **Examples:**
 ```bash
 # Basic health check
-browse test-url https://example.com
+browse https://example.com
 
 # Check for specific content
-browse test-url https://example.com --expect-text "Sign Up" --expect-selector ".hero"
+browse https://example.com --expect-text "Sign Up" --expect-selector ".hero"
 
 # Custom timeout
-browse test-url https://example.com --timeout 10000
+browse https://example.com --timeout 10000
 ```
 
 ### click <url>
@@ -176,7 +176,7 @@ Run a multi-step browser flow from a JSON file.
 All screenshots are saved to the specified output directory with timestamps:
 ```
 screenshots/
-├── screenshot-2024-01-15T10-30-00-000Z.png
+├── example.com_2024-01-15T10-30-00-000Z.png
 └── ...
 ```
 
@@ -186,9 +186,37 @@ The `test-url` command exits with code 1 on test failure, making it suitable for
 
 ```bash
 # In your CI workflow
-browse test-url https://staging.example.com --expect-text "Dashboard"
+browse https://staging.example.com --expect-text "Dashboard"
+```
+
+## Configuration
+
+Flows are configured in `superpowers.config.json`:
+
+```json
+{
+  "browser": {
+    "flows": {
+      "critical": ["/", "/about", "/contact"],
+      "auth": ["/login", "/dashboard", "/profile"],
+      "checkout": ["/cart", "/checkout", "/payment"]
+    },
+    "viewports": {
+      "mobile": { "width": 375, "height": 667 },
+      "tablet": { "width": 768, "height": 1024 },
+      "desktop": { "width": 1280, "height": 720 }
+    }
+  }
+}
 ```
 
 ## Environment Variables
 
-No required environment variables. Playwright browsers are installed automatically on first run.
+- `PLAYWRIGHT_BROWSERS_PATH` - Custom browser installation path
+- `SCREENSHOT_DIR` - Output directory for screenshots (default: ./screenshots)
+
+## Resources
+
+- **scripts/browse.ts** - Main browser automation script
+- **scripts/lib/screenshot.ts** - Screenshot utilities
+- **scripts/lib/flows.ts** - Flow execution engine
