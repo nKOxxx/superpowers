@@ -11,7 +11,7 @@ program
   .name('plan-ceo-review')
   .description('Product strategy review using BAT framework and 10-star methodology')
   .version('1.0.0')
-  .argument('<feature>', 'Feature name to evaluate')
+  .argument('[feature]', 'Feature name to evaluate')
   .option('-g, --goal <goal>', 'Business goal')
   .option('-m, --market <market>', 'Target market segment')
   .option('-b, --brand <n>', 'Brand score (0-5)', parseIntValue, 3)
@@ -26,7 +26,7 @@ program
         console.log(chalk.bold('\n📊 Example BAT Evaluations\n'));
         console.log(chalk.gray('(Brand + Attention + Trust = Total)'));
         console.log('');
-        
+
         for (const ex of EXAMPLE_COMPARISONS) {
           const total = ex.brand + ex.attention + ex.trust;
           const color = total >= 10 ? chalk.green : total >= 8 ? chalk.yellow : chalk.red;
@@ -34,6 +34,11 @@ program
         }
         console.log('');
         return;
+      }
+
+      if (!feature) {
+        console.error(chalk.red('Error: Feature name is required (unless using --examples)'));
+        process.exit(1);
       }
 
       await planCEOReview({
