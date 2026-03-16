@@ -55,10 +55,8 @@ const TRUST_DESCRIPTIONS: Record<number, string> = {
 };
 
 export class BATFramework {
-  private config: CEOReviewConfig;
-
-  constructor(config?: CEOReviewConfig) {
-    this.config = config || {};
+  constructor(_config?: CEOReviewConfig) {
+    // Config available for future extensibility
   }
 
   calculateScore(scores: BATScores): number {
@@ -298,4 +296,4 @@ export async function planCEOReview(options: {
   return evaluation;
 }
 
-export { loadConfig, EXAMPLE_COMPARISONS, BRAND_DESCRIPTIONS, ATTENTION_DESCRIPTIONS, TRUST_DESCRIPTIONS };
+export { loadConfig, BRAND_DESCRIPTIONS, ATTENTION_DESCRIPTIONS, TRUST_DESCRIPTIONS };

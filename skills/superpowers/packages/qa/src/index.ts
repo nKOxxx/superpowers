@@ -1,7 +1,7 @@
 import { execSync } from 'child_process';
 import { loadConfig, sendTelegramNotification, formatDuration, type TelegramConfig } from '@openclaw/superpowers-shared';
-import { existsSync, readdirSync, statSync } from 'fs';
-import { resolve, relative, join, extname, basename } from 'path';
+import { existsSync, readdirSync } from 'fs';
+import { relative, join, extname, basename } from 'path';
 import chalk from 'chalk';
 
 export interface QAConfig {

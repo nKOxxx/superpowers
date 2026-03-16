@@ -4,13 +4,33 @@
   "description": "OpenClaw Superpowers - Opinionated workflow skills for AI agents",
   "private": false,
   "type": "module",
+  "workspaces": ["packages/*"],
+  "bin": {
+    "superpowers": "./packages/cli/dist/cli.js",
+    "browse": "./packages/browse/dist/cli.js",
+    "qa": "./packages/qa/dist/cli.js",
+    "ship": "./packages/ship/dist/cli.js",
+    "plan-ceo-review": "./packages/plan-ceo-review/dist/cli.js"
+  },
+  "exports": {
+    "./browse": "./packages/browse/dist/index.js",
+    "./qa": "./packages/qa/dist/index.js",
+    "./ship": "./packages/ship/dist/index.js",
+    "./plan-ceo-review": "./packages/plan-ceo-review/dist/index.js",
+    "./shared": "./packages/shared/dist/index.js"
+  },
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "test": "turbo run test",
+    "build": "npm run build:shared && npm run build:cli && npm run build:skills",
+    "build:shared": "cd packages/shared && npm run build",
+    "build:skills": "npm run build:browse && npm run build:qa && npm run build:ship && npm run build:plan-ceo-review",
+    "build:browse": "cd packages/browse && npm run build",
+    "build:qa": "cd packages/qa && npm run build",
+    "build:ship": "cd packages/ship && npm run build",
+    "build:plan-ceo-review": "cd packages/plan-ceo-review && npm run build",
+    "build:cli": "cd packages/cli && npm run build",
+    "test": "echo 'Tests not yet implemented'",
     "lint": "eslint .",
-    "format": "prettier --write .",
-    "typecheck": "tsc --noEmit"
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

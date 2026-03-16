@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { planCEOReview, EXAMPLE_COMPARISONS, BATFramework } from './index.js';
+import { planCEOReview, EXAMPLE_COMPARISONS } from './index.js';
 import chalk from 'chalk';
 
 const program = new Command();
+
+const parseIntValue = (value: string): number => parseInt(value, 10);
 
 program
   .name('plan-ceo-review')
@@ -12,9 +14,9 @@ program
   .argument('<feature>', 'Feature name to evaluate')
   .option('-g, --goal <goal>', 'Business goal')
   .option('-m, --market <market>', 'Target market segment')
-  .option('-b, --brand <n>', 'Brand score (0-5)', parseInt, 3)
-  .option('-a, --attention <n>', 'Attention score (0-5)', parseInt, 3)
-  .option('-t, --trust <n>', 'Trust score (0-5)', parseInt, 3)
+  .option('-b, --brand <n>', 'Brand score (0-5)', parseIntValue, 3)
+  .option('-a, --attention <n>', 'Attention score (0-5)', parseIntValue, 3)
+  .option('-t, --trust <n>', 'Trust score (0-5)', parseIntValue, 3)
   .option('-c, --config <path>', 'Config file path')
   .option('--telegram', 'Send Telegram notification', false)
   .option('--examples', 'Show example evaluations', false)
@@ -24,8 +26,6 @@ program
         console.log(chalk.bold('\n📊 Example BAT Evaluations\n'));
         console.log(chalk.gray('(Brand + Attention + Trust = Total)'));
         console.log('');
-        
-        const framework = new BATFramework();
         
         for (const ex of EXAMPLE_COMPARISONS) {
           const total = ex.brand + ex.attention + ex.trust;

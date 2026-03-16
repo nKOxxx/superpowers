@@ -132,8 +132,6 @@ export class ReleasePipeline {
   }
 
   generateChangelog(version: string): string {
-    const preset = this.config.changelog?.preset || 'conventional';
-    
     try {
       // Get commits since last tag
       let lastTag: string;

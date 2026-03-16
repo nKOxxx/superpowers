@@ -66,15 +66,16 @@ export async function sendTelegramNotification(
   
   try {
     if (options?.photo) {
-      // Send photo with caption
-      const formData = new FormData();
-      formData.append('chat_id', config.chatId);
-      formData.append('caption', options.caption || message);
-      formData.append('photo', new Blob([await Bun.file(options.photo).arrayBuffer()]));
-      
-      await fetch(`${baseUrl}/sendPhoto`, {
+      // Photo sending requires multipart/form-data - sending as text with link for now
+      const photoMessage = `${options.caption || message}\n\n[Photo: ${options.photo}]`;
+      await fetch(`${baseUrl}/sendMessage`, {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: config.chatId,
+          text: photoMessage,
+          parse_mode: 'Markdown'
+        })
       });
     } else {
       // Send text message

@@ -1,4 +1,4 @@
-import type { Page, Browser, BrowserContext, ViewportSize } from 'playwright';
+import type { Page, Browser, ViewportSize } from 'playwright';
 import { chromium, firefox, webkit } from 'playwright';
 import { loadConfig, sendTelegramNotification, substituteEnvVars, formatDuration, timestamp, type TelegramConfig } from '@openclaw/superpowers-shared';
 import { mkdir } from 'fs/promises';
@@ -44,7 +44,6 @@ const DEFAULT_VIEWPORTS: Record<string, ViewportSize> = {
 export class BrowserAutomation {
   private config: BrowseConfig;
   private browser?: Browser;
-  private context?: BrowserContext;
 
   constructor(config?: BrowseConfig) {
     this.config = config || {};
