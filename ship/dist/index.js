@@ -2,7 +2,6 @@ import { execSync } from 'child_process';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import chalk from 'chalk';
-import semver from 'semver';
 const conventionalTypes = {
     feat: { emoji: '✨', section: 'Features' },
     fix: { emoji: '🐛', section: 'Bug Fixes' },
@@ -139,10 +138,43 @@ function calculateNewVersion(current, bumpType) {
     if (bumpType.match(/^\d+\.\d+\.\d+/)) {
         return bumpType;
     }
-    // Otherwise treat as semver bump
-    const newVersion = semver.inc(current, bumpType);
-    if (!newVersion) {
-        throw new Error(`Invalid version bump type: ${bumpType}`);
+    // Parse current version
+    const match = current.match(/^(\d+)\.(\d+)\.(\d+)(?:-(.+))?$/);
+    if (!match) {
+        throw new Error(`Invalid current version: ${current}`);
+    }
+    let [, major, minor, patch, prerelease] = match;
+    let majorNum = parseInt(major, 10);
+    let minorNum = parseInt(minor, 10);
+    let patchNum = parseInt(patch, 10);
+    let prereleaseStr = prerelease;
+    // Apply bump
+    switch (bumpType) {
+        case 'major':
+            majorNum++;
+            minorNum = 0;
+            patchNum = 0;
+            prereleaseStr = undefined;
+            break;
+        case 'minor':
+            minorNum++;
+            patchNum = 0;
+            prereleaseStr = undefined;
+            break;
+        case 'patch':
+            patchNum++;
+            prereleaseStr = undefined;
+            break;
+        case 'prerelease':
+            patchNum++;
+            prereleaseStr = prereleaseStr ? `${prereleaseStr}.1` : 'alpha.1';
+            break;
+        default:
+            throw new Error(`Invalid version bump type: ${bumpType}. Use: major, minor, patch, prerelease, or explicit version (e.g., 1.2.3)`);
+    }
+    let newVersion = `${majorNum}.${minorNum}.${patchNum}`;
+    if (prereleaseStr) {
+        newVersion += `-${prereleaseStr}`;
     }
     return newVersion;
 }
