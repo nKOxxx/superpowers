@@ -9,7 +9,7 @@ program
   .name('ship')
   .description('One-command release pipeline')
   .version('1.0.0')
-  .requiredOption('-v, --version <bump>', 'Version bump (patch/minor/major/x.y.z)')
+  .requiredOption('-b, --bump <bump>', 'Version bump (patch/minor/major/x.y.z)')
   .option('-r, --repo <repo>', 'Repository (owner/repo)', )
   .option('-d, --dry-run', 'Preview without making changes', false)
   .option('--skip-tests', 'Skip test execution', false)
@@ -20,7 +20,7 @@ program
   .action(async (options) => {
     try {
       await ship({
-        version: options.version,
+        version: options.bump,
         repo: options.repo,
         dryRun: options.dryRun,
         skipTests: options.skipTests,
