@@ -1,3 +1,8 @@
+---
+name: ship
+description: One-command release pipeline - version bump, changelog generation, and GitHub release. Use when releasing new versions, publishing packages, creating GitHub releases, or shipping code. Triggers on /ship, release, publish, or ship commands.
+---
+
 # ship
 
 One-command release pipeline - version bump, changelog, and GitHub release.

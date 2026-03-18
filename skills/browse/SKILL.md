@@ -1,3 +1,8 @@
+---
+name: browse
+description: Browser automation for visual testing, QA, and web scraping with Playwright. Use when capturing screenshots, testing UI flows, running accessibility audits, or validating responsive designs across multiple viewports. Triggers on /browse, screenshot requests, visual testing, or UI automation tasks.
+---
+
 # browse
 
 Browser automation for visual testing, QA, and web scraping with Playwright.

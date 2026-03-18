@@ -1,3 +1,8 @@
+---
+name: qa
+description: Systematic testing as QA Lead - analyzes code changes and runs appropriate tests with smart test selection. Use when running tests, analyzing test coverage, validating code changes, or performing regression testing. Triggers on /qa, run tests, test coverage, or code quality checks.
+---
+
 # qa
 
 Systematic testing based on code changes - intelligent test selection and coverage analysis.

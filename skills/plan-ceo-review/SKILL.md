@@ -1,3 +1,8 @@
+---
+name: plan-ceo-review
+description: Product strategy review using BAT framework (Brand, Attention, Trust) and 10-star methodology for build vs buy decisions. Use for feature evaluation, build vs buy decisions, product prioritization, or strategic planning. Triggers on /plan-ceo-review, /ceo-review, should we build, feature evaluation, or product strategy discussions.
+---
+
 # plan-ceo-review
 
 Product strategy evaluation using BAT framework (Brand, Attention, Trust) and 10-star methodology for build vs buy decisions.

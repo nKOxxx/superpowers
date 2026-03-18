@@ -1,3 +1,8 @@
+---
+name: superpowers
+description: OpenClaw superpowers - opinionated workflow skills for AI agents. Includes /browse (browser automation), /qa (systematic testing), /ship (release pipeline), and /plan-ceo-review (product strategy with BAT framework). Use for web testing, QA automation, releases, and product decisions.
+---
+
 # superpowers
 
 OpenClaw superpowers - opinionated workflow skills for AI agents.
