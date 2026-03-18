@@ -3,12 +3,18 @@
   "version": "1.0.0",
   "description": "Opinionated workflow skills for OpenClaw AI agents",
   "type": "module",
+  "bin": {
+    "superpowers": "./packages/cli/dist/cli.js"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "browse": "node dist/browse/browse.js",
-    "qa": "node dist/qa/qa.js",
-    "ship": "node dist/ship/ship.js"
+    "lint": "echo 'Linting skipped - no linter configured'",
+    "test": "echo 'Tests skipped - no test suite configured'",
+    "browse": "node packages/browse/dist/cli.js",
+    "qa": "node packages/qa/dist/cli.js",
+    "ship": "node packages/ship/dist/cli.js",
+    "plan-ceo-review": "node packages/plan-ceo-review/dist/cli.js"
   },
   "keywords": ["openclaw", "skills", "automation", "testing", "playwright"],
   "author": "OpenClaw",
