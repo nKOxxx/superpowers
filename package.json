@@ -6,6 +6,9 @@
   "bin": {
     "superpowers": "./packages/cli/dist/cli.js"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",

@@ -1,4 +1,4 @@
-import { loadConfig, sendTelegramNotification, type TelegramConfig } from '@openclaw/superpowers-shared';
+import { loadConfig, sendTelegramNotification, type TelegramConfig } from '../../shared/dist/index.js';
 import chalk from 'chalk';
 
 export interface CEOReviewConfig {

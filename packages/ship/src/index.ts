@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { loadConfig, sendTelegramNotification, type TelegramConfig } from '@openclaw/superpowers-shared';
+import { loadConfig, sendTelegramNotification, type TelegramConfig } from '../../shared/dist/index.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import chalk from 'chalk';

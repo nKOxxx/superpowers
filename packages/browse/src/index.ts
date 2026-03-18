@@ -1,6 +1,6 @@
 import type { Page, Browser, ViewportSize } from 'playwright';
 import { chromium, firefox, webkit } from 'playwright';
-import { loadConfig, sendTelegramNotification, substituteEnvVars, formatDuration, timestamp, type TelegramConfig } from '@openclaw/superpowers-shared';
+import { loadConfig, sendTelegramNotification, substituteEnvVars, formatDuration, timestamp, type TelegramConfig } from '../../shared/dist/index.js';
 import { mkdir } from 'fs/promises';
 import { resolve } from 'path';
 import chalk from 'chalk';
