@@ -11,7 +11,7 @@ program
   .version('1.0.0')
   .argument('<url>', 'URL to browse')
   .option('-v, --viewport <viewport>', 'Viewport preset (mobile, tablet, desktop, 1440p, 4k)', 'desktop')
-  .option('-V, --viewports <viewports>', 'Multiple viewports (comma-separated)', (val) => val.split(','))
+  .option('-p, --viewports <viewports>', 'Multiple viewports (comma-separated)', (val) => val.split(','))
   .option('-f, --flows <flows>', 'Flow names to run (comma-separated)', (val) => val.split(','))
   .option('-s, --selector <selector>', 'CSS selector for element screenshot')
   .option('-F, --full-page', 'Capture full page', true)
