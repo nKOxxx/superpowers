@@ -1,83 +1,146 @@
-# Plan CEO Review Skill
+---
+name: plan-ceo-review
+description: Product strategy evaluation using BAT framework (Brand, Attention, Trust) and 10-star methodology for build vs buy decisions. Use when evaluating features, assessing product decisions, determining whether to build or buy, or prioritizing product roadmap items. Provides structured scoring and actionable recommendations.
+user-invocable: true
+metadata:
+  { "openclaw": { "requires": { "bins": ["node"], "npm": ["@openclaw/superpowers-plan-ceo-review"] }, "emoji": "📊" } }
+---
 
-Product strategy evaluation using the BAT framework and 10-star methodology.
+# Plan CEO Review - Product Strategy (BAT Framework)
 
-## Usage
+Structured product decision-making using the BAT (Brand, Attention, Trust) framework and 10-star methodology.
 
+## Quick Start
+
+### Evaluate a Feature
+```bash
+/plan-ceo-review "Feature Name" --brand=4 --attention=5 --trust=3
 ```
-/plan-ceo-review "<question or proposal>"
+
+### See Example Evaluations
+```bash
+/plan-ceo-review --examples
 ```
 
 ## BAT Framework
 
-Evaluates proposals across three dimensions:
+Evaluate across three dimensions (0-5 stars each):
 
-### Brand (B)
+### 🎨 Brand (B)
 Does this align with and strengthen our brand?
-- Core values alignment
-- Market positioning impact
-- Long-term brand equity
 
-### Attention (A)
+| Score | Meaning |
+|-------|---------|
+| 5 | Iconic, defines category |
+| 4 | Differentiated, memorable |
+| 3 | Good quality, expected |
+| 2 | Mediocre, forgettable |
+| 1 | Weakens brand |
+| 0 | Damages brand |
+
+### 👁 Attention (A)
 Will this capture and retain user attention?
-- User value proposition
-- Differentiation from competitors
-- Engagement potential
 
-### Trust (T)
+| Score | Meaning |
+|-------|---------|
+| 5 | Daily use, core workflow |
+| 4 | Weekly use, high value |
+| 3 | Monthly use, nice to have |
+| 2 | Occasionally used |
+| 1 | Rarely used, low value |
+| 0 | Never used, wasted effort |
+
+### 🔐 Trust (T)
 Will this build or erode trust?
-- User expectations
-- Deliverability
-- Transparency and honesty
+
+| Score | Meaning |
+|-------|---------|
+| 5 | Critical safety/security |
+| 4 | Significant reliability improvement |
+| 3 | Expected standard |
+| 2 | Minor trust impact |
+| 1 | Minor trust concerns |
+| 0 | Erodes trust (dark patterns) |
 
 ## 10-Star Methodology
 
-Rate each dimension 1-10, then average:
+Total score = Brand + Attention + Trust (max 15)
 
-| Rating | Meaning |
-|--------|---------|
-| 9-10 | Exceptional, must do |
-| 7-8 | Strong, should do |
-| 5-6 | Neutral, could do |
-| 3-4 | Weak, probably not |
-| 1-2 | Poor, avoid |
+| Total | Recommendation |
+|-------|----------------|
+| 10-15 | ✅ BUILD - Core differentiator |
+| 8-9 | 🤔 CONSIDER - Needs validation |
+| 0-7 | ❌ DON'T BUILD - Buy or skip |
+
+## Commands
+
+### `/plan-ceo-review "<feature>" [options]`
+
+Evaluate a feature or proposal.
+
+**Options:**
+- `-b, --brand <n>` - Brand score 0-5 (default: 3)
+- `-a, --attention <n>` - Attention score 0-5 (default: 3)
+- `-t, --trust <n>` - Trust score 0-5 (default: 3)
+- `-g, --goal <text>` - Business goal context
+- `-m, --market <text>` - Target market segment
+- `--examples` - Show example evaluations
+
+## Example Evaluations
+
+```
+Feature          Brand  Attention  Trust  Total  Decision
+─────────────────────────────────────────────────────────
+AI Chat             5          5      3     13   BUILD
+Auth System         2          5      5     12   BUY (Auth0)
+Analytics           3          4      4     11   BUY (Mixpanel)
+Mobile App          4          5      4     13   BUILD
+PDF Export          2          2      3      7   DON'T BUILD
+```
 
 ## Output
 
-- Individual BAT scores with reasoning
-- Overall score and recommendation
-- Risk assessment
-- Alternative considerations
-- Decision: PROCEED / PAUSE / REJECT
+The skill provides:
+- Individual BAT scores with descriptions
+- Total score (out of 15)
+- Recommendation (BUILD/CONSIDER/DON'T BUILD)
+- Rationale with strengths and concerns
+- Specific next steps
+- Build vs Buy analysis
 
-## Examples
+## When to Use
 
-```bash
-# Evaluate a feature idea
-/plan-ceo-review "Should we add a free tier with ads?"
+**Use for:**
+- Feature prioritization decisions
+- Build vs Buy analysis
+- Product roadmap planning
+- Resource allocation discussions
+- Evaluating partnerships or integrations
 
-# Review pricing change
-/plan-ceo-review "Increase prices by 20% for new customers"
+**Don't use for:**
+- Technical architecture decisions (use system-architect skill)
+- Code implementation (use coding directly)
+- Marketing campaigns
 
-# Assess partnership
-/plan-ceo-review "Partner with BigTech Corp for distribution"
+## Configuration
 
-# Evaluate tech decision
-/plan-ceo-review "Rewrite the frontend in new framework"
+Create `superpowers.config.json`:
+
+```json
+{
+  "ceoReview": {
+    "minimumScore": 10,
+    "requireAllBAT": false,
+    "autoGenerateNextSteps": true,
+    "marketAnalysis": true
+  }
+}
 ```
 
-## Decision Matrix
+## Key Principles
 
-| Overall Score | Recommendation |
-|---------------|----------------|
-| 8.5+ | PROCEED - High confidence |
-| 7.0-8.4 | PROCEED - With cautions |
-| 5.0-6.9 | PAUSE - Needs refinement |
-| <5.0 | REJECT - Doesn't meet bar |
-
-## Notes
-
-- The skill uses AI analysis for subjective dimensions
-- Provides structured thinking, not absolute answers
-- Encourages discussion of edge cases
-- Considers second-order effects
+1. **Be honest about scores** - Don't inflate to get the answer you want
+2. **Consider second-order effects** - How does this impact other features?
+3. **Re-evaluate over time** - Market conditions change
+4. **10+ means build** - High confidence investment
+5. **Below 8 means don't build** - Focus on higher-impact work
