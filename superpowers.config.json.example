@@ -1,0 +1,61 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nKOxxx/superpowers/main/config-schema.json",
+  "browser": {
+    "browserType": "chromium",
+    "defaultViewport": "desktop",
+    "viewports": {
+      "mobile": { "width": 375, "height": 667 },
+      "tablet": { "width": 768, "height": 1024 },
+      "desktop": { "width": 1280, "height": 720 },
+      "1440p": { "width": 2560, "height": 1440 },
+      "4k": { "width": 3840, "height": 2160 }
+    },
+    "flows": {
+      "critical": ["/", "/about", "/pricing"],
+      "auth": ["/login", "/dashboard", "/profile"],
+      "checkout": ["/cart", "/checkout", "/confirmation"]
+    },
+    "selectors": {
+      "cookieBanner": "[data-testid='cookie-banner']",
+      "modal": ".modal-overlay"
+    }
+  },
+  "qa": {
+    "defaultMode": "targeted",
+    "coverageThreshold": 80,
+    "testCommand": "npm test",
+    "testPatterns": {
+      "unit": ["**/*.test.ts", "**/*.spec.ts"],
+      "integration": ["**/*.integration.test.ts"],
+      "e2e": ["**/e2e/**/*.spec.ts"]
+    },
+    "testMapping": {
+      "src/api/**": ["tests/api/"],
+      "src/components/**": ["tests/components/"]
+    }
+  },
+  "ship": {
+    "requireCleanWorkingDir": true,
+    "runTestsBeforeRelease": true,
+    "testCommand": "npm test",
+    "changelog": {
+      "preset": "conventional",
+      "includeContributors": true
+    },
+    "github": {
+      "defaultOrg": "nKOxxx",
+      "token": "${GH_TOKEN}"
+    }
+  },
+  "ceoReview": {
+    "minimumScore": 10,
+    "requireAllBAT": false,
+    "autoGenerateNextSteps": true,
+    "marketAnalysis": true
+  },
+  "telegram": {
+    "enabled": false,
+    "botToken": "${TELEGRAM_BOT_TOKEN}",
+    "chatId": "${TELEGRAM_CHAT_ID}"
+  }
+}

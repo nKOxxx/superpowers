@@ -1,0 +1,25 @@
+# Source files (we publish dist/)
+src/
+tsconfig.json
+
+# Development files
+.eslintrc*
+*.test.ts
+*.spec.ts
+coverage/
+.github/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local

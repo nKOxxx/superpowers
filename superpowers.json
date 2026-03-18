@@ -1,0 +1,30 @@
+{
+  "name": "superpowers",
+  "version": "1.0.0",
+  "description": "Opinionated workflow skills for AI agents",
+  "skills": [
+    {
+      "name": "browse",
+      "description": "Browser automation for visual testing, QA, and web scraping",
+      "entry": "skills/browse/SKILL.md",
+      "bin": "skills/browse/browse.ts"
+    },
+    {
+      "name": "qa",
+      "description": "Systematic testing based on code changes",
+      "entry": "skills/qa/SKILL.md",
+      "bin": "skills/qa/qa.ts"
+    },
+    {
+      "name": "ship",
+      "description": "One-command release pipeline",
+      "entry": "skills/ship/SKILL.md",
+      "bin": "skills/ship/ship.ts"
+    },
+    {
+      "name": "plan-ceo-review",
+      "description": "Product strategy using BAT framework and 10-star methodology",
+      "entry": "skills/plan-ceo-review/SKILL.md"
+    }
+  ]
+}

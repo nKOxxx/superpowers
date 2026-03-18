@@ -1,0 +1,19 @@
+{
+  "name": "@openclaw/superpowers-cli",
+  "version": "1.0.0",
+  "description": "Main CLI for OpenClaw Superpowers",
+  "type": "module",
+  "bin": {
+    "superpowers": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "commander": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}
