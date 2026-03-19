@@ -5,11 +5,11 @@
   "type": "module",
   "main": "./dist/src/cli.js",
   "bin": {
-    "superpowers": "./dist/src/cli.js",
-    "browse": "./dist/browse/scripts/browse.js",
-    "qa": "./dist/qa/scripts/qa.js",
-    "ship": "./dist/ship/scripts/ship.js",
-    "plan-ceo-review": "./dist/plan-ceo-review/scripts/plan-ceo-review.js"
+    "superpowers": "./dist/cli.js",
+    "browse": "./browse/dist/cli.js",
+    "qa": "./qa/dist/cli.js",
+    "ship": "./ship/dist/cli.js",
+    "plan-ceo-review": "./plan-ceo-review/dist/cli.js"
   },
   "files": [
     "dist/**/*",
@@ -21,11 +21,12 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run build:skills",
+    "build:skills": "cd browse && npm run build && cd ../qa && npm run build && cd ../ship && npm run build && cd ../plan-ceo-review && npm run build",
     "dev": "tsc --watch",
     "install:all": "./install.sh",
     "test": "vitest run",
-    "lint": "eslint scripts --ext .ts",
+    "lint": "eslint src --ext .ts",
     "prepublishOnly": "npm run build",
     "postinstall": "npx playwright install chromium 2>/dev/null || true"
   },
