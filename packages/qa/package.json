@@ -1,0 +1,32 @@
+{
+  "name": "@openclaw/skill-qa",
+  "version": "1.0.0",
+  "description": "QA Lead skill for systematic testing with smart test selection and coverage analysis",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "qa": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts"
+  },
+  "keywords": ["openclaw", "skill", "testing", "qa", "coverage", "jest", "vitest"],
+  "author": "OpenClaw",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^12.0.0",
+    "chalk": "^4.1.2",
+    "glob": "^10.3.0",
+    "simple-git": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

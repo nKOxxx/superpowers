@@ -1,6 +1,41 @@
-# This directory contains the compiled output of the TypeScript build.
-# It is ignored by git and should not be committed.
-dist/
+# Dependencies
 node_modules/
+*/node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+*/dist/
+*.tsbuildinfo
+
+# Testing
+coverage/
+.nyc_output/
 *.log
+
+# Screenshots (browse skill)
+screenshots/
+*.png
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp

@@ -1,50 +1,35 @@
 {
   "name": "@openclaw/superpowers",
   "version": "1.0.0",
+  "private": true,
   "description": "OpenClaw superpowers - opinionated workflow skills for AI agents",
-  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "install:all": "npm install && npm run install:skills",
-    "install:skills": "cd browse && npm install && cd ../qa && npm install && cd ../ship && npm install && cd ../plan-ceo-review && npm install",
-    "build": "npm run build:shared && npm run build:skills",
-    "build:shared": "tsc -p shared/tsconfig.json",
-    "build:skills": "npm run build:browse && npm run build:qa && npm run build:ship && npm run build:plan-ceo-review",
-    "build:browse": "tsc -p browse/tsconfig.json",
-    "build:qa": "tsc -p qa/tsconfig.json",
-    "build:ship": "tsc -p ship/tsconfig.json",
-    "build:plan-ceo-review": "tsc -p plan-ceo-review/tsconfig.json",
-    "dev": "npm run build && npm run watch",
-    "watch": "concurrently \"tsc -p shared/tsconfig.json --watch\" \"tsc -p browse/tsconfig.json --watch\" \"tsc -p qa/tsconfig.json --watch\" \"tsc -p ship/tsconfig.json --watch\" \"tsc -p plan-ceo-review/tsconfig.json --watch\"",
-    "test": "npm run test:browse && npm run test:qa && npm run test:ship && npm run test:plan-ceo-review",
-    "test:browse": "cd browse && npm test",
-    "test:qa": "cd qa && npm test",
-    "test:ship": "cd ship && npm test",
-    "test:plan-ceo-review": "cd plan-ceo-review && npm test",
-    "lint": "eslint . --ext .ts",
-    "clean": "rm -rf */dist */node_modules node_modules"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "concurrently": "^8.2.2",
-    "eslint": "^8.56.0",
-    "@typescript-eslint/eslint-plugin": "^6.15.0",
-    "@typescript-eslint/parser": "^6.15.0",
-    "typescript": "^5.3.3"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "clean": "rm -rf packages/*/dist",
+    "dev": "npm run dev --workspaces"
   },
   "keywords": [
     "openclaw",
     "skills",
-    "browser-automation",
+    "ai-agents",
+    "workflows",
     "testing",
+    "browser",
     "release",
-    "product-strategy"
+    "strategy"
   ],
+  "author": "OpenClaw",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/nKOxxx/superpowers.git"
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

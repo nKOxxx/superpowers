@@ -1,165 +1,99 @@
-# OpenClaw Superpowers 🦾
+# OpenClaw Superpowers
 
-A collection of TypeScript skills for OpenClaw AI agents, designed for the Kimi K2.5 model.
+Opinionated workflow skills for AI agents. TypeScript implementation of the OpenClaw superpowers skill suite.
 
-## Skills
+## Quick Reference
 
-| Command | Skill | Description |
-|---------|-------|-------------|
-| `/browse` | Browser Automation | Visual testing with Playwright, screenshots, and accessibility audits |
-| `/qa` | Systematic Testing | Smart test selection, coverage analysis for Jest/Vitest/Mocha/pytest |
-| `/ship` | Release Pipeline | Semantic versioning, changelog generation, GitHub releases |
-| `/plan-ceo-review` | Product Strategy | BAT framework (Brand, Attention, Trust) + 10-star methodology |
+| Command | Purpose | Trigger |
+|---------|---------|---------|
+| `/browse` | Browser automation, screenshots, accessibility audits | screenshot, visual testing |
+| `/qa` | Smart test selection, coverage analysis | run tests, test coverage |
+| `/ship` | Version bump, changelog, GitHub release | release, publish |
+| `/plan-ceo-review` | Strategic analysis with BAT framework | should we build, feature evaluation |
 
-## Quick Start
+## Installation
 
 ```bash
-# Install all dependencies
-npm run install:all
-
-# Build all skills
+# Install all skills
+cd superpowers-ts
+npm install
 npm run build
 
-# Run all tests
-npm test
+# Link for global usage
+npm link
 ```
 
 ## Individual Skills
 
-### Browse (`/browse`)
+### Browse
 
-Browser automation with Playwright for visual testing and accessibility audits.
-
-```bash
-# Navigate and screenshot
-browse https://example.com --screenshot --mobile
-
-# Accessibility audit
-browse https://example.com --audit --viewport 1920x1080
-
-# Visual regression testing
-browse https://staging.com --screenshot --compare baseline.png
-```
-
-### QA (`/qa`)
-
-Smart test selection with automatic framework detection.
+Browser automation with Playwright.
 
 ```bash
-# Run all tests
-qa
-
-# Run only changed tests
-qa --changed
-
-# Coverage report
-qa --coverage
+browse https://example.com --screenshot --audit
+browse https://mysite.com --viewport 1920x1080 --compare baseline.png
 ```
 
-### Ship (`/ship`)
+### QA
+
+Systematic testing with smart test selection.
+
+```bash
+qa --changed --coverage
+qa --framework jest --grep "auth"
+```
+
+### Ship
 
 One-command release pipeline.
 
 ```bash
-# Release patch version
-ship patch
-
-# Dry run preview
-ship minor --dry-run
-
-# Skip npm publish
-ship major --no-publish
+ship patch --dry-run
+ship minor --message "Feature release"
 ```
 
-### Plan CEO Review (`/plan-ceo-review`)
+### Plan CEO Review
 
 Product strategy evaluation with BAT framework.
 
 ```bash
-# Review a feature
-plan-ceo-review "AI-powered search"
-
-# Build vs buy analysis
-plan-ceo-review "Notifications" --build-vs-buy
-
-# Compare features
-plan-ceo-review "Feature A" --compare "Feature B"
-```
-
-## BAT Framework
-
-Evaluates product opportunities across three dimensions:
-
-| Dimension | Question | Range |
-|-----------|----------|-------|
-| Brand | Does this strengthen our brand? | 0-5 |
-| Attention | Will users actually use this? | 0-5 |
-| Trust | Does this build user trust? | 0-5 |
-
-**Scoring:**
-- 12-15: **BUILD** - Strong signal, prioritize
-- 10-11: **BUILD** - Good signal, proceed
-- 8-9: **CONSIDER** - Mixed signal, needs refinement
-- 0-7: **DON'T BUILD** - Weak signal, reconsider
-
-## 10-Star Methodology
-
-Inspired by Brian Chesky (Airbnb CEO):
-
-| Rating | Description |
-|--------|-------------|
-| 1★ | Works (barely) |
-| 3★ | Meets basic needs |
-| 5★ | Meets expectations |
-| 7★ | Great - exceeds expectations |
-| 10★ | Transforms the category |
-
-## Architecture
-
-```
-superpowers/
-├── shared/              # Shared utilities and types
-│   └── src/
-│       ├── index.ts     # Core types, Logger, execAsync
-│       └── telegram.ts  # Telegram formatting utilities
-├── browse/              # Browser automation skill
-├── qa/                  # Testing skill
-├── ship/                # Release pipeline skill
-├── plan-ceo-review/     # Product strategy skill
-└── dist-skills/         # Packaged skills for distribution
+plan-ceo-review "AI feature" --audience enterprise
+plan-ceo-review "Mobile app" --build-vs-buy
+plan-ceo-review compare "Feature A" "Feature B"
 ```
 
 ## Development
 
 ```bash
-# Watch mode for all skills
-npm run watch
+# Build all packages
+npm run build
 
-# Lint
+# Run tests
+npm run test
+
+# Lint code
 npm run lint
-
-# Clean
-npm run clean
 ```
 
-## Telegram Integration
+## Architecture
 
-All skills include Telegram formatting utilities for optimal display:
-
-```typescript
-import { TelegramFormatter } from '@openclaw/superpowers-shared';
-
-// Format results for Telegram
-const message = TelegramFormatter.formatQaResult(testResults);
-// Returns: { text: "...", parse_mode: "Markdown", media?: [...] }
+```
+superpowers-ts/
+├── packages/
+│   ├── browse/          # Browser automation (Playwright)
+│   ├── qa/              # Testing framework integration
+│   ├── ship/            # Release pipeline
+│   └── plan-ceo-review/ # Product strategy (BAT framework)
+├── package.json         # Workspace root
+└── README.md
 ```
 
 ## Requirements
 
 - Node.js >= 18.0.0
-- TypeScript >= 5.3.0
-- Playwright (for browse skill)
-- Git (for ship skill)
+- Playwright browsers (installed via `npx playwright install`)
+- Git
+- GitHub CLI (optional, for releases)
 
 ## License
 

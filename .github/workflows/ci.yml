@@ -1,65 +1,67 @@
-name: CI/CD
+name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, develop]
   pull_request:
-    branches: [main, master]
+    branches: [main]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup Node.js
+      - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: ${{ matrix.node-version }}
       
       - name: Install dependencies
-        run: npm ci
+        run: npm install
       
-      - name: Lint
+      - name: Build packages
+        run: npm run build
+      
+      - name: Run tests
+        run: npm run test
+      
+      - name: Run linting
         run: npm run lint
-      
-      - name: Build
-        run: npm run build
-      
-      - name: Test
-        run: npm test
 
-  release:
-    needs: test
+  integration-test:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       
-      - name: Setup Node.js
+      - name: Use Node.js 20.x
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: 20.x
       
       - name: Install dependencies
-        run: npm ci
+        run: npm install
       
-      - name: Build
+      - name: Build packages
         run: npm run build
       
-      - name: Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+      
+      - name: Test browse skill
         run: |
-          if git log -1 --pretty=%B | grep -q "chore(release)"; then
-            echo "Skipping release commit"
-          else
-            npm run build
-            # Release logic here
-          fi
+          node packages/browse/dist/cli.js https://example.com --screenshot --output ./test-screenshots
+        continue-on-error: true
+      
+      - name: Upload test screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-screenshots
+          path: ./test-screenshots/*.png
