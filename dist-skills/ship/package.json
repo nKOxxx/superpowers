@@ -1,22 +1,34 @@
 {
   "name": "@openclaw/skill-ship",
   "version": "1.0.0",
-  "description": "Ship skill for OpenClaw - One-command release pipeline",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "description": "Release pipeline skill for OpenClaw - versioning, changelogs, and publishing",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
-    "ship": "./dist/scripts/ship.js"
+    "ship": "./bin/ship.js"
   },
-  "files": [
-    "dist",
-    "SKILL.md"
-  ],
   "scripts": {
     "build": "tsc",
-    "test": "echo 'Tests run in main repo'"
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts"
   },
-  "dependencies": {},
-  "keywords": ["openclaw", "skill", "release", "version", "changelog", "publish"],
-  "license": "MIT"
+  "keywords": ["openclaw", "skill", "release", "semver", "changelog", "publish"],
+  "author": "OpenClaw",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^12.0.0",
+    "chalk": "^4.1.2",
+    "semver": "^7.6.0",
+    "conventional-commits-parser": "^5.0.0",
+    "conventional-changelog": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/semver": "^7.5.8",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
