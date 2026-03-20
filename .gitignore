@@ -1,13 +1,6 @@
-node_modules/
+# This directory contains the compiled output of the TypeScript build.
+# It is ignored by git and should not be committed.
 dist/
+node_modules/
 *.log
 .DS_Store
-.env
-.env.local
-*.tgz
-.vscode/
-.idea/
-coverage/
-.nyc_output/
-temp/
-tmp/

@@ -2,6 +2,9 @@
  * Core types shared across all superpowers skills
  */
 
+// Re-export Telegram utilities
+export * from './telegram.js';
+
 export interface SkillConfig {
   name: string;
   version: string;
