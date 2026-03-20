@@ -1,0 +1,24 @@
+{
+  "name": "@openclaw/skill-ship",
+  "version": "1.0.0",
+  "description": "Release pipeline skill for OpenClaw - semantic versioning, changelog, and publishing",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node --test dist/**/*.test.js"
+  },
+  "keywords": ["openclaw", "skill", "release", "ship", "version", "changelog", "semantic"],
+  "author": "OpenClaw",
+  "license": "MIT",
+  "dependencies": {
+    "semver": "^7.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/semver": "^7.5.0",
+    "typescript": "^5.3.0"
+  }
+}

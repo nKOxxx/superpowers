@@ -1,0 +1,28 @@
+{
+  "name": "@openclaw/skill-browse",
+  "version": "1.0.0",
+  "description": "Browser automation skill for OpenClaw - screenshots, accessibility audits, and visual regression",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node --test dist/**/*.test.js"
+  },
+  "keywords": ["openclaw", "skill", "browser", "playwright", "accessibility"],
+  "author": "OpenClaw",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "axe-core": "^4.8.0",
+    "pixelmatch": "^5.3.0",
+    "pngjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/pixelmatch": "^5.2.0",
+    "@types/pngjs": "^6.0.0",
+    "typescript": "^5.3.0"
+  }
+}

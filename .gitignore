@@ -1,40 +1,13 @@
-# Dependencies
 node_modules/
-.pnpm-store/
-.yarn/
-
-# Build output
 dist/
-build/
-*.tsbuildinfo
-
-# Environment
+*.log
+.DS_Store
 .env
 .env.local
-.env.*.local
-
-# IDE
+*.tgz
 .vscode/
 .idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-npm-debug.log*
-
-# Testing
 coverage/
 .nyc_output/
-
-# Screenshots (generated)
-screenshots/
-qa-reports/
-
-# Misc
-*.tmp
-*.temp
+temp/
+tmp/

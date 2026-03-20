@@ -1,0 +1,24 @@
+{
+  "name": "@openclaw/skill-qa",
+  "version": "1.0.0",
+  "description": "QA Lead skill for OpenClaw - systematic testing with smart test selection",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node --test dist/**/*.test.js"
+  },
+  "keywords": ["openclaw", "skill", "testing", "qa", "coverage", "jest", "vitest"],
+  "author": "OpenClaw",
+  "license": "MIT",
+  "dependencies": {
+    "glob": "^10.0.0",
+    "minimatch": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  }
+}
