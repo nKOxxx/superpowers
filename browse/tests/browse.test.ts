@@ -1,21 +1,15 @@
-/**
- * Browse skill tests
- */
-
-import { describe, it, expect } from 'vitest';
-import { BrowseSkill, type BrowseOptions } from '../src/index.js';
+import { describe, it, expect, vi } from 'vitest';
+import { BrowseSkill } from '../src/index.js';
 
 describe('BrowseSkill', () => {
-  it('should initialize correctly', () => {
+  it('should create a BrowseSkill instance', () => {
     const skill = new BrowseSkill();
     expect(skill).toBeDefined();
   });
 
-  it('should parse viewport correctly', () => {
-    const options: BrowseOptions = {
-      url: 'https://example.com',
-      viewport: { width: 1920, height: 1080 }
-    };
-    expect(options.viewport).toEqual({ width: 1920, height: 1080 });
+  it('should have required methods', () => {
+    const skill = new BrowseSkill();
+    expect(typeof skill.browse).toBe('function');
+    expect(typeof skill.close).toBe('function');
   });
 });

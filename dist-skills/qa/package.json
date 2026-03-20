@@ -1,25 +1,22 @@
 {
   "name": "@openclaw/skill-qa",
   "version": "1.0.0",
-  "description": "Systematic testing skill for OpenClaw",
+  "description": "QA skill for OpenClaw - Systematic testing with smart test selection",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
     "qa": "./dist/scripts/qa.js"
   },
+  "files": [
+    "dist",
+    "SKILL.md"
+  ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "echo 'Tests run in main repo'"
   },
-  "dependencies": {
-    "@openclaw/superpowers-shared": "file:../shared"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "typescript": "^5.3.3",
-    "vitest": "^1.1.0"
-  }
+  "dependencies": {},
+  "keywords": ["openclaw", "skill", "testing", "jest", "vitest", "mocha", "pytest"],
+  "license": "MIT"
 }

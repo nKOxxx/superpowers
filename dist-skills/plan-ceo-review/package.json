@@ -1,25 +1,22 @@
 {
   "name": "@openclaw/skill-plan-ceo-review",
   "version": "1.0.0",
-  "description": "Product strategy skill with BAT framework for OpenClaw",
+  "description": "Plan CEO Review skill for OpenClaw - Product strategy with BAT framework",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
     "plan-ceo-review": "./dist/scripts/plan-ceo-review.js"
   },
+  "files": [
+    "dist",
+    "SKILL.md"
+  ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "echo 'Tests run in main repo'"
   },
-  "dependencies": {
-    "@openclaw/superpowers-shared": "file:../shared"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "typescript": "^5.3.3",
-    "vitest": "^1.1.0"
-  }
+  "dependencies": {},
+  "keywords": ["openclaw", "skill", "strategy", "product", "bat-framework", "10-star"],
+  "license": "MIT"
 }

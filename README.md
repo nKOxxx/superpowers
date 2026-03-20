@@ -92,15 +92,15 @@ Evaluates product opportunities across three dimensions:
 
 | Dimension | Question | Range |
 |-----------|----------|-------|
-| **Brand** | Does this strengthen our brand? | 0-5 |
-| **Attention** | Will users actually use this? | 0-5 |
-| **Trust** | Does this build user trust? | 0-5 |
+| Brand | Does this strengthen our brand? | 0-5 |
+| Attention | Will users actually use this? | 0-5 |
+| Trust | Does this build user trust? | 0-5 |
 
 **Scoring:**
-- **12-15**: BUILD - Strong signal, prioritize
-- **10-11**: BUILD - Good signal, proceed
-- **8-9**: CONSIDER - Mixed signal, needs refinement
-- **0-7**: DON'T BUILD - Weak signal, reconsider
+- 12-15: **BUILD** - Strong signal, prioritize
+- 10-11: **BUILD** - Good signal, proceed
+- 8-9: **CONSIDER** - Mixed signal, needs refinement
+- 0-7: **DON'T BUILD** - Weak signal, reconsider
 
 ## 10-Star Methodology
 
@@ -125,7 +125,8 @@ superpowers/
 ├── browse/              # Browser automation skill
 ├── qa/                  # Testing skill
 ├── ship/                # Release pipeline skill
-└── plan-ceo-review/     # Product strategy skill
+├── plan-ceo-review/     # Product strategy skill
+└── dist-skills/         # Packaged skills for distribution
 ```
 
 ## Development

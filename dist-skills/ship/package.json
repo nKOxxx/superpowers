@@ -1,28 +1,22 @@
 {
   "name": "@openclaw/skill-ship",
   "version": "1.0.0",
-  "description": "Release pipeline skill for OpenClaw",
+  "description": "Ship skill for OpenClaw - One-command release pipeline",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
     "ship": "./dist/scripts/ship.js"
   },
+  "files": [
+    "dist",
+    "SKILL.md"
+  ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "echo 'Tests run in main repo'"
   },
-  "dependencies": {
-    "@openclaw/superpowers-shared": "file:../shared",
-    "conventional-changelog": "^5.1.0",
-    "conventional-recommended-bump": "^9.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "@types/conventional-changelog": "^3.1.5",
-    "typescript": "^5.3.3",
-    "vitest": "^1.1.0"
-  }
+  "dependencies": {},
+  "keywords": ["openclaw", "skill", "release", "version", "changelog", "publish"],
+  "license": "MIT"
 }

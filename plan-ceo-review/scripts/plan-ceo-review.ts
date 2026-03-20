@@ -1,84 +1,104 @@
 #!/usr/bin/env node
 /**
- * Plan CEO Review CLI script - /plan-ceo-review command handler
+ * Plan CEO Review CLI - Command line interface for CEO review skill
  */
 
-import { PlanCeoReviewSkill, type CeoReviewOptions, type CeoReviewResult } from '../src/index.js';
-import { parseArgs, ConsoleLogger } from '@openclaw/superpowers-shared';
+import { PlanCeoReviewSkill, type CeoReviewOptions, type AudienceType, type MarketType } from '../src/index.js';
+import { TelegramFormatter } from '@openclaw/superpowers-shared';
+
+function parseArgs(args: string[]): Record<string, string | boolean | undefined> {
+  const result: Record<string, string | boolean | undefined> = {};
+  
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    
+    if (arg.startsWith('--')) {
+      const key = arg.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+      const nextArg = args[i + 1];
+      
+      if (nextArg && !nextArg.startsWith('-')) {
+        result[key] = nextArg;
+        i++;
+      } else {
+        result[key] = true;
+      }
+    } else if (arg.startsWith('-')) {
+      const key = arg.slice(1).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+      result[key] = true;
+    } else if (!result.feature) {
+      result.feature = arg;
+    }
+  }
+  
+  return result;
+}
+
+function showHelp(): void {
+  console.log(`
+Plan CEO Review - Product strategy evaluation
+
+Usage: plan-ceo-review "feature name" [options]
+
+Options:
+  --build-vs-buy         Include build vs buy analysis
+  --compare <feature2>   Compare two features
+  --audience <type>      Target audience (enterprise, consumer, saas)
+  --market <type>        Market type (b2b, b2c, saas)
+  --format <type>        Output format (summary, detailed)
+  --telegram             Output formatted for Telegram
+  --help                 Show this help
+
+Examples:
+  plan-ceo-review "AI-powered search"
+  plan-ceo-review "Mobile app" --audience=enterprise
+  plan-ceo-review "Feature A" --compare "Feature B"
+  plan-ceo-review "Notifications" --build-vs-buy
+`);
+}
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
-  const logger = new ConsoleLogger(args.verbose ? 'debug' : 'info');
-
+  
   if (args.help) {
-    console.log('Usage: plan-ceo-review "feature name" [options]');
-    console.log('');
-    console.log('Options:');
-    console.log('  --build-vs-buy          Include build vs buy analysis');
-    console.log('  --compare <feature2>    Compare two features');
-    console.log('  --audience <type>       Target audience (enterprise, consumer, saas)');
-    console.log('  --market <type>         Market type');
-    console.log('  --format <type>         Output format (summary, detailed)');
-    console.log('  --verbose               Enable verbose logging');
-    console.log('');
-    console.log('Examples:');
-    console.log('  plan-ceo-review "AI-powered search"');
-    console.log('  plan-ceo-review "Mobile app" --audience=enterprise --build-vs-buy');
-    console.log('  plan-ceo-review "Feature A" --compare "Feature B"');
+    showHelp();
     process.exit(0);
   }
-
-  const featureName = args._ as string;
   
-  if (!featureName) {
+  if (!args.feature || typeof args.feature !== 'string') {
     console.error('Error: Feature name is required');
-    console.error('Usage: plan-ceo-review "feature name" [options]');
+    showHelp();
     process.exit(1);
   }
-
-  const options: CeoReviewOptions = {
-    featureName,
-    compareWith: args.compare as string,
-    buildVsBuy: !!args['build-vs-buy'],
-    audience: args.audience as CeoReviewOptions['audience'],
-    market: args.market as CeoReviewOptions['market'],
-    format: (args.format as CeoReviewOptions['format']) || 'detailed'
-  };
-
-  logger.info(`Starting CEO review: ${featureName}`);
-
-  const skill = new PlanCeoReviewSkill(logger);
   
-  // If comparing, run both reviews
-  if (options.compareWith) {
-    const result1 = await skill.review(options);
-    const result2 = await skill.review({
-      ...options,
-      featureName: options.compareWith
-    });
-
-    console.log(skill.formatResult(result1, options.format));
-    console.log('');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('');
-    console.log(skill.formatResult(result2, options.format));
-    console.log('');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('');
-    console.log('COMPARISON');
-    console.log(`  ${result1.featureName}: BAT ${result1.batScore.total}/15, 10-Star ${result1.tenStarScore.overall}/10`);
-    console.log(`  ${result2.featureName}: BAT ${result2.batScore.total}/15, 10-Star ${result2.tenStarScore.overall}/10`);
-    
-    const winner = result1.batScore.total > result2.batScore.total ? result1.featureName :
-                   result2.batScore.total > result1.batScore.total ? result2.featureName : 'Tie';
-    console.log(`  Winner: ${winner}`);
-  } else {
+  const skill = new PlanCeoReviewSkill();
+  
+  const options: CeoReviewOptions = {
+    featureName: args.feature,
+    buildVsBuy: args.buildVsBuy === true,
+    audience: args.audience as AudienceType,
+    market: args.market as MarketType,
+    format: (args.format as 'summary' | 'detailed') || 'detailed',
+  };
+  
+  if (args.compare && typeof args.compare === 'string') {
+    options.compareWith = args.compare;
+  }
+  
+  try {
     const result = await skill.review(options);
-    console.log(skill.formatResult(result, options.format));
+    
+    if (args.telegram) {
+      const telegramResult = TelegramFormatter.formatCeoReviewResult(result);
+      console.log(JSON.stringify(telegramResult, null, 2));
+    } else {
+      console.log(skill.formatResult(result, options.format));
+    }
+    
+    process.exit(0);
+  } catch (error) {
+    console.error('CEO Review failed:', error);
+    process.exit(1);
   }
 }
 
-main().catch((error) => {
-  console.error('Fatal error:', error);
-  process.exit(1);
-});
+main();

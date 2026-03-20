@@ -1,102 +1,126 @@
 #!/usr/bin/env node
 /**
- * Ship CLI script - /ship command handler
+ * Ship CLI - Command line interface for ship skill
  */
 
-import { ShipSkill, type ShipOptions, type ShipResult, type VersionBump } from '../src/index.js';
-import { parseArgs, ConsoleLogger } from '@openclaw/superpowers-shared';
+import { ShipSkill, type VersionBump } from '../src/index.js';
+import { TelegramFormatter } from '@openclaw/superpowers-shared';
+
+function parseArgs(args: string[]): Record<string, string | boolean | undefined> {
+  const result: Record<string, string | boolean | undefined> = {};
+  
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    
+    if (arg.startsWith('--')) {
+      const key = arg.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+      const nextArg = args[i + 1];
+      
+      if (nextArg && !nextArg.startsWith('-')) {
+        result[key] = nextArg;
+        i++;
+      } else {
+        result[key] = true;
+      }
+    } else if (arg.startsWith('-')) {
+      const key = arg.slice(1).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+      result[key] = true;
+    } else if (!result.bump) {
+      result.bump = arg;
+    }
+  }
+  
+  return result;
+}
+
+function showHelp(): void {
+  console.log(`
+Ship - One-command release pipeline
+
+Usage: ship <version> [options]
+
+Version:
+  patch   Bug fixes, docs, chores (1.0.0 → 1.0.1)
+  minor   New features (1.0.0 → 1.1.0)
+  major   Breaking changes (1.0.0 → 2.0.0)
+
+Options:
+  --dry-run              Preview changes without applying
+  --no-publish           Skip npm publish
+  --no-github-release    Skip GitHub release
+  --branch <name>        Target branch (default: main)
+  --message <msg>        Custom release message
+  --telegram             Output formatted for Telegram
+  --help                 Show this help
+
+Examples:
+  ship patch
+  ship minor --dry-run
+  ship major --no-publish
+`);
+}
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
-  const logger = new ConsoleLogger(args.verbose ? 'debug' : 'info');
-
-  if (args.help || !args._) {
-    console.log('Usage: ship <version>');
-    console.log('');
-    console.log('Version:');
-    console.log('  patch    Bug fixes, docs, chores (1.0.0 → 1.0.1)');
-    console.log('  minor    New features (1.0.0 → 1.1.0)');
-    console.log('  major    Breaking changes (1.0.0 → 2.0.0)');
-    console.log('');
-    console.log('Options:');
-    console.log('  --dry-run              Preview changes without applying');
-    console.log('  --no-publish           Skip npm publish');
-    console.log('  --no-github-release    Skip GitHub release');
-    console.log('  --branch <name>        Target branch (default: main)');
-    console.log('  --message <msg>        Custom release message');
-    console.log('  --verbose              Enable verbose logging');
-    process.exit(args.help ? 0 : 1);
+  
+  if (args.help) {
+    showHelp();
+    process.exit(0);
   }
-
-  const bump = args._ as string;
-  if (!['patch', 'minor', 'major'].includes(bump)) {
-    console.error(`Error: Invalid version type "${bump}". Use: patch, minor, or major`);
+  
+  if (!args.bump || !['patch', 'minor', 'major'].includes(args.bump as string)) {
+    console.error('Error: Version bump (patch, minor, major) is required');
+    showHelp();
     process.exit(1);
   }
-
-  const options: ShipOptions = {
-    bump: bump as VersionBump,
-    dryRun: !!args['dry-run'],
-    noPublish: !!args['no-publish'],
-    noGitHubRelease: !!args['no-github-release'],
+  
+  const skill = new ShipSkill();
+  
+  const options = {
+    bump: args.bump as VersionBump,
+    dryRun: args.dryRun === true,
+    noPublish: args.noPublish === true,
+    noGitHubRelease: args.noGithubRelease === true,
     branch: args.branch as string,
-    message: args.message as string
+    message: args.message as string,
   };
-
-  logger.info(`Starting ship: ${bump} release`);
-
-  const skill = new ShipSkill(process.cwd(), logger);
-  const result = await skill.ship(options);
-
-  // Output results
-  console.log('');
-  console.log('═══ Release Results ═══');
-  console.log(`Status:      ${result.success ? '\x1b[32m✓ SUCCESS\x1b[0m' : '\x1b[31m✗ FAILED\x1b[0m'}`);
-  console.log(`Previous:    v${result.previousVersion}`);
-  console.log(`New:         v${result.newVersion}`);
-  console.log('');
-
-  if (result.steps.length > 0) {
-    console.log('═══ Steps ═══');
-    for (const step of result.steps) {
-      const icon = step.success ? '\x1b[32m✓\x1b[0m' : '\x1b[31m✗\x1b[0m';
-      const message = step.message ? ` (${step.message})` : '';
-      console.log(`  ${icon} ${step.step}${message}`);
+  
+  try {
+    const result = await skill.ship(options);
+    
+    if (args.telegram) {
+      const telegramResult = TelegramFormatter.formatShipResult(result);
+      console.log(JSON.stringify(telegramResult, null, 2));
+    } else {
+      if (args.dryRun) {
+        console.log('\n═══ DRY RUN ═══');
+      } else {
+        console.log('\n═══ Release Results ═══');
+      }
+      
+      console.log(`Version: ${result.previousVersion} → ${result.newVersion}`);
+      console.log(`Success: ${result.success ? 'Yes' : 'No'}`);
+      
+      if (result.changelog) {
+        console.log(`\nChangelog:\n${result.changelog}`);
+      }
+      
+      console.log('\nSteps:');
+      for (const step of result.steps) {
+        const status = step.success ? '✓' : '✗';
+        console.log(`  ${status} ${step.step}${step.message ? `: ${step.message}` : ''}`);
+      }
+      
+      if (result.errors.length > 0) {
+        console.log(`\nErrors: ${result.errors.join(', ')}`);
+      }
     }
+    
+    process.exit(result.success ? 0 : 1);
+  } catch (error) {
+    console.error('Ship failed:', error);
+    process.exit(1);
   }
-
-  if (result.commits.length > 0) {
-    console.log('');
-    console.log('═══ Commits ═══');
-    for (const commit of result.commits.slice(0, 10)) {
-      const scope = commit.scope ? `\x1b[36m(${commit.scope})\x1b[0m ` : '';
-      const breaking = commit.breaking ? ' \x1b[31m[breaking]\x1b[0m' : '';
-      console.log(`  ${commit.type}: ${scope}${commit.description}${breaking}`);
-    }
-    if (result.commits.length > 10) {
-      console.log(`  ... and ${result.commits.length - 10} more`);
-    }
-  }
-
-  if (result.changelog && options.dryRun) {
-    console.log('');
-    console.log('═══ Changelog ═══');
-    console.log(result.changelog);
-  }
-
-  if (result.errors.length > 0) {
-    console.log('');
-    console.log('═══ Errors ═══');
-    for (const error of result.errors) {
-      console.log(`  \x1b[31m✗ ${error}\x1b[0m`);
-    }
-  }
-
-  // Exit with appropriate code
-  process.exit(result.success ? 0 : 1);
 }
 
-main().catch((error) => {
-  console.error('Fatal error:', error);
-  process.exit(1);
-});
+main();

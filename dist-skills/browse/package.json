@@ -1,31 +1,27 @@
 {
   "name": "@openclaw/skill-browse",
   "version": "1.0.0",
-  "description": "Browser automation skill for OpenClaw",
+  "description": "Browser automation skill for OpenClaw - Playwright-based visual testing and accessibility audits",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
     "browse": "./dist/scripts/browse.js"
   },
+  "files": [
+    "dist",
+    "SKILL.md"
+  ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "echo 'Tests run in main repo'"
   },
   "dependencies": {
-    "@openclaw/superpowers-shared": "file:../shared",
+    "playwright": "^1.40.0",
     "axe-core": "^4.8.0",
     "pixelmatch": "^5.3.0",
-    "playwright": "^1.40.0",
     "pngjs": "^7.0.0"
   },
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "@types/pixelmatch": "^5.2.6",
-    "@types/pngjs": "^6.0.5",
-    "typescript": "^5.3.3",
-    "vitest": "^1.1.0"
-  }
+  "keywords": ["openclaw", "skill", "browser", "playwright", "testing"],
+  "license": "MIT"
 }
