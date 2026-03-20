@@ -1,148 +1,94 @@
 ---
 name: ship
-description: One-command release pipeline - semantic version bumping, changelog generation, GitHub releases, and npm publishing. Triggers on release commands, version bump requests, changelog generation, or when asked to publish/ship a project.
+description: One-command release pipeline - semantic version bumping, changelog generation, GitHub releases, and npm publishing. Use when creating releases, managing versions, generating changelogs, or automating release workflows.
 ---
 
-# Ship - Release Pipeline
+# Ship Skill
 
-One-command release automation with semantic versioning, changelog generation, and multi-platform publishing.
+One-command release pipeline. Version bumping, changelog generation, GitHub releases, and npm publishing.
 
-## Quick Start
+## Capabilities
 
-```bash
-# Create a release (auto-detect bump type)
-/ship
+- **Version Bumping**: Semantic versioning (major, minor, patch)
+- **Changelog Generation**: Conventional commits to changelog
+- **GitHub Releases**: Automated release creation
+- **NPM Publishing**: Package publishing support
+- **Dry Run Mode**: Preview changes without executing
 
-# Patch release (1.0.0 -> 1.0.1)
-/ship patch
-
-# Minor release (1.0.0 -> 1.1.0)
-/ship minor
-
-# Major release (1.0.0 -> 2.0.0)
-/ship major
-
-# Dry run
-/ship --dry-run
-```
-
-## Release Workflow
-
-1. **Version Bump** - Updates version in package files
-2. **Changelog** - Generates/updates CHANGELOG.md
-3. **Git Tag** - Creates annotated git tag
-4. **GitHub Release** - Creates release with notes
-5. **Publish** - Publishes to package managers (optional)
-
-## Version Bumping
-
-### Manual Bump Types
+## Usage
 
 ```bash
-/ship patch   # Bug fixes
-/ship minor   # New features (backward compatible)
-/ship major   # Breaking changes
+# Patch release (1.0.0 → 1.0.1)
+ship patch
+
+# Minor release (1.0.0 → 1.1.0)
+ship minor
+
+# Major release (1.0.0 → 2.0.0)
+ship major
+
+# Dry run to preview
+ship minor --dry-run
+
+# Skip tests
+ship patch --skip-tests
 ```
 
-### Auto-Detect from Commits
+## Version Bumps
 
-```bash
-/ship --auto  # Analyzes commits since last tag
-```
+| Type | When to Use | Example |
+|------|-------------|---------|
+| `patch` | Bug fixes | 1.0.0 → 1.0.1 |
+| `minor` | New features | 1.0.0 → 1.1.0 |
+| `major` | Breaking changes | 1.0.0 → 2.0.0 |
 
-Uses conventional commits:
-- `feat:` → minor bump
-- `fix:` → patch bump
-- `BREAKING CHANGE:` → major bump
+## Conventional Commits
 
-## Changelog Generation
+Automatically categorizes commits:
+- ✨ **Features** (`feat:`)
+- 🐛 **Bug Fixes** (`fix:`)
+- 📚 **Documentation** (`docs:`)
+- ♻️ **Refactoring** (`refactor:`)
+- ⚡ **Performance** (`perf:`)
+- 🧪 **Tests** (`test:`)
+- 🔧 **Chores** (`chore:`)
+- ⚠️ **Breaking Changes** (`BREAKING CHANGE:` or `feat!:`)
 
-### Formats Supported
+## Environment Variables
 
-- **Keep a Changelog** (default)
-- **Conventional Changelog**
-- **GitHub Releases** format
+- `GITHUB_TOKEN` - GitHub personal access token
+- `NPM_TOKEN` - npm authentication token
 
-### Customization
+## Options
 
-```bash
-# Custom changelog path
-/ship --changelog docs/HISTORY.md
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--dry-run` | Preview changes only | false |
+| `--skip-tests` | Skip running tests | false |
+| `--skip-changelog` | Skip changelog update | false |
+| `--skip-tag` | Skip git tag creation | false |
+| `--skip-push` | Skip git push | false |
+| `--message` | Custom commit message | "chore(release): {{version}}" |
 
-# Include commit links
-/ship --links
+## Output
 
-# Exclude specific commits
-/ship --exclude "chore,docs"
-```
+- Updated package.json
+- Updated CHANGELOG.md
+- Git tag created
+- GitHub release (if token available)
 
-## GitHub Integration
+## Error Handling
 
-```bash
-# Create GitHub release
-/ship --github-release
+The ship skill will fail gracefully with clear error messages for:
+- Non-git repositories
+- Unclean working directories
+- Failed tests (unless `--skip-tests`)
+- Missing permissions
 
-# Generate release notes
-/ship --generate-notes
+## Reference
 
-# Pre-release
-/ship --prerelease alpha
-```
-
-## Package Manager Publishing
-
-### npm/yarn
-
-```bash
-# Auto-detect from package.json
-/ship --publish
-
-# Specific registry
-/ship --publish --registry https://npm.example.com
-```
-
-### PyPI
-
-```bash
-/ship --publish --pypi
-```
-
-### Docker
-
-```bash
-/ship --publish --docker user/repo
-```
-
-## Monorepo Support
-
-```bash
-# Release specific package
-/ship packages/ui
-
-# Release all changed packages
-/ship --workspaces
-```
-
-## CI/CD Integration
-
-```bash
-# Non-interactive mode
-/ship --ci
-
-# Skip prompts
-/ship --yes
-
-# With token
-/ship --github-token $GITHUB_TOKEN
-```
-
-## Safety Checks
-
-Before releasing:
-- ✅ Working directory clean
-- ✅ On main/master branch
-- ✅ Tests passing
-- ✅ No uncommitted changes
-- ✅ Version not already tagged
-
-Skip with `--skip-checks` (not recommended).
+See [references/semver.md](references/semver.md) for:
+- Semantic versioning guide
+- Conventional commits specification
+- Pre-release versions
+- GitHub releases setup

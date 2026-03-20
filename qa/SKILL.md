@@ -3,102 +3,86 @@ name: qa
 description: QA Lead skill for systematic testing and code quality analysis. Automatically selects relevant tests based on code changes, analyzes coverage, runs regression tests, and supports multiple testing frameworks (Jest, Vitest, Mocha, pytest, etc.). Triggers on test commands, coverage analysis, code quality checks, or when asked to run tests.
 ---
 
-# QA - Systematic Testing & Quality Analysis
+# QA Skill
 
-Intelligent test runner with smart test selection, coverage analysis, and multi-framework support.
+Systematic testing as QA Lead with smart test selection and coverage analysis.
 
-## Quick Start
+## Capabilities
+
+- **Smart Test Selection**: Automatically detect and run relevant tests based on changed files
+- **Coverage Analysis**: Track and report test coverage with trend analysis
+- **Multi-Framework Support**: Jest, Vitest, Mocha, Ava, pytest, go test, cargo test, etc.
+- **Regression Testing**: Run full or selective regression suites
+
+## Usage
 
 ```bash
 # Run all tests
-/qa
+qa run
 
-# Run tests with coverage
-/qa --coverage
+# Smart test selection based on changes
+qa run --changed
 
-# Smart test selection (based on changes)
-/qa --changed
+# Check coverage
+qa coverage
 
-# Run specific test pattern
-/qa --pattern "auth"
+# Watch mode
+qa run --watch
 
-# Regression test suite
-/qa --regression
+# Specific framework
+qa run --framework jest
+
+# Run with pattern
+qa run --pattern "auth"
 ```
 
-## Supported Frameworks
+## Test Framework Detection
 
-Auto-detected from project files:
+Auto-detects frameworks by looking for:
 
-| Framework | Detection | Command |
-|-----------|-----------|---------|
-| Jest | `jest.config.*` / `package.json` | `jest` |
-| Vitest | `vitest.config.*` | `vitest` |
-| Mocha | `mocha` in package.json | `mocha` |
-| Cypress | `cypress.config.*` | `cypress run` |
-| Playwright | `playwright.config.*` | `playwright test` |
-| pytest | `pytest.ini` / `setup.py` | `pytest` |
-| unittest | `test_*.py` files | `python -m unittest` |
-| Go test | `*_test.go` files | `go test` |
-| Rust test | `Cargo.toml` | `cargo test` |
+| Framework | Detection |
+|-----------|-----------|
+| Jest | `jest.config.*`, `package.json` scripts |
+| Vitest | `vitest.config.*`, vite projects |
+| Mocha | `.mocharc.*`, `mocha.opts` |
+| Ava | `ava.config.*` |
+| pytest | `pytest.ini`, `setup.py`, `pyproject.toml` |
+| unittest | `*test*.py` files |
+| go test | `*_test.go` files |
+| cargo test | `Cargo.toml` |
+| dotnet test | `*.csproj`, `*.sln` |
+
+## Output
+
+- Test results with pass/fail counts
+- Coverage reports (when available)
+- Failed test details with stack traces
+- Suggestions for fixing failures
+
+## Configuration
+
+Create `qa.config.js` to customize:
+
+```javascript
+module.exports = {
+  testFramework: 'jest', // auto-detected by default
+  coverageThreshold: 80,
+  ignorePatterns: ['**/*.spec.ts', '**/dist/**'],
+  timeout: 30000
+};
+```
 
 ## Smart Test Selection
 
-Automatically selects tests based on:
+The QA skill automatically finds affected tests for changed files:
+- `src/file.ts` → `src/file.test.ts`
+- `src/file.ts` → `src/__tests__/file.test.ts`
+- `src/file.ts` → `tests/file.test.ts`
 
-1. **Git changes** - Tests related to modified files
-2. **Import graph** - Tests importing changed modules
-3. **Historical failures** - Previously flaky tests
-4. **Coverage gaps** - Untested changed code
+## Reference
 
-### Selection Modes
-
-```bash
-# Only tests for changed files
-/qa --changed
-
-# Changed + dependencies
-/qa --related
-
-# Full suite with priority ordering
-/qa --prioritized
-```
-
-## Coverage Analysis
-
-```bash
-# Generate coverage report
-/qa --coverage
-
-# Coverage diff against main
-/qa --coverage-diff
-
-# Uncovered lines report
-/qa --uncovered
-```
-
-## Regression Testing
-
-```bash
-# Full regression suite
-/qa --regression
-
-# Smoke tests only
-/qa --smoke
-
-# E2E tests
-/qa --e2e
-```
-
-## CI/CD Integration
-
-```bash
-# Output for GitHub Actions
-/qa --format github --output test-results/
-
-# Fail on threshold
-/qa --coverage --threshold 80
-
-# Parallel execution
-/qa --parallel 4
-```
+See [references/frameworks.md](references/frameworks.md) for:
+- Framework-specific configuration
+- Vitest, Jest, Playwright, Mocha setup
+- Coverage analysis details
+- Test pattern matching

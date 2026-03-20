@@ -1,144 +1,118 @@
 ---
 name: plan-ceo-review
-description: Product strategy evaluation using BAT framework (Brand, Attention, Trust) and 10-star methodology for build vs buy decisions. Triggers on strategic product questions, feature evaluation, build vs buy decisions, roadmap prioritization, or CEO-level product reviews.
+description: Product strategy evaluation using BAT framework (Brand, Attention, Trust) and 10-star methodology for build vs buy decisions. Use when evaluating new features, prioritizing roadmap, comparing product opportunities, or making strategic product decisions.
 ---
 
-# Plan CEO Review - Product Strategy
+# Plan CEO Review Skill
 
-Strategic product analysis using the BAT framework and 10-star methodology for build vs buy decisions.
+Product strategy evaluation using the BAT framework and 10-star methodology. Make better product decisions with structured analysis.
 
-## Quick Start
+## Capabilities
+
+- **BAT Analysis**: Evaluate Brand, Attention, and Trust dimensions
+- **10-Star Methodology**: Assess problem, usability, delight, feasibility, viability
+- **Build vs Buy Decisions**: Structured decision framework
+- **Feature Prioritization**: Compare multiple features
+- **Strategic Recommendations**: Clear build/don't build guidance
+
+## Usage
 
 ```bash
-# Evaluate a feature/strategy
-/plan-ceo-review "Should we build our own auth system?"
+# Review a feature idea
+plan-ceo-review "AI-powered search"
 
-# With context
-/plan-ceo-review "Should we acquire Company X?" --market-size 10B
+# Review with context
+plan-ceo-review "Mobile app" --audience="enterprise" --market="saas"
 
-# Full analysis
-/plan-ceo-review "Build vs buy CRM" --depth full
+# Compare two features
+plan-ceo-review compare "Feature A" "Feature B"
+
+# Build vs Buy analysis
+plan-ceo-review "Notifications" --build-vs-buy
 ```
 
 ## BAT Framework
 
-Analyze through three lenses:
+Evaluates three dimensions (0-5 each):
 
-### Brand
-How does this affect our brand perception?
+| Dimension | Question | High Score When |
+|-----------|----------|-----------------|
+| **Brand** | Does this strengthen our brand? | Iconic, brand-defining feature |
+| **Attention** | Will users actually use this? | Solves real problem, high demand |
+| **Trust** | Does this build user trust? | Transparent, secure, user control |
 
-- **Differentiation** - Does it set us apart?
-- **Reputation** - Does it enhance or risk our reputation?
-- **Positioning** - Where does it place us in the market?
-- **Story** - What's the narrative we can tell?
+### Scoring Summary
 
-### Attention
-How does this capture and retain user attention?
-
-- **Acquisition** - Does it attract new users?
-- **Engagement** - Does it increase usage?
-- **Retention** - Does it keep users coming back?
-- **Virality** - Does it drive word-of-mouth?
-
-### Trust
-How does this build or erode trust?
-
-- **Security** - Is it secure and private?
-- **Reliability** - Will it work consistently?
-- **Transparency** - Are we clear about what it does?
-- **Support** - Can we stand behind it?
+| Score | Recommendation |
+|-------|----------------|
+| 12-15 | **BUILD** - Strong signal, prioritize |
+| 10-11 | **BUILD** - Good signal, proceed |
+| 8-9 | **CONSIDER** - Mixed, needs refinement |
+| 0-7 | **DON'T BUILD** - Weak signal, reconsider |
 
 ## 10-Star Methodology
 
-Rate each option across 10 dimensions (1-5 stars each):
+Inspired by Brian Chesky (Airbnb CEO) - push beyond "good enough":
 
-| Dimension | Question |
-|-----------|----------|
-| 1. User Value | Does it solve a real problem? |
-| 2. Market Fit | Is the timing right? |
-| 3. Strategic Alignment | Does it fit our mission? |
-| 4. Technical Feasibility | Can we build it well? |
-| 5. Resource Efficiency | Is it worth the investment? |
-| 6. Speed to Market | How fast can we ship? |
-| 7. Competitive Moat | Does it create defensibility? |
-| 8. Scalability | Can it grow with us? |
-| 9. Risk Level | What could go wrong? |
-| 10. Opportunity Cost | What are we NOT doing? |
+| Rating | Description |
+|--------|-------------|
+| 1★ | Works (barely) |
+| 3★ | Meets basic needs |
+| 5★ | Meets expectations |
+| 7★ | Great - exceeds expectations |
+| 10★ | Transforms the category |
 
-**Scoring:**
-- 40-50 stars: Must do
-- 30-39 stars: Strong candidate
-- 20-29 stars: Consider carefully
-- <20 stars: Probably skip
+### Dimensions
 
-## Analysis Types
+- **Problem**: How well does it solve a real user problem?
+- **Usability**: How easy is it to use?
+- **Delight**: Does it create moments of joy?
+- **Feasibility**: Can we build this well?
+- **Viability**: Sustainable business model?
 
-### Build vs Buy
+## Build vs Buy Framework
 
-```bash
-/plan-ceo-review "Build vs buy authentication"
-```
+When evaluating whether to build or buy:
 
-Compares:
-- Build: Full control, differentiation, higher cost
-- Buy: Faster, proven, less control
+1. **Cost Analysis**: Build cost vs Buy cost (TCO over 3 years)
+2. **Time to Market**: Build timeline vs Buy timeline
+3. **Strategic Value**: Core differentiator vs Commodity
+4. **Maintenance Burden**: Ongoing costs
+5. **Customization Needs**: How much tailoring required?
 
-### Feature Evaluation
+## Output
 
-```bash
-/plan-ceo-review "Should we add real-time collaboration?"
-```
+- BAT scores with visual bars
+- 10-star overall rating
+- BUILD/CONSIDER/DON'T BUILD recommendation
+- Next steps and resource estimates
+- Timeline projections
 
-Evaluates:
-- User impact
-- Engineering cost
-- Strategic value
-- Competitive necessity
+## Scoring Guide
 
-### Acquisition Analysis
+### BAT Score Interpretation
 
-```bash
-/plan-ceo-review "Acquire startup X" --type acquisition
-```
+| Score | Recommendation |
+|-------|----------------|
+| 12-15 | **BUILD** - Strong signal, prioritize |
+| 10-11 | **BUILD** - Good signal, proceed |
+| 8-9 | **CONSIDER** - Mixed, needs refinement |
+| 0-7 | **DON'T BUILD** - Weak signal, reconsider |
 
-Assesses:
-- Strategic fit
-- Cultural alignment
-- Technology value
-- Team quality
-- Price reasonableness
+### 10-Star Scale
 
-### Market Entry
+| Stars | Level |
+|-------|-------|
+| 1-3 | Below expectations |
+| 4-5 | Meets minimum |
+| 6-7 | Good - competitive |
+| 8-9 | Excellent - market leader |
+| 10 | Transforms category |
 
-```bash
-/plan-ceo-review "Enter European market" --type market
-```
+## Reference
 
-Analyzes:
-- Market size and growth
-- Regulatory requirements
-- Competition
-- Localization needs
-
-## Output Formats
-
-### Summary (default)
-Key recommendation with BAT scores
-
-### Detailed
-Full analysis with 10-star breakdown
-
-### Executive
-One-page brief for leadership
-
-```bash
-/plan-ceo-review "Question" --format detailed
-/plan-ceo-review "Question" --format executive
-```
-
-## Integration
-
-Use with other superpowers:
-- `/qa` - Validate technical feasibility
-- `/browse` - Research competitors
-- `/ship` - Plan the rollout
+See [references/frameworks.md](references/frameworks.md) for:
+- Detailed BAT framework scoring
+- 10-star methodology breakdown
+- Build vs buy decision tree
+- Industry examples
